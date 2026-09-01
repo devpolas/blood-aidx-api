@@ -1,5 +1,3 @@
 allowBuilds:
-  bcrypt: false
-  esbuild: false
   msgpackr-extract: true
   workerd: true
