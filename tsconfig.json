@@ -3,19 +3,13 @@
     "rootDir": "./src",
     "outDir": "./dist",
 
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "target": "esnext",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
 
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
 
     "esModuleInterop": true,
-
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -27,10 +21,16 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
 
-    "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    "skipLibCheck": true
   },
 
-  "include": ["src/**/*", "src/**/*.d.ts"],
+  "include": ["src/**/*"],
+
   "exclude": ["node_modules", "dist"]
 }
