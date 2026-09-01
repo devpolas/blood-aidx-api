@@ -1,14 +1,36 @@
 {
   "name": "blood-aid-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Find a blood donor or donate blood",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/server.js",
+    "start:dev": "tsx watch src/server.ts",
+    "start:prod": "node dist/server.js",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "check": "pnpm typecheck && pnpm lint",
+    "verify": "pnpm check && pnpm build",
+    "contract:emit": "prisma contract emit",
+    "db:update": "prisma db update",
+    "db:verify": "prisma db verify",
+    "db:schema": "prisma db schema",
+    "migration:plan": "prisma migration plan",
+    "migration:status": "prisma migration status",
+    "db:migrate": "prisma db migrate",
+    "postinstall": "prisma skills sync || exit 0"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "blood",
+    "donate",
+    "aid",
+    "blood-donate"
+  ],
+  "author": "Polas Chandra Barmon",
   "license": "ISC",
+  "packageManager": "pnpm@11.24.0",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -16,6 +38,45 @@
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@11.24.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@prisma/orm-postgres": "8.0.0-rc.8",
+    "bcrypt": "^6.0.0",
+    "better-auth": "^1.7.2",
+    "body-parser": "^2.3.0",
+    "bowser": "^2.14.1",
+    "cloudinary": "^2.11.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "http-status": "^2.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^9.1.0",
+    "redis": "^6.2.1",
+    "runtime": "link:@prisma/orm-postgres/runtime",
+    "slugify": "^1.6.9",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@prisma/cli-engine": "0.2.3",
+    "@types/bcrypt": "^6.0.0",
+    "@types/body-parser": "^1.19.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.19.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.4.0",
+    "@types/nodemailer": "^8.0.1",
+    "oxlint": "^1.80.0",
+    "prisma": "8.0.0-rc.10",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
 }
