@@ -3,10 +3,42 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import cors from "cors";
 import notFound from "./middleware/not-found";
 import globalErrorController from "./middleware/error";
+import config from "./config";
 
 const app: Application = express();
+
+const allowedOrigins = config.app_urls ?? [];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "Origin",
+      "X-Client-Info",
+      "X-Client-Session",
+      "X-Request-ID",
+    ],
+    exposedHeaders: ["Set-Cookie"],
+  }),
+);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
