@@ -27,4 +27,5 @@ export default {
   cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME as StringValue,
   cloudinary_api_key: process.env.CLOUDINARY_API_KEY as StringValue,
   cloudinary_api_secret: process.env.CLOUDINARY_SECRET as StringValue,
+  redis_url: process.env.REDIS_URL as StringValue,
 };
