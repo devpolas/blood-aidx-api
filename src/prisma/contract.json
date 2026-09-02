@@ -4,30 +4,114 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
-    "post": {
-      "model": "Post",
+    "accounts": {
+      "model": "Account",
       "namespace": "public"
     },
-    "user": {
+    "sessions": {
+      "model": "Session",
+      "namespace": "public"
+    },
+    "users": {
       "model": "User",
+      "namespace": "public"
+    },
+    "verifications": {
+      "model": "Verification",
       "namespace": "public"
     }
   },
   "domain": {
     "namespaces": {
       "public": {
+        "enum": {
+          "Gender": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "MEN",
+                "value": "men"
+              },
+              {
+                "name": "WOMEN",
+                "value": "women"
+              },
+              {
+                "name": "UNISEX",
+                "value": "unisex"
+              }
+            ]
+          },
+          "Priority": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "LOW",
+                "value": "low"
+              },
+              {
+                "name": "HIGH",
+                "value": "high"
+              },
+              {
+                "name": "URGENT",
+                "value": "urgent"
+              }
+            ]
+          },
+          "UserRole": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "DONOR",
+                "value": "donor"
+              },
+              {
+                "name": "RECIPIENT",
+                "value": "recipient"
+              },
+              {
+                "name": "VOLUNTEER",
+                "value": "volunteer"
+              },
+              {
+                "name": "HOSPITAL",
+                "value": "hospital"
+              },
+              {
+                "name": "BLOOD_BANK",
+                "value": "blood_bank"
+              },
+              {
+                "name": "MODERATOR",
+                "value": "moderator"
+              },
+              {
+                "name": "ADMIN",
+                "value": "admin"
+              }
+            ]
+          }
+        },
         "models": {
-          "Post": {
+          "Account": {
             "fields": {
-              "authorId": {
-                "nullable": false,
+              "accessToken": {
+                "nullable": true,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
-              "content": {
+              "accessTokenExpiresAt": {
                 "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "accountId": {
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -43,12 +127,47 @@
               "id": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
-              "title": {
+              "idToken": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "password": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerId": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "refreshToken": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "refreshTokenExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "scope": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -57,17 +176,24 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamptz-string@1",
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               }
             },
             "relations": {
-              "author": {
+              "user": {
                 "cardinality": "N:1",
                 "on": {
                   "localFields": [
-                    "authorId"
+                    "userId"
                   ],
                   "targetFields": [
                     "id"
@@ -81,11 +207,14 @@
             },
             "storage": {
               "fields": {
-                "authorId": {
-                  "column": "authorId"
+                "accessToken": {
+                  "column": "accessToken"
                 },
-                "content": {
-                  "column": "content"
+                "accessTokenExpiresAt": {
+                  "column": "accessTokenExpiresAt"
+                },
+                "accountId": {
+                  "column": "accountId"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -93,19 +222,175 @@
                 "id": {
                   "column": "id"
                 },
-                "title": {
-                  "column": "title"
+                "idToken": {
+                  "column": "idToken"
+                },
+                "password": {
+                  "column": "password"
+                },
+                "providerId": {
+                  "column": "providerId"
+                },
+                "refreshToken": {
+                  "column": "refreshToken"
+                },
+                "refreshTokenExpiresAt": {
+                  "column": "refreshTokenExpiresAt"
+                },
+                "scope": {
+                  "column": "scope"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
                 }
               },
               "namespaceId": "public",
-              "table": "post"
+              "table": "accounts"
+            }
+          },
+          "Session": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "impersonatedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ipAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "token": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "userAgent": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expiresAt": {
+                  "column": "expiresAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "impersonatedBy": {
+                  "column": "impersonatedBy"
+                },
+                "ipAddress": {
+                  "column": "ipAddress"
+                },
+                "token": {
+                  "column": "token"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userAgent": {
+                  "column": "userAgent"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "sessions"
             }
           },
           "User": {
             "fields": {
+              "banExpires": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "banReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "banned": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -120,15 +405,168 @@
                   "kind": "scalar"
                 }
               },
+              "emailVerified": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "gender": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Gender",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "image": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
               "name": {
-                "nullable": true,
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "role": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "UserRole",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "accounts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Account",
+                  "namespace": "public"
+                }
+              },
+              "sessions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Session",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "banExpires": {
+                  "column": "banExpires"
+                },
+                "banReason": {
+                  "column": "banReason"
+                },
+                "banned": {
+                  "column": "banned"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "emailVerified": {
+                  "column": "emailVerified"
+                },
+                "gender": {
+                  "column": "gender"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "image": {
+                  "column": "image"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "role": {
+                  "column": "role"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "users"
+            }
+          },
+          "Verification": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "identifier": {
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -137,58 +575,42 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamptz-string@1",
+                  "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
                 }
               },
-              "username": {
-                "nullable": true,
+              "value": {
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               }
             },
-            "relations": {
-              "posts": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "authorId"
-                  ]
-                },
-                "to": {
-                  "model": "Post",
-                  "namespace": "public"
-                }
-              }
-            },
+            "relations": {},
             "storage": {
               "fields": {
                 "createdAt": {
                   "column": "createdAt"
                 },
-                "email": {
-                  "column": "email"
+                "expiresAt": {
+                  "column": "expiresAt"
                 },
                 "id": {
                   "column": "id"
                 },
-                "name": {
-                  "column": "name"
+                "identifier": {
+                  "column": "identifier"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
                 },
-                "username": {
-                  "column": "username"
+                "value": {
+                  "column": "value"
                 }
               },
               "namespaceId": "public",
-              "table": "user"
+              "table": "verifications"
             }
           }
         }
@@ -200,17 +622,22 @@
       "public": {
         "entries": {
           "table": {
-            "post": {
+            "accounts": {
               "columns": {
-                "authorId": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": false
-                },
-                "content": {
+                "accessToken": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
+                },
+                "accessTokenExpiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "accountId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -222,50 +649,77 @@
                   "nullable": false
                 },
                 "id": {
-                  "codecId": "pg/int4@1",
-                  "default": {
-                    "expression": "autoincrement()",
-                    "kind": "function"
-                  },
-                  "nativeType": "int4",
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
                   "nullable": false
                 },
-                "title": {
+                "idToken": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "password": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "providerId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
                 },
-                "updatedAt": {
+                "refreshToken": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "refreshTokenExpiresAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "scope": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
                   "nullable": false
                 }
               },
               "foreignKeys": [
                 {
+                  "onDelete": "cascade",
                   "source": {
                     "columns": [
-                      "authorId"
+                      "userId"
                     ],
                     "namespaceId": "public",
-                    "tableName": "post"
+                    "tableName": "accounts"
                   },
                   "target": {
                     "columns": [
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "user"
+                    "tableName": "users"
                   }
                 }
               ],
               "indexes": [
                 {
                   "columns": [
-                    "authorId"
+                    "userId"
                   ],
-                  "name": "post_authorId_idx_e47547ed",
-                  "prefix": "post_authorId_idx",
+                  "name": "accounts_userId_idx_a489d58a",
+                  "prefix": "accounts_userId_idx",
                   "unique": false
                 }
               ],
@@ -276,8 +730,133 @@
               },
               "uniques": []
             },
-            "user": {
+            "sessions": {
               "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "impersonatedBy": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "ipAddress": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "token": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "userAgent": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "sessions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "sessions_userId_idx_a489d58a",
+                  "prefix": "sessions_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "token"
+                  ]
+                }
+              ]
+            },
+            "users": {
+              "checks": [
+                {
+                  "expression": "\"gender\" IN ('men', 'women', 'unisex')",
+                  "name": "users_gender_check_78d2beda",
+                  "prefix": "users_gender_check"
+                },
+                {
+                  "expression": "\"role\" IN ('donor', 'recipient', 'volunteer', 'hospital', 'blood_bank', 'moderator', 'admin')",
+                  "name": "users_role_check_13016f52",
+                  "prefix": "users_role_check"
+                }
+              ],
+              "columns": {
+                "banExpires": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "banReason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "banned": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -292,29 +871,60 @@
                   "nativeType": "text",
                   "nullable": false
                 },
-                "id": {
-                  "codecId": "pg/int4@1",
+                "emailVerified": {
+                  "codecId": "pg/bool@1",
                   "default": {
-                    "expression": "autoincrement()",
-                    "kind": "function"
+                    "kind": "literal",
+                    "value": false
                   },
-                  "nativeType": "int4",
+                  "nativeType": "bool",
                   "nullable": false
+                },
+                "gender": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Gender",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "image": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "name": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": true
-                },
-                "updatedAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "nativeType": "timestamptz",
                   "nullable": false
                 },
-                "username": {
+                "role": {
                   "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "donor"
+                  },
                   "nativeType": "text",
-                  "nullable": true
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "UserRole",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
                 }
               },
               "foreignKeys": [],
@@ -331,6 +941,91 @@
                   ]
                 }
               ]
+            },
+            "verifications": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "identifier": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "value": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "identifier"
+                  ],
+                  "name": "verifications_identifier_idx_79a0dbb3",
+                  "prefix": "verifications_identifier_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            }
+          },
+          "valueSet": {
+            "Gender": {
+              "kind": "valueSet",
+              "values": [
+                "men",
+                "women",
+                "unisex"
+              ]
+            },
+            "Priority": {
+              "kind": "valueSet",
+              "values": [
+                "low",
+                "high",
+                "urgent"
+              ]
+            },
+            "UserRole": {
+              "kind": "valueSet",
+              "values": [
+                "donor",
+                "recipient",
+                "volunteer",
+                "hospital",
+                "blood_bank",
+                "moderator",
+                "admin"
+              ]
             }
           }
         },
@@ -338,40 +1033,114 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1e8412e162dbbe69f4bb3bf8d07f0280ae67eaab15c34dcf201e67468315428d"
+    "storageHash": "feb8d9662c68d5e7dee16e971762ceecf733bf931d42a6cf60ecf5c87e7ee0e7"
   },
   "execution": {
-    "executionHash": "4abff323cc88151ef9c9a0ec90122cfee6d46814a118cdb66a9fdd94a4123463",
+    "executionHash": "828fbd01ef8886799a577adbb4f916cbf3931078c45040fe3f5e0117ce7de97d",
     "mutations": {
       "defaults": [
         {
           "onCreate": {
-            "id": "timestampNow",
-            "kind": "generator"
-          },
-          "onUpdate": {
-            "id": "timestampNow",
+            "id": "uuidv4",
             "kind": "generator"
           },
           "ref": {
-            "column": "updatedAt",
+            "column": "id",
             "namespace": "public",
-            "table": "post"
+            "table": "accounts"
           }
         },
         {
           "onCreate": {
-            "id": "timestampNow",
+            "id": "instantNow",
             "kind": "generator"
           },
           "onUpdate": {
-            "id": "timestampNow",
+            "id": "instantNow",
             "kind": "generator"
           },
           "ref": {
             "column": "updatedAt",
             "namespace": "public",
-            "table": "user"
+            "table": "accounts"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "sessions"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "sessions"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "users"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "users"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "verifications"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "verifications"
           }
         }
       ]

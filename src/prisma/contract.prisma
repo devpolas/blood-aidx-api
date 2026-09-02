@@ -1,21 +1,108 @@
 // use prisma-next
+enum UserRole {
+  @@type("pg/text@1")
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+  DONOR = "donor"
+  RECIPIENT = "recipient"
+  VOLUNTEER = "volunteer"
+  HOSPITAL = "hospital"
+  BLOOD_BANK = "blood_bank"
+  MODERATOR = "moderator"
+  ADMIN = "admin"
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+enum Gender {
+  @@type("pg/text@1")
+
+  MEN = "men"
+  WOMEN = "women"
+  UNISEX = "unisex"
+}
+
+enum Priority {
+  @@type("pg/text@1")
+
+  LOW = "low"
+  HIGH = "high"
+  URGENT = "urgent"
+}
+
+model User {
+  id            Uuid                 @id @default(uuid())
+  name          String
+  email         String
+  emailVerified Boolean              @default(false)
+  image         String?
+
+  createdAt     TimestamptzString    @default(now())
+  updatedAt     temporal.updatedAt()
+
+  role          UserRole             @default(DONOR)
+  gender        Gender?
+  banned        Boolean?             @default(false)
+  banReason     String?
+  banExpires    TimestamptzString?
+
+  sessions      Session[]
+  accounts      Account[]
+
+  @@unique([email])
+  @@map("users")
+}
+
+model Session {
+  id             Uuid                 @id @default(uuid())
+  expiresAt      TimestamptzString
+  token          String
+  createdAt      TimestamptzString    @default(now())
+  updatedAt      temporal.updatedAt()
+
+  ipAddress      String?
+  userAgent      String?
+
+  userId         Uuid
+  user           User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
+
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    Uuid                 @id @default(uuid())
+  accountId             String
+  providerId            String
+
+  userId                Uuid
+  user                  User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+
+  accessTokenExpiresAt  TimestamptzString?
+  refreshTokenExpiresAt TimestamptzString?
+
+  scope                 String?
+  password              String?
+
+  createdAt             TimestamptzString    @default(now())
+  updatedAt             temporal.updatedAt()
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         Uuid                 @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  TimestamptzString
+  createdAt  TimestamptzString    @default(now())
+  updatedAt  temporal.updatedAt()
+
+  @@index([identifier])
+  @@map("verifications")
 }
