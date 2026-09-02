@@ -43,6 +43,19 @@ app.use(
 
 app.use(cookieParser());
 
+app.use(
+  express.json({
+    limit: "100kb",
+  }),
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "50kb",
+  }),
+);
+
 app.get("/", (req: Request, res: Response) => {
   res.json({
     message: "hello from blood aid api",
