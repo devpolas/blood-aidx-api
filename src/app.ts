@@ -8,6 +8,8 @@ import cookieParser from "cookie-parser";
 import notFound from "./middleware/not-found";
 import globalErrorController from "./middleware/error";
 import config from "./config";
+import { sendResponse } from "./utils/sendResponse";
+import httpStatus from "http-status";
 
 const app: Application = express();
 
@@ -56,9 +58,30 @@ app.use(
   }),
 );
 
-app.get("/", (req: Request, res: Response) => {
-  res.json({
-    message: "hello from blood aid api",
+app.get("/", (_req: Request, res: Response) => {
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Blood Aid is ready to talk!",
+  });
+});
+
+app.get("/health", (_req: Request, res: Response) => {
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Blood Aid is healthy!",
+  });
+});
+
+app.get("/version", (_req: Request, res: Response) => {
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Version information retrieved successfully.",
+    data: {
+      version: "1.0.0",
+    },
   });
 });
 
