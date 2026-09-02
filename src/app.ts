@@ -3,6 +3,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import notFound from "./middleware/not-found";
 
 const app: Application = express();
 
@@ -11,5 +12,7 @@ app.get("/", (req: Request, res: Response) => {
     message: "hello from blood aid api",
   });
 });
+
+app.use(notFound);
 
 export default app;
