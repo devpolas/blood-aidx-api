@@ -14,6 +14,14 @@ export default {
   jwt_access_expire_in: process.env.JWT_ACCESS_EXPIRES_IN as StringValue,
   jwt_refresh_secret: process.env.JWT_REFRESH_SECRET as string,
   jwt_refresh_expire_in: process.env.JWT_REFRESH_EXPIRES_IN as StringValue,
+  auth_credential_provider: process.env.AUTH_CREDENTIAL_PROVIDER as string,
+  auth_session_duration_days: Number(process.env.AUTH_SESSION_DURATION_DAYS),
+  auth_password_reset_duration_minutes: Number(
+    process.env.AUTH_PASSWORD_RESET_DURATION_MINUTES,
+  ),
+  auth_user_cache_duration_minutes: Number(
+    process.env.AUTH_USER_CACHE_DURATION_MINUTES,
+  ),
   stripe_secret: process.env.STRIPE_SECRET as StringValue,
   website_url: process.env.WEBSITE_URL as StringValue,
   nodemailer_user: process.env.NODEMAILER_USER as StringValue,
