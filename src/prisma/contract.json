@@ -15,10 +15,6 @@
     "users": {
       "model": "User",
       "namespace": "public"
-    },
-    "verifications": {
-      "model": "Verification",
-      "namespace": "public"
     }
   },
   "domain": {
@@ -541,77 +537,6 @@
               "namespaceId": "public",
               "table": "users"
             }
-          },
-          "Verification": {
-            "fields": {
-              "createdAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "kind": "scalar"
-                }
-              },
-              "expiresAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
-              },
-              "identifier": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "updatedAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "kind": "scalar"
-                }
-              },
-              "value": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {},
-            "storage": {
-              "fields": {
-                "createdAt": {
-                  "column": "createdAt"
-                },
-                "expiresAt": {
-                  "column": "expiresAt"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "identifier": {
-                  "column": "identifier"
-                },
-                "updatedAt": {
-                  "column": "updatedAt"
-                },
-                "value": {
-                  "column": "value"
-                }
-              },
-              "namespaceId": "public",
-              "table": "verifications"
-            }
           }
         }
       }
@@ -728,7 +653,14 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "providerId",
+                    "accountId"
+                  ]
+                }
+              ]
             },
             "sessions": {
               "columns": {
@@ -941,61 +873,6 @@
                   ]
                 }
               ]
-            },
-            "verifications": {
-              "columns": {
-                "createdAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                },
-                "expiresAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                },
-                "id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
-                  "nullable": false
-                },
-                "identifier": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "updatedAt": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                },
-                "value": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [],
-              "indexes": [
-                {
-                  "columns": [
-                    "identifier"
-                  ],
-                  "name": "verifications_identifier_idx_79a0dbb3",
-                  "prefix": "verifications_identifier_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": []
             }
           },
           "valueSet": {
@@ -1033,10 +910,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "feb8d9662c68d5e7dee16e971762ceecf733bf931d42a6cf60ecf5c87e7ee0e7"
+    "storageHash": "53476ea54eb9b038377412afd304669a1b26eef4650d72a48362274759773f9f"
   },
   "execution": {
-    "executionHash": "828fbd01ef8886799a577adbb4f916cbf3931078c45040fe3f5e0117ce7de97d",
+    "executionHash": "70031956e5f220ce0fb29d05f0786f0d9f80a8da698cc0feb0c90f3ac7d8b22f",
     "mutations": {
       "defaults": [
         {
@@ -1115,32 +992,6 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "users"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv4",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "id",
-            "namespace": "public",
-            "table": "verifications"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "instantNow",
-            "kind": "generator"
-          },
-          "onUpdate": {
-            "id": "instantNow",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "updatedAt",
-            "namespace": "public",
-            "table": "verifications"
           }
         }
       ]

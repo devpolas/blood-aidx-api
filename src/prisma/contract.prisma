@@ -33,7 +33,6 @@ model User {
   email         String
   emailVerified Boolean              @default(false)
   image         String?
-
   createdAt     TimestamptzString    @default(now())
   updatedAt     temporal.updatedAt()
 
@@ -54,16 +53,16 @@ model Session {
   id             Uuid                 @id @default(uuid())
   expiresAt      TimestamptzString
   token          String
+
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
   ipAddress      String?
   userAgent      String?
-
   userId         Uuid
-  user           User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
-
   impersonatedBy String?
+
+  user           User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   @@unique([token])
   @@index([userId])
@@ -78,31 +77,22 @@ model Account {
   userId                Uuid
   user                  User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
 
+  // OAuth credentials
   accessToken           String?
   refreshToken          String?
   idToken               String?
+  scope                 String?
 
   accessTokenExpiresAt  TimestamptzString?
   refreshTokenExpiresAt TimestamptzString?
 
-  scope                 String?
+  // Credential authentication
   password              String?
 
   createdAt             TimestamptzString    @default(now())
   updatedAt             temporal.updatedAt()
 
+  @@unique([providerId, accountId])
   @@index([userId])
   @@map("accounts")
-}
-
-model Verification {
-  id         Uuid                 @id @default(uuid())
-  identifier String
-  value      String
-  expiresAt  TimestamptzString
-  createdAt  TimestamptzString    @default(now())
-  updatedAt  temporal.updatedAt()
-
-  @@index([identifier])
-  @@map("verifications")
 }
