@@ -264,6 +264,9 @@ importers:
       slugify:
         specifier: ^1.6.9
         version: 1.6.9
+      stripe:
+        specifier: ^22.6.0
+        version: 22.6.0(@types/node@26.4.0)
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -3789,6 +3792,15 @@ packages:
   strip-final-newline@4.0.0:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
     engines: {node: '>=18'}
+
+  stripe@22.6.0:
+    resolution: {integrity: sha512-Ezk+WYEEwX2DLxFrKfb6coznlCMZvCaCYMNPXNHFSZkBIEzF5Hgm7RLb38q/0h9Ol5jsUJGJRorvhzAvckgfhw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   strnum@2.4.2:
     resolution: {integrity: sha512-rDG3Ah4TV0k1hWvLSzkZtMmLN9+eS+h3knq4MP6A42Y3Yh5qGNnOUs1jJkoSr8FG5dsL28c7KgkIBzSEykqtuw==}
@@ -7528,6 +7540,10 @@ snapshots:
       ansi-regex: 6.3.0
 
   strip-final-newline@4.0.0: {}
+
+  stripe@22.6.0(@types/node@26.4.0):
+    optionalDependencies:
+      '@types/node': 26.4.0
 
   strnum@2.4.2:
     dependencies:

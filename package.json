@@ -59,6 +59,7 @@
     "redis": "^6.2.1",
     "runtime": "link:@prisma/orm-postgres/runtime",
     "slugify": "^1.6.9",
+    "stripe": "^22.6.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
