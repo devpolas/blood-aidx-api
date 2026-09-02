@@ -62,6 +62,7 @@
     "runtime": "link:@prisma/orm-postgres/runtime",
     "slugify": "^1.6.9",
     "stripe": "^22.6.0",
+    "temporal-polyfill": "^1.0.4",
     "zod": "^4.5.4"
   },
   "devDependencies": {

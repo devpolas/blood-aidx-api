@@ -11,6 +11,7 @@ import notFound from "./middleware/absent.middleware";
 import globalErrorController from "./middleware/error.middleware";
 import { sendResponse } from "./utils/sendResponse";
 import authRouter from "./modules/auth/auth.routes";
+import "temporal-polyfill/full/global";
 
 const app: Application = express();
 
