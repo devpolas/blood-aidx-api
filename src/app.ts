@@ -5,8 +5,8 @@ import express, {
 } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import notFound from "./middleware/not-found";
-import globalErrorController from "./middleware/error";
+import notFound from "./middleware/absent.middleware";
+import globalErrorController from "./middleware/error.middleware";
 import config from "./config";
 import { sendResponse } from "./utils/sendResponse";
 import httpStatus from "http-status";
