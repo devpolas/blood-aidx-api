@@ -13,7 +13,7 @@ import httpStatus from "http-status";
 
 const app: Application = express();
 
-const allowedOrigins = config.app_urls ?? [];
+const allowedOrigins = config.origin_urls ?? [];
 
 app.use(
   cors({
