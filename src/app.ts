@@ -5,11 +5,12 @@ import express, {
 } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import httpStatus from "http-status";
+import config from "./config";
 import notFound from "./middleware/absent.middleware";
 import globalErrorController from "./middleware/error.middleware";
-import config from "./config";
 import { sendResponse } from "./utils/sendResponse";
-import httpStatus from "http-status";
+import authRouter from "./modules/auth/auth.routes";
 
 const app: Application = express();
 
@@ -84,6 +85,8 @@ app.get("/version", (_req: Request, res: Response) => {
     },
   });
 });
+
+app.use("/api/v1/auth", authRouter);
 
 app.use(notFound);
 app.use(globalErrorController);
