@@ -4,6 +4,7 @@ import express, {
   type Response,
 } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import notFound from "./middleware/not-found";
 import globalErrorController from "./middleware/error";
 import config from "./config";
@@ -39,6 +40,8 @@ app.use(
     exposedHeaders: ["Set-Cookie"],
   }),
 );
+
+app.use(cookieParser());
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
