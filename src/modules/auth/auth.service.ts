@@ -1,10 +1,8 @@
 import { db } from "../../prisma/db";
-
 import { deleteCache, getCache, setCache } from "../../lib/redis";
 import config from "../../config";
 import { otpService } from "./otp.service";
 import { comparePassword, hashPassword, toDate } from "./auth.utils";
-
 import type {
   AuthResponse,
   AuthUser,
@@ -12,7 +10,6 @@ import type {
   ResetPasswordInput,
   SignUpInput,
 } from "./auth.schema";
-
 import { AppError } from "../../utils/appError";
 import { Time } from "../../utils/timeHelper";
 import { createJWT, verifyToken } from "../../utils/jwt";
@@ -21,22 +18,23 @@ import ms from "ms";
 import { sendEmail } from "../../utils/sendEmail";
 
 // Constants
-
 const CREDENTIAL_PROVIDER = config.auth_credential_provider;
 const SESSION_DURATION = Time.day(config.auth_session_duration_days);
 const PASSWORD_RESET_DURATION = Time.minute(
   config.auth_password_reset_duration_minutes,
 );
-
 const PASSWORD_RESET_DURATION_SECONDS = PASSWORD_RESET_DURATION / 1000;
 const USER_CACHE_DURATION = Time.minute(
   config.auth_user_cache_duration_minutes,
 );
-
 const USER_CACHE_DURATION_SECONDS = USER_CACHE_DURATION / 1000;
 const REFRESH_TOKEN_DURATION = ms(config.jwt_refresh_expire_in);
 
 // Types
+interface PasswordResetOtpCache {
+  userId: string;
+  email: string;
+}
 
 interface PasswordResetCache {
   userId: string;
@@ -82,8 +80,12 @@ const getRefreshTokenExpiry = (): string => {
   return new Date(Date.now() + REFRESH_TOKEN_DURATION).toISOString();
 };
 
+const getPasswordResetOtpKey = (email: string): string => {
+  return `password-reset:otp:${normalizeEmail(email)}`;
+};
+
 const getPasswordResetKey = (tokenHash: string): string => {
-  return `password-reset:${tokenHash}`;
+  return `password-reset:token:${tokenHash}`;
 };
 
 const getUserCacheKey = (userId: string): string => {
@@ -149,8 +151,8 @@ export const refreshCachedUser = async (user: AuthUser): Promise<void> => {
 };
 
 // User
-
 // Get user by email
+
 export const getUserByEmail = async (
   email: string,
 ): Promise<AuthUser | null> => {
@@ -184,13 +186,12 @@ export const getUserById = async (userId: string): Promise<AuthUser | null> => {
   }
 
   const authUser = toAuthUser(user);
-
   await cacheUser(authUser);
-
   return authUser;
 };
 
 // Get fresh user directly from database
+
 export const getFreshUserById = async (
   userId: string,
 ): Promise<AuthUser | null> => {
@@ -206,8 +207,8 @@ export const getFreshUserById = async (
 };
 
 // Account
-
 // Get credential account
+
 export const getCredentialAccount = async (
   userId: string,
 ): Promise<CredentialAccount | null> => {
@@ -237,7 +238,6 @@ export const getCredentialAccount = async (
 
 export const signup = async (data: SignUpInput): Promise<AuthUser> => {
   const email = normalizeEmail(data.email);
-
   const name = normalizeName(data.name);
 
   if (!name) {
@@ -288,6 +288,7 @@ export const signup = async (data: SignUpInput): Promise<AuthUser> => {
 
     // PostgreSQL unique constraint protection.
     // This also handles concurrent signup requests.
+
     if (message.toLowerCase().includes("unique")) {
       throw new AppError("Email is already registered", 409);
     }
@@ -296,10 +297,10 @@ export const signup = async (data: SignUpInput): Promise<AuthUser> => {
   }
 
   const authUser = toAuthUser(user);
-
   await removeCachedUser(authUser.id);
 
   // Generate email verification OTP.
+
   const otp = await otpService.generateOtp(email);
 
   await sendEmail({
@@ -319,8 +320,8 @@ export const signup = async (data: SignUpInput): Promise<AuthUser> => {
 };
 
 // Account Password
-
 // Verify account password
+
 export const verifyAccountPassword = async (
   userId: string,
   password: string,
@@ -335,6 +336,7 @@ export const verifyAccountPassword = async (
 };
 
 // Change password
+
 export const changePassword = async (
   userId: string,
   data: ChangePasswordInput,
@@ -383,6 +385,7 @@ export const changePassword = async (
 
     // Password changes invalidate
     // every existing database session.
+
     await tx.orm.public.Session.where({
       userId,
     }).deleteAll();
@@ -392,8 +395,8 @@ export const changePassword = async (
 };
 
 // Session
-
 // Create database session
+
 export const createSession = async (
   userId: string,
   ipAddress?: string,
@@ -407,9 +410,7 @@ export const createSession = async (
   assertValidUser(user);
 
   const token = generateToken();
-
   const tokenHash = hashToken(token);
-
   const expiresAt = getSessionExpiry();
 
   const session = await db.orm.public.Session.create({
@@ -432,13 +433,13 @@ export const createSession = async (
       userId: session.userId,
       impersonatedBy: session.impersonatedBy,
     },
+
     token,
   };
 };
 
-// Get Session
-
 // Get session by raw session token
+
 export const getSessionByToken = async (
   token: string,
 ): Promise<{
@@ -483,6 +484,7 @@ export const getSessionByToken = async (
 
   return {
     user,
+
     session: {
       id: session.id,
       expiresAt: toDate(session.expiresAt),
@@ -497,6 +499,7 @@ export const getSessionByToken = async (
 };
 
 // Get session by ID
+
 export const getSessionById = async (
   sessionId: string,
 ): Promise<AuthSession | null> => {
@@ -521,8 +524,8 @@ export const getSessionById = async (
 };
 
 // Revoke Session
-
 // Revoke current session
+
 export const revokeSession = async (
   userId: string,
   sessionId: string,
@@ -543,6 +546,7 @@ export const revokeSession = async (
 };
 
 // Alias
+
 export const logout = revokeSession;
 
 // Revoke Other Sessions
@@ -607,11 +611,12 @@ export const revokeAllSessions = async (userId: string): Promise<void> => {
 };
 
 // Alias
+
 export const logoutAll = revokeAllSessions;
 
 // Auth Tokens
-
 // Create access + refresh tokens
+
 export const createAuthTokens = async (
   userId: string,
 ): Promise<{
@@ -664,7 +669,6 @@ export const createAuthTokens = async (
 
 // Fresh Access Token
 
-// Generate a fresh access token
 export const generateFreshAccessToken = async (
   refreshToken: string,
 ): Promise<string> => {
@@ -730,14 +734,13 @@ export const generateFreshAccessToken = async (
   );
 };
 
-// Verify email
+// Verify Email
 
 export const verifyEmail = async (
   email: string,
   code: string,
 ): Promise<AuthUser> => {
   const normalizedEmail = normalizeEmail(email);
-
   const user = await getUserByEmail(normalizedEmail);
 
   if (!user) {
@@ -767,9 +770,7 @@ export const verifyEmail = async (
   }
 
   const authUser = toAuthUser(updatedUser);
-
   await refreshCachedUser(authUser);
-
   return authUser;
 };
 
@@ -779,7 +780,6 @@ export const resendVerification = async (
   email: string,
 ): Promise<boolean | null> => {
   const normalizedEmail = normalizeEmail(email);
-
   const user = await getUserByEmail(normalizedEmail);
 
   if (!user || user.emailVerified) {
@@ -800,56 +800,172 @@ export const resendVerification = async (
     greeting: "🩸 Welcome to the Blood AidX community!",
     showSecurityNotice: false,
   });
+
   return true;
 };
 
 // Password Reset
+// Forgot Password
+// This does NOT create the reset token.
+// It creates a 6-digit OTP and sends it
+// to the user's email.
 
-// Create password reset token
-export const createPasswordResetToken = async (
-  email: string,
-): Promise<string | null> => {
+export const forgotPassword = async (email: string): Promise<void> => {
   const normalizedEmail = normalizeEmail(email);
+  const user = await getUserByEmail(normalizedEmail);
+
+  // Do not reveal whether the
+  // account exists.
+
+  if (!user) {
+    return;
+  }
+
+  if (user.banned) {
+    return;
+  }
+
+  // Make sure this is a credential
+  // password account.
+
+  const account = await getCredentialAccount(user.id);
+
+  if (!account?.password) {
+    return;
+  }
+
+  // Generate 6-digit OTP.
+  // otpService is responsible for
+  // storing/verifying the OTP.
+
+  const otp = await otpService.generateOtp(normalizedEmail);
+
+  // Store which user this password
+  // reset request belongs to.
+
+  const otpKey = getPasswordResetOtpKey(normalizedEmail);
+
+  const otpData: PasswordResetOtpCache = {
+    userId: user.id,
+    email: normalizedEmail,
+  };
+
+  await setCache(otpKey, otpData, PASSWORD_RESET_DURATION_SECONDS);
+
+  await sendEmail({
+    to: normalizedEmail,
+    subject: "Reset your Blood AidX password",
+    title: "Reset Your Password",
+    description:
+      "We received a request to reset your Blood AidX password. Enter the verification code below to continue.",
+    verificationCode: otp,
+    codeLabel: "Password Reset Code",
+    codeExpiresIn: "10 minutes",
+    greeting: "🩸 Blood AidX Security",
+    showSecurityNotice: true,
+  });
+};
+
+// Verify Password Reset OTP
+// OTP proves that the user controls
+// the email address.
+// After successful verification,
+// a separate resetToken is created.
+
+export const verifyPasswordReset = async (
+  email: string,
+  code: string,
+): Promise<string> => {
+  const normalizedEmail = normalizeEmail(email);
+  const verificationCode = code?.trim();
+
+  if (!verificationCode) {
+    throw new AppError("Verification code is required", 400);
+  }
 
   const user = await getUserByEmail(normalizedEmail);
 
   if (!user) {
-    return null;
+    throw new AppError("Invalid verification code", 400);
   }
 
   if (user.banned) {
-    return null;
+    throw new AppError("Your account has been banned", 403);
   }
 
-  const token = generateToken();
+  const account = await getCredentialAccount(user.id);
 
-  const tokenHash = hashToken(token);
+  if (!account?.password) {
+    throw new AppError("Password authentication is not configured", 400);
+  }
 
-  const key = getPasswordResetKey(tokenHash);
+  // Check that a password reset
+  // request actually exists.
 
-  const cacheData: PasswordResetCache = {
+  const otpKey = getPasswordResetOtpKey(normalizedEmail);
+  const otpData = await getCache<PasswordResetOtpCache>(otpKey);
+
+  if (!otpData) {
+    throw new AppError("Invalid or expired verification code", 400);
+  }
+
+  if (otpData.userId !== user.id || otpData.email !== normalizedEmail) {
+    await deleteCache(otpKey);
+
+    throw new AppError("Invalid verification request", 400);
+  }
+
+  // Validate the actual 6-digit OTP.
+  // otpService should delete the OTP
+  // after successful validation.
+
+  await otpService.validateOtp(normalizedEmail, verificationCode);
+
+  // Delete the password-reset
+  // request marker.
+  // This makes the OTP flow
+  // single-use.
+
+  await deleteCache(otpKey);
+
+  // Generate a new cryptographically
+  // random reset token.
+
+  const resetToken = generateToken();
+
+  // Never store the raw reset token.
+
+  const tokenHash = hashToken(resetToken);
+  const resetKey = getPasswordResetKey(tokenHash);
+
+  const resetData: PasswordResetCache = {
     userId: user.id,
     tokenHash,
   };
 
-  await setCache(key, cacheData, PASSWORD_RESET_DURATION_SECONDS);
+  // Store hashed token in Redis.
+  // The raw token is returned only
+  // to the client.
 
-  return token;
+  await setCache(resetKey, resetData, PASSWORD_RESET_DURATION_SECONDS);
+
+  return resetToken;
 };
 
 // Reset Password
+// This endpoint requires the resetToken
+// returned after successful OTP verification.
+// No logged-in session is required.
 
 export const resetPassword = async (
   data: ResetPasswordInput,
 ): Promise<void> => {
-  if (!data.token?.trim()) {
+  if (!data.resetToken?.trim()) {
     throw new AppError("Reset token is required", 400);
   }
 
-  const token = data.token.trim();
-
-  const tokenHash = hashToken(token);
-
+  const resetToken = data.resetToken.trim();
+  const tokenHash = hashToken(resetToken);
   const key = getPasswordResetKey(tokenHash);
 
   const resetData = await getCache<PasswordResetCache>(key);
@@ -858,9 +974,10 @@ export const resetPassword = async (
     throw new AppError("Invalid or expired reset token", 400);
   }
 
+  // Verify the stored hash.
+
   if (resetData.tokenHash !== tokenHash) {
     await deleteCache(key);
-
     throw new AppError("Invalid reset token", 400);
   }
 
@@ -868,13 +985,11 @@ export const resetPassword = async (
 
   if (!user) {
     await deleteCache(key);
-
-    throw new AppError("Invalid reset token", 400);
+    throw new AppError("Invalid or expired reset token", 400);
   }
 
   if (user.banned) {
     await deleteCache(key);
-
     throw new AppError("Your account has been banned", 403);
   }
 
@@ -882,13 +997,30 @@ export const resetPassword = async (
 
   if (!account) {
     await deleteCache(key);
-
     throw new AppError("Password authentication is not configured", 400);
+  }
+
+  if (!account.password) {
+    await deleteCache(key);
+    throw new AppError("Password authentication is not configured", 400);
+  }
+
+  // Prevent setting the same password.
+  const samePassword = await comparePassword(data.password, account.password);
+
+  if (samePassword) {
+    throw new AppError(
+      "New password must be different from your current password",
+      400,
+    );
   }
 
   const hashedPassword = await hashPassword(data.password);
 
   await db.transaction(async (tx) => {
+    // Update password and invalidate
+    // the refresh token.
+
     await tx.orm.public.Account.where({
       id: account.id,
     }).update({
@@ -897,15 +1029,19 @@ export const resetPassword = async (
       refreshTokenExpiresAt: null,
     });
 
-    // Resetting the password
-    // invalidates every session.
+    // Password reset invalidates
+    // every existing session.
+
     await tx.orm.public.Session.where({
       userId: user.id,
     }).deleteAll();
   });
 
-  // Password reset tokens are single-use.
+  // Reset token is single-use.
+
   await deleteCache(key);
+
+  // Remove stale cached user.
 
   await removeCachedUser(user.id);
 };
@@ -955,7 +1091,8 @@ interface AuthService {
   resendVerification: typeof resendVerification;
 
   // Password Reset
-  createPasswordResetToken: typeof createPasswordResetToken;
+  forgotPassword: typeof forgotPassword;
+  verifyPasswordReset: typeof verifyPasswordReset;
   resetPassword: typeof resetPassword;
 }
 
@@ -1004,6 +1141,7 @@ export const authService: AuthService = {
   resendVerification,
 
   // Password Reset
-  createPasswordResetToken,
+  forgotPassword,
+  verifyPasswordReset,
   resetPassword,
 };

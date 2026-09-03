@@ -1,7 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-
 import passport from "passport";
-
 import config from "../../config";
 
 import {
@@ -11,55 +9,46 @@ import {
   ResendVerificationSchema,
   SignUpSchema,
   VerifyEmailSchema,
+  VerifyPasswordResetSchema,
 } from "./auth.schema";
 
 import {
   changePassword,
   createAuthTokens,
-  createPasswordResetToken,
   createSession,
-  resendVerification,
+  forgotPassword,
   generateFreshAccessToken,
   logout,
   logoutAll,
+  resendVerification,
   revokeOtherSessions,
   resetPassword,
   signup,
   verifyAccountPassword,
   verifyEmail,
+  verifyPasswordReset,
 } from "./auth.service";
 
 import { Time } from "../../utils/timeHelper";
-
 import { catchAsync } from "../../utils/catchAsync";
-
 import {
   clearAuthCookies,
   sendResponse,
   sendResponseToCookies,
 } from "../../utils/sendResponse";
-
 import { AppError } from "../../utils/appError";
 
-// ============================================================
 // Constants
-// ============================================================
 
 const SESSION_COOKIE_NAME = "session_token";
-
 const ACCESS_TOKEN_COOKIE_NAME = "accessToken";
-
 const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
 const SESSION_MAX_AGE = Time.day(config.auth_session_duration_days);
-
 const ACCESS_TOKEN_MAX_AGE = Time.day(1);
-
 const REFRESH_TOKEN_MAX_AGE = Time.day(30);
 
-// ============================================================
 // Helpers
-// ============================================================
 
 const getClientIp = (req: Request): string | undefined => {
   return req.ip;
@@ -90,14 +79,10 @@ const getRefreshToken = (req: Request): string => {
   return refreshToken;
 };
 
-// ============================================================
 // Auth Controller
-// ============================================================
 
 export const AuthController = {
-  // ==========================================================
   // Signup
-  // ==========================================================
 
   signup: catchAsync(async (req: Request, res: Response) => {
     const data = SignUpSchema.parse(req.body);
@@ -114,9 +99,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Signin
-  // ==========================================================
 
   signin: (req: Request, res: Response, next: NextFunction): void => {
     passport.authenticate(
@@ -186,9 +169,7 @@ export const AuthController = {
     )(req, res, next);
   },
 
-  // ==========================================================
   // Current User
-  // ==========================================================
 
   me: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
@@ -203,9 +184,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Verify Account Password
-  // ==========================================================
 
   verifyPassword: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
@@ -229,9 +208,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Fresh Access Token
-  // ==========================================================
 
   freshToken: catchAsync(async (req: Request, res: Response) => {
     const refreshToken = getRefreshToken(req);
@@ -251,9 +228,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Email Verification
-  // ==========================================================
 
   verifyEmail: catchAsync(async (req: Request, res: Response) => {
     const data = VerifyEmailSchema.parse(req.body);
@@ -270,18 +245,14 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Resend Verification
-  // ==========================================================
 
   resendVerification: catchAsync(async (req: Request, res: Response) => {
     const data = ResendVerificationSchema.parse(req.body);
 
     await resendVerification(data.email);
 
-    // Do not reveal whether
-    // the email exists.
-
+    // Do not reveal whether the email exists.
     sendResponse(res, {
       success: true,
       message:
@@ -290,9 +261,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Logout Current Session
-  // ==========================================================
 
   logout: catchAsync(async (req: Request, res: Response) => {
     const { user, session } = requireAuth(req);
@@ -308,9 +277,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Logout All Devices
-  // ==========================================================
 
   logoutAll: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
@@ -326,9 +293,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Logout Other Devices
-  // ==========================================================
 
   logoutOtherDevices: catchAsync(async (req: Request, res: Response) => {
     const { user, session } = requireAuth(req);
@@ -342,9 +307,7 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
   // Change Password
-  // ==========================================================
 
   changePassword: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
@@ -362,29 +325,40 @@ export const AuthController = {
     });
   }),
 
-  // ==========================================================
-  // Forgot Password
-  // ==========================================================
+  // Forgot Password - Send OTP
 
   forgotPassword: catchAsync(async (req: Request, res: Response) => {
     const data = ForgotPasswordSchema.parse(req.body);
 
-    await createPasswordResetToken(data.email);
+    await forgotPassword(data.email);
 
-    // Do not reveal whether
-    // the email exists.
-
+    // Do not reveal whether the email exists.
     sendResponse(res, {
       success: true,
       message:
-        "If an account exists with this email, a password reset link has been sent.",
+        "If an account exists with this email, a verification code has been sent.",
       statusCode: 200,
     });
   }),
 
-  // ==========================================================
+  // Verify Password Reset OTP
+
+  verifyPasswordReset: catchAsync(async (req: Request, res: Response) => {
+    const data = VerifyPasswordResetSchema.parse(req.body);
+
+    const resetToken = await verifyPasswordReset(data.email, data.code);
+
+    sendResponse(res, {
+      success: true,
+      message: "Verification successful. You can now reset your password.",
+      statusCode: 200,
+      data: {
+        resetToken,
+      },
+    });
+  }),
+
   // Reset Password
-  // ==========================================================
 
   resetPassword: catchAsync(async (req: Request, res: Response) => {
     const data = ResetPasswordSchema.parse(req.body);

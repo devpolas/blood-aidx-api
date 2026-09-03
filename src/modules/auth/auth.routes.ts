@@ -1,5 +1,4 @@
 import { Router, type Router as ExpressRouter } from "express";
-
 import { AuthController } from "./auth.controller";
 
 import {
@@ -10,20 +9,23 @@ import {
 
 const router: ExpressRouter = Router();
 
-// ============================================================
 // Public Routes
-// ============================================================
 
 router.post("/signup", AuthController.signup);
 router.post("/signin", AuthController.signin);
 router.post("/verify-email", AuthController.verifyEmail);
 router.post("/resend-verification", AuthController.resendVerification);
+
+// Password Recovery Routes
+// Step 1: Send 6-digit OTP
+// Step 2: Verify OTP and receive temporary reset token
+// Step 3: Reset password using temporary reset token
+
 router.post("/forgot-password", AuthController.forgotPassword);
+router.post("/verify-password-reset", AuthController.verifyPasswordReset);
 router.post("/reset-password", AuthController.resetPassword);
 
-// ============================================================
 // Protected Routes
-// ============================================================
 
 router.get("/me", protect, AuthController.me);
 router.post("/fresh-token", AuthController.freshToken);
@@ -35,9 +37,7 @@ router.post(
   AuthController.logoutOtherDevices,
 );
 
-// ============================================================
 // Protected + Active + Verified
-// ============================================================
 
 router.post(
   "/verify-password",

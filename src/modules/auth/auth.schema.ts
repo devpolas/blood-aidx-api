@@ -15,7 +15,6 @@ export const UserRoleSchema = z.enum([
 export const GenderSchema = z.enum(["men", "women", "unisex"]);
 
 // Public Signup Roles
-
 // Admin and moderator should not be selectable during signup
 
 export const PublicUserRoleSchema = z.enum([
@@ -30,7 +29,7 @@ export const PublicUserRoleSchema = z.enum([
 
 export const EmailSchema = z
   .email("Invalid email address")
-  .transform((value) => value.toLowerCase());
+  .transform((value) => value.trim().toLowerCase());
 
 export const PasswordSchema = z
   .string()
@@ -63,6 +62,7 @@ export const SignInSchema = z.object({
 
 export const VerifyEmailSchema = z.object({
   email: EmailSchema,
+
   code: z
     .string()
     .trim()
@@ -82,11 +82,23 @@ export const ForgotPasswordSchema = z.object({
   email: EmailSchema,
 });
 
+// Verify Password Reset OTP
+
+export const VerifyPasswordResetSchema = z.object({
+  email: EmailSchema,
+
+  code: z
+    .string()
+    .trim()
+    .length(6, "Verification code must be 6 digits")
+    .regex(/^\d{6}$/, "Verification code must contain only digits"),
+});
+
 // Reset Password
 
 export const ResetPasswordSchema = z
   .object({
-    token: z.string().trim().min(1, "Reset token is required"),
+    resetToken: z.string().trim().min(1, "Reset token is required"),
     password: PasswordSchema,
     confirmPassword: PasswordSchema,
   })
@@ -173,6 +185,9 @@ export type SignInInput = z.infer<typeof SignInSchema>;
 export type VerifyEmailInput = z.infer<typeof VerifyEmailSchema>;
 export type ResendVerificationInput = z.infer<typeof ResendVerificationSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+export type VerifyPasswordResetInput = z.infer<
+  typeof VerifyPasswordResetSchema
+>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 export type LogoutInput = z.infer<typeof LogoutSchema>;
