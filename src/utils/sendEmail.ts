@@ -1,30 +1,45 @@
 import config from "../config";
 import transporter from "../lib/nodemailer";
 
-interface EmailTemplateOptions {
+interface BaseEmailTemplateOptions {
   title: string;
   description: string;
+
+  // Action link
   link?: string;
   actionText?: string;
+
   greeting?: string;
   showSecurityNotice?: boolean;
 }
 
-interface SendEmailOptions extends EmailTemplateOptions {
+interface NoVerificationCode {
+  verificationCode?: never;
+  codeLabel?: never;
+  codeExpiresIn?: never;
+}
+
+interface WithVerificationCode {
+  verificationCode: string;
+  codeLabel: string;
+  codeExpiresIn: string;
+}
+
+export type EmailTemplateOptions = BaseEmailTemplateOptions &
+  (NoVerificationCode | WithVerificationCode);
+
+export type SendEmailOptions = EmailTemplateOptions & {
   to: string;
   subject: string;
-}
+};
 
 const EMAIL = {
   brand: "Blood AidX",
-
   logoUrl: config.logo,
-
   websiteDescription:
     "Connecting people through blood donation and helping save lives.",
 
   footerTitle: "Blood AidX",
-
   footerDescription:
     "Your kindness can give someone hope.<br />Together, we help save lives.",
 
@@ -200,6 +215,66 @@ const createActionButton = (
   `;
 };
 
+const createVerification = (
+  verificationCode: string,
+  codeExpiresIn: string,
+  codeLabel: string,
+): string => {
+  return `
+  <table
+    width="100%"
+    cellpadding="0"
+    cellspacing="0"
+    border="0"
+    role="presentation"
+    style="
+      margin:28px 0 8px;
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      border-radius:12px;
+    "
+  >
+    <tr>
+      <td
+        align="center"
+        style="padding:22px 20px;"
+      >
+        <p style="
+          margin:0 0 8px;
+          font-size:12px;
+          line-height:18px;
+          font-weight:700;
+          letter-spacing:.5px;
+          text-transform:uppercase;
+          color:#64748b;
+        ">
+          ${codeLabel}
+        </p>
+
+        <p style="
+          margin:0;
+          font-size:32px;
+          line-height:40px;
+          font-weight:700;
+          letter-spacing:8px;
+          color:#dc2626;
+        ">
+          ${verificationCode}
+        </p>
+
+        <p style="
+          margin:10px 0 0;
+          font-size:12px;
+          line-height:18px;
+          color:#64748b;
+        ">
+          This code expires in ${codeExpiresIn}.
+        </p>
+      </td>
+    </tr>
+  </table>`;
+};
+
 const createSecurityNotice = (): string => {
   return `
     <table
@@ -315,13 +390,22 @@ export const emailTemplate = ({
   link,
   actionText = "Continue",
   greeting = "🩸 Welcome to the Blood AidX community!",
+  verificationCode,
+  codeLabel,
+  codeExpiresIn,
   showSecurityNotice = true,
 }: EmailTemplateOptions): string => {
+  const isVerification = Boolean(
+    verificationCode && codeLabel && codeExpiresIn,
+  );
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   const safeGreeting = escapeHtml(greeting);
+  const actionButton = link ? createActionButton(link, actionText) : "";
 
-  const actionButton = createActionButton(link, actionText);
+  const verification = isVerification
+    ? createVerification(verificationCode!, codeLabel!, codeExpiresIn!)
+    : "";
 
   const securityNotice = showSecurityNotice ? createSecurityNotice() : "";
 
@@ -451,6 +535,8 @@ export const emailTemplate = ({
                       ${safeDescription}
                     </p>
 
+                    ${verification}
+
                     <!-- Action -->
                     ${actionButton}
 
@@ -493,6 +579,9 @@ export const sendEmail = async ({
   link,
   actionText,
   greeting,
+  verificationCode,
+  codeLabel,
+  codeExpiresIn,
   showSecurityNotice,
 }: SendEmailOptions): Promise<{ success: true }> => {
   const html = emailTemplate({
@@ -501,6 +590,9 @@ export const sendEmail = async ({
     ...(link !== undefined ? { link } : {}),
     ...(actionText !== undefined ? { actionText } : {}),
     ...(greeting !== undefined ? { greeting } : {}),
+    ...(verificationCode !== undefined ? { verificationCode } : {}),
+    ...(codeLabel !== undefined ? { codeLabel } : {}),
+    ...(codeExpiresIn !== undefined ? { codeExpiresIn } : {}),
     ...(showSecurityNotice !== undefined ? { showSecurityNotice } : {}),
   });
 
@@ -510,17 +602,11 @@ export const sendEmail = async ({
         name: EMAIL.brand,
         address: config.nodemailer_user,
       },
-
       to,
-
       replyTo: config.nodemailer_user,
-
       subject: `${EMAIL.brand} - ${subject}`,
-
       text: description,
-
       html,
-
       headers: {
         "X-Priority": "3",
         "X-Mailer": `${EMAIL.brand} Mailer`,
