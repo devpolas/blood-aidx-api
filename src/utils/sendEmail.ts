@@ -121,10 +121,10 @@ const createHeader = (): string => {
         <img
           src="${logoUrl}"
           alt="${EMAIL.brand}"
-          width="75"
+          width="48"
           style="
             display:block;
-            width:75px;
+            width:48px;
             max-width:100%;
             height:auto;
             margin:0 auto;
