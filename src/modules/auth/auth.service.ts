@@ -18,6 +18,7 @@ import { Time } from "../../utils/timeHelper";
 import { createJWT, verifyToken } from "../../utils/jwt";
 import { generateToken, hashToken } from "../../utils/token";
 import ms from "ms";
+import { sendEmail } from "../../utils/sendEmail";
 
 // Constants
 
@@ -299,7 +300,20 @@ export const signup = async (data: SignUpInput): Promise<AuthUser> => {
   await removeCachedUser(authUser.id);
 
   // Generate email verification OTP.
-  await otpService.generateOtp(email);
+  const otp = await otpService.generateOtp(email);
+
+  await sendEmail({
+    to: user.email,
+    subject: "Verify your email",
+    title: "Verify Your Email Address",
+    description:
+      "Thank you for joining Blood AidX. Enter the verification code below to verify your email address.",
+    verificationCode: otp,
+    codeLabel: "Email Verification Code",
+    codeExpiresIn: "10 minutes",
+    greeting: "🩸 Welcome to the Blood AidX community!",
+    showSecurityNotice: false,
+  });
 
   return authUser;
 };
@@ -716,23 +730,6 @@ export const generateFreshAccessToken = async (
   );
 };
 
-// Email Verification
-
-// Create verification OTP
-export const createVerificationCode = async (
-  email: string,
-): Promise<string | null> => {
-  const normalizedEmail = normalizeEmail(email);
-
-  const user = await getUserByEmail(normalizedEmail);
-
-  if (!user || user.emailVerified) {
-    return null;
-  }
-
-  return otpService.generateOtp(normalizedEmail);
-};
-
 // Verify email
 
 export const verifyEmail = async (
@@ -780,7 +777,7 @@ export const verifyEmail = async (
 
 export const resendVerification = async (
   email: string,
-): Promise<string | null> => {
+): Promise<boolean | null> => {
   const normalizedEmail = normalizeEmail(email);
 
   const user = await getUserByEmail(normalizedEmail);
@@ -789,7 +786,21 @@ export const resendVerification = async (
     return null;
   }
 
-  return otpService.generateOtp(normalizedEmail);
+  const otp = await otpService.generateOtp(normalizedEmail);
+
+  await sendEmail({
+    to: normalizedEmail,
+    subject: "Verify your email",
+    title: "Verify Your Email Address",
+    description:
+      "Thank you for joining Blood AidX. Enter the verification code below to verify your email address.",
+    verificationCode: otp,
+    codeLabel: "Email Verification Code",
+    codeExpiresIn: "10 minutes",
+    greeting: "🩸 Welcome to the Blood AidX community!",
+    showSecurityNotice: false,
+  });
+  return true;
 };
 
 // Password Reset
@@ -940,7 +951,6 @@ interface AuthService {
   generateFreshAccessToken: typeof generateFreshAccessToken;
 
   // Email Verification
-  createVerificationCode: typeof createVerificationCode;
   verifyEmail: typeof verifyEmail;
   resendVerification: typeof resendVerification;
 
@@ -990,7 +1000,6 @@ export const authService: AuthService = {
   generateFreshAccessToken,
 
   // Email Verification
-  createVerificationCode,
   verifyEmail,
   resendVerification,
 

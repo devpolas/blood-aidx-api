@@ -18,7 +18,7 @@ import {
   createAuthTokens,
   createPasswordResetToken,
   createSession,
-  createVerificationCode,
+  resendVerification,
   generateFreshAccessToken,
   logout,
   logoutAll,
@@ -277,7 +277,7 @@ export const AuthController = {
   resendVerification: catchAsync(async (req: Request, res: Response) => {
     const data = ResendVerificationSchema.parse(req.body);
 
-    await createVerificationCode(data.email);
+    await resendVerification(data.email);
 
     // Do not reveal whether
     // the email exists.
