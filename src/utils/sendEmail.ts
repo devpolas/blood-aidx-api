@@ -217,8 +217,8 @@ const createActionButton = (
 
 const createVerification = (
   verificationCode: string,
-  codeExpiresIn: string,
   codeLabel: string,
+  codeExpiresIn: string,
 ): string => {
   return `
   <table
