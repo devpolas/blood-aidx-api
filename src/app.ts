@@ -12,6 +12,7 @@ import globalErrorController from "./middleware/error.middleware";
 import { sendResponse } from "./utils/sendResponse";
 import authRouter from "./modules/auth/auth.routes";
 import "temporal-polyfill/full/global";
+import "./modules/auth/passport/local.strategy";
 
 const app: Application = express();
 
