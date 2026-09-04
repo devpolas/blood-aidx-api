@@ -2,7 +2,7 @@ import app from "./app";
 
 import { redisClient } from "./lib/redis";
 import config from "./config";
-import { db } from "./prisma/db";
+import { db } from "../prisma/db";
 
 const bootstrap = async (): Promise<void> => {
   // Handle uncaught exceptions

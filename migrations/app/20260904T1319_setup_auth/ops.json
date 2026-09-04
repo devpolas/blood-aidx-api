@@ -41,7 +41,7 @@
     "execute": [
       {
         "description": "create table \"accounts\"",
-        "sql": "CREATE TABLE \"public\".\"accounts\" (\n  \"accessToken\" text,\n  \"accessTokenExpiresAt\" timestamptz,\n  \"accountId\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"idToken\" text,\n  \"password\" text,\n  \"providerId\" text NOT NULL,\n  \"refreshToken\" text,\n  \"refreshTokenExpiresAt\" timestamptz,\n  \"scope\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "sql": "CREATE TABLE \"public\".\"accounts\" (\n  \"accessToken\" text,\n  \"accessTokenExpiresAt\" timestamptz,\n  \"accountId\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"idToken\" text,\n  \"password\" text,\n  \"providerId\" text NOT NULL,\n  \"refreshToken\" text,\n  \"refreshTokenExpiresAt\" timestamptz,\n  \"scope\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
         "params": []
       }
     ],
@@ -80,7 +80,7 @@
     "execute": [
       {
         "description": "create table \"sessions\"",
-        "sql": "CREATE TABLE \"public\".\"sessions\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamptz NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"impersonatedBy\" text,\n  \"ipAddress\" text,\n  \"token\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"userAgent\" text,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "sql": "CREATE TABLE \"public\".\"sessions\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamptz NOT NULL,\n  \"id\" text NOT NULL,\n  \"impersonatedBy\" text,\n  \"ipAddress\" text,\n  \"token\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"userAgent\" text,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
         "params": []
       }
     ],
@@ -119,7 +119,7 @@
     "execute": [
       {
         "description": "create table \"users\"",
-        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"banExpires\" timestamptz,\n  \"banReason\" text,\n  \"banned\" bool DEFAULT false,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"gender\" text,\n  \"id\" uuid NOT NULL,\n  \"image\" text,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'donor' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"users_gender_check_78d2beda\" CHECK (\"gender\" IN ('men', 'women', 'unisex')),\n  CONSTRAINT \"users_role_check_13016f52\" CHECK (\"role\" IN ('donor', 'recipient', 'volunteer', 'hospital', 'blood_bank', 'moderator', 'admin'))\n)",
+        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"banExpires\" timestamptz,\n  \"banReason\" text,\n  \"banned\" bool DEFAULT false NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"gender\" text,\n  \"id\" text NOT NULL,\n  \"image\" text,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'donor' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"users_gender_check_78d2beda\" CHECK (\"gender\" IN ('men', 'women', 'unisex')),\n  CONSTRAINT \"users_role_check_13016f52\" CHECK (\"role\" IN ('donor', 'recipient', 'volunteer', 'hospital', 'blood_bank', 'moderator', 'admin'))\n)",
         "params": []
       }
     ],

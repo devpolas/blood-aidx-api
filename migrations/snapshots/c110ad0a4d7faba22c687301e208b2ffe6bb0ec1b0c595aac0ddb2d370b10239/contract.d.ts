@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'53476ea54eb9b038377412afd304669a1b26eef4650d72a48362274759773f9f'>;
+  StorageHashBase<'c110ad0a4d7faba22c687301e208b2ffe6bb0ec1b0c595aac0ddb2d370b10239'>;
 export type ExecutionHash =
   ExecutionHashBase<'70031956e5f220ce0fb29d05f0786f0d9f80a8da698cc0feb0c90f3ac7d8b22f'>;
 export type ProfileHash =
@@ -242,10 +242,10 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
 export type FieldOutputTypes = {
   readonly public: {
     readonly Account: {
-      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
       readonly accountId: CodecTypes['pg/text@1']['output'];
       readonly providerId: CodecTypes['pg/text@1']['output'];
-      readonly userId: CodecTypes['pg/uuid@1']['output'];
+      readonly userId: CodecTypes['pg/text@1']['output'];
       readonly accessToken: CodecTypes['pg/text@1']['output'] | null;
       readonly refreshToken: CodecTypes['pg/text@1']['output'] | null;
       readonly idToken: CodecTypes['pg/text@1']['output'] | null;
@@ -257,18 +257,18 @@ export type FieldOutputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly Session: {
-      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly token: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly ipAddress: CodecTypes['pg/text@1']['output'] | null;
       readonly userAgent: CodecTypes['pg/text@1']['output'] | null;
-      readonly userId: CodecTypes['pg/uuid@1']['output'];
+      readonly userId: CodecTypes['pg/text@1']['output'];
       readonly impersonatedBy: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly User: {
-      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly emailVerified: CodecTypes['pg/bool@1']['output'];
@@ -278,7 +278,7 @@ export type FieldOutputTypes = {
       readonly role:
         'donor' | 'recipient' | 'volunteer' | 'hospital' | 'blood_bank' | 'moderator' | 'admin';
       readonly gender: 'men' | 'women' | 'unisex' | null;
-      readonly banned: CodecTypes['pg/bool@1']['output'] | null;
+      readonly banned: CodecTypes['pg/bool@1']['output'];
       readonly banReason: CodecTypes['pg/text@1']['output'] | null;
       readonly banExpires: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     };
@@ -287,10 +287,10 @@ export type FieldOutputTypes = {
 export type FieldInputTypes = {
   readonly public: {
     readonly Account: {
-      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
       readonly accountId: CodecTypes['pg/text@1']['input'];
       readonly providerId: CodecTypes['pg/text@1']['input'];
-      readonly userId: CodecTypes['pg/uuid@1']['input'];
+      readonly userId: CodecTypes['pg/text@1']['input'];
       readonly accessToken: CodecTypes['pg/text@1']['input'] | null;
       readonly refreshToken: CodecTypes['pg/text@1']['input'] | null;
       readonly idToken: CodecTypes['pg/text@1']['input'] | null;
@@ -302,18 +302,18 @@ export type FieldInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly Session: {
-      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly token: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly ipAddress: CodecTypes['pg/text@1']['input'] | null;
       readonly userAgent: CodecTypes['pg/text@1']['input'] | null;
-      readonly userId: CodecTypes['pg/uuid@1']['input'];
+      readonly userId: CodecTypes['pg/text@1']['input'];
       readonly impersonatedBy: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly User: {
-      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly emailVerified: CodecTypes['pg/bool@1']['input'];
@@ -323,7 +323,7 @@ export type FieldInputTypes = {
       readonly role:
         'donor' | 'recipient' | 'volunteer' | 'hospital' | 'blood_bank' | 'moderator' | 'admin';
       readonly gender: 'men' | 'women' | 'unisex' | null;
-      readonly banned: CodecTypes['pg/bool@1']['input'] | null;
+      readonly banned: CodecTypes['pg/bool@1']['input'];
       readonly banReason: CodecTypes['pg/text@1']['input'] | null;
       readonly banExpires: CodecTypes['pg/timestamptz-string@1']['input'] | null;
     };
@@ -336,7 +336,7 @@ export type StorageColumnTypes = {
       readonly accessTokenExpiresAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly accountId: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
-      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
       readonly idToken: CodecTypes['pg/text@1']['output'] | null;
       readonly password: CodecTypes['pg/text@1']['output'] | null;
       readonly providerId: CodecTypes['pg/text@1']['output'];
@@ -344,28 +344,28 @@ export type StorageColumnTypes = {
       readonly refreshTokenExpiresAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly scope: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
-      readonly userId: CodecTypes['pg/uuid@1']['output'];
+      readonly userId: CodecTypes['pg/text@1']['output'];
     };
     readonly sessions: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'];
-      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
       readonly impersonatedBy: CodecTypes['pg/text@1']['output'] | null;
       readonly ipAddress: CodecTypes['pg/text@1']['output'] | null;
       readonly token: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly userAgent: CodecTypes['pg/text@1']['output'] | null;
-      readonly userId: CodecTypes['pg/uuid@1']['output'];
+      readonly userId: CodecTypes['pg/text@1']['output'];
     };
     readonly users: {
       readonly banExpires: CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly banned: CodecTypes['pg/bool@1']['output'] | null;
+      readonly banned: CodecTypes['pg/bool@1']['output'];
       readonly banReason: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly emailVerified: CodecTypes['pg/bool@1']['output'];
       readonly gender: 'men' | 'women' | 'unisex' | null;
-      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
       readonly image: CodecTypes['pg/text@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly role:
@@ -381,7 +381,7 @@ export type StorageColumnInputTypes = {
       readonly accessTokenExpiresAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly accountId: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
-      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
       readonly idToken: CodecTypes['pg/text@1']['input'] | null;
       readonly password: CodecTypes['pg/text@1']['input'] | null;
       readonly providerId: CodecTypes['pg/text@1']['input'];
@@ -389,28 +389,28 @@ export type StorageColumnInputTypes = {
       readonly refreshTokenExpiresAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly scope: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-      readonly userId: CodecTypes['pg/uuid@1']['input'];
+      readonly userId: CodecTypes['pg/text@1']['input'];
     };
     readonly sessions: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'];
-      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
       readonly impersonatedBy: CodecTypes['pg/text@1']['input'] | null;
       readonly ipAddress: CodecTypes['pg/text@1']['input'] | null;
       readonly token: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly userAgent: CodecTypes['pg/text@1']['input'] | null;
-      readonly userId: CodecTypes['pg/uuid@1']['input'];
+      readonly userId: CodecTypes['pg/text@1']['input'];
     };
     readonly users: {
       readonly banExpires: CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly banned: CodecTypes['pg/bool@1']['input'] | null;
+      readonly banned: CodecTypes['pg/bool@1']['input'];
       readonly banReason: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly emailVerified: CodecTypes['pg/bool@1']['input'];
       readonly gender: 'men' | 'women' | 'unisex' | null;
-      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
       readonly image: CodecTypes['pg/text@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly role:
@@ -440,8 +440,8 @@ type ContractBase = Omit<
             readonly accounts: {
               columns: {
                 readonly id: {
-                  readonly nativeType: 'uuid';
-                  readonly codecId: 'pg/uuid@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly accountId: {
@@ -455,8 +455,8 @@ type ContractBase = Omit<
                   readonly nullable: false;
                 };
                 readonly userId: {
-                  readonly nativeType: 'uuid';
-                  readonly codecId: 'pg/uuid@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly accessToken: {
@@ -534,8 +534,8 @@ type ContractBase = Omit<
             readonly sessions: {
               columns: {
                 readonly id: {
-                  readonly nativeType: 'uuid';
-                  readonly codecId: 'pg/uuid@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly expiresAt: {
@@ -570,8 +570,8 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly userId: {
-                  readonly nativeType: 'uuid';
-                  readonly codecId: 'pg/uuid@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly impersonatedBy: {
@@ -608,8 +608,8 @@ type ContractBase = Omit<
             readonly users: {
               columns: {
                 readonly id: {
-                  readonly nativeType: 'uuid';
-                  readonly codecId: 'pg/uuid@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly name: {
@@ -664,7 +664,7 @@ type ContractBase = Omit<
                 readonly banned: {
                   readonly nativeType: 'bool';
                   readonly codecId: 'pg/bool@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
@@ -731,7 +731,7 @@ type ContractBase = Omit<
             readonly fields: {
               readonly id: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly accountId: {
                 readonly nullable: false;
@@ -743,7 +743,7 @@ type ContractBase = Omit<
               };
               readonly userId: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly accessToken: {
                 readonly nullable: true;
@@ -828,7 +828,7 @@ type ContractBase = Omit<
             readonly fields: {
               readonly id: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly expiresAt: {
                 readonly nullable: false;
@@ -865,7 +865,7 @@ type ContractBase = Omit<
               };
               readonly userId: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly impersonatedBy: {
                 readonly nullable: true;
@@ -902,7 +902,7 @@ type ContractBase = Omit<
             readonly fields: {
               readonly id: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly name: {
                 readonly nullable: false;
@@ -943,7 +943,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly banned: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
               readonly banReason: {

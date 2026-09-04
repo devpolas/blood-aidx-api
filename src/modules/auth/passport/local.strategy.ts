@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 
-import { db } from "../../../prisma/db";
+import { db } from "../../../../prisma/db";
 import { comparePassword } from "../auth.utils";
 
 passport.use(

@@ -123,7 +123,7 @@
               "id": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/uuid@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -179,7 +179,7 @@
               "userId": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/uuid@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               }
@@ -266,7 +266,7 @@
               "id": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/uuid@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -308,7 +308,7 @@
               "userId": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/uuid@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               }
@@ -381,7 +381,7 @@
                 }
               },
               "banned": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/bool@1",
                   "kind": "scalar"
@@ -424,7 +424,7 @@
               "id": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/uuid@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -574,8 +574,8 @@
                   "nullable": false
                 },
                 "id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "idToken": {
@@ -614,8 +614,8 @@
                   "nullable": false
                 },
                 "userId": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 }
               },
@@ -679,8 +679,8 @@
                   "nullable": false
                 },
                 "id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "impersonatedBy": {
@@ -709,8 +709,8 @@
                   "nullable": true
                 },
                 "userId": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 }
               },
@@ -787,7 +787,7 @@
                     "value": false
                   },
                   "nativeType": "bool",
-                  "nullable": true
+                  "nullable": false
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -824,8 +824,8 @@
                   }
                 },
                 "id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "image": {
@@ -910,7 +910,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "53476ea54eb9b038377412afd304669a1b26eef4650d72a48362274759773f9f"
+    "storageHash": "c110ad0a4d7faba22c687301e208b2ffe6bb0ec1b0c595aac0ddb2d370b10239"
   },
   "execution": {
     "executionHash": "70031956e5f220ce0fb29d05f0786f0d9f80a8da698cc0feb0c90f3ac7d8b22f",

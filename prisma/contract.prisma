@@ -1,4 +1,5 @@
 // use prisma-next
+
 enum UserRole {
   @@type("pg/text@1")
 
@@ -28,17 +29,19 @@ enum Priority {
 }
 
 model User {
-  id            Uuid                 @id @default(uuid())
+  id            String               @id @default(uuid())
   name          String
   email         String
   emailVerified Boolean              @default(false)
   image         String?
+
   createdAt     TimestamptzString    @default(now())
   updatedAt     temporal.updatedAt()
 
   role          UserRole             @default(DONOR)
   gender        Gender?
-  banned        Boolean?             @default(false)
+
+  banned        Boolean              @default(false)
   banReason     String?
   banExpires    TimestamptzString?
 
@@ -50,7 +53,7 @@ model User {
 }
 
 model Session {
-  id             Uuid                 @id @default(uuid())
+  id             String               @id @default(uuid())
   expiresAt      TimestamptzString
   token          String
 
@@ -59,7 +62,7 @@ model Session {
 
   ipAddress      String?
   userAgent      String?
-  userId         Uuid
+  userId         String
   impersonatedBy String?
 
   user           User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
@@ -70,11 +73,11 @@ model Session {
 }
 
 model Account {
-  id                    Uuid                 @id @default(uuid())
+  id                    String               @id @default(uuid())
   accountId             String
   providerId            String
+  userId                String
 
-  userId                Uuid
   user                  User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   // OAuth credentials
@@ -82,7 +85,6 @@ model Account {
   refreshToken          String?
   idToken               String?
   scope                 String?
-
   accessTokenExpiresAt  TimestamptzString?
   refreshTokenExpiresAt TimestamptzString?
 

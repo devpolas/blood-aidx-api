@@ -1,4 +1,4 @@
-import { db } from "../../prisma/db";
+import { db } from "../../../prisma/db";
 import { deleteCache, getCache, setCache } from "../../lib/redis";
 import config from "../../config";
 import { otpService } from "./otp.service";
