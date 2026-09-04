@@ -1,8 +1,27 @@
 {
-  "name": "blood-aid-api",
-  "version": "1.0.0",
+  "name": "blood-aidx-api",
+  "version": "0.1.0",
+  "author": "Polas Chandra Barmon",
   "description": "Find a blood donor or donate blood",
+  "homepage": "https://github.com/devpolas/blood-aidx-api#readme",
+  "bugs": {
+    "url": "https://github.com/devpolas/blood-aidx-api/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devpolas/blood-aidx-api.git"
+  },
+  "keywords": [
+    "blood",
+    "donate",
+    "aid",
+    "blood-donate"
+  ],
+  "type": "module",
   "main": "dist/server.js",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "start": "node dist/server.js",
     "start:dev": "tsx watch src/server.ts",
@@ -11,8 +30,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "check": "pnpm typecheck && pnpm lint",
-    "verify": "pnpm check && pnpm build",
+    "check": "npm run typecheck && npm run lint",
+    "verify": "npm run check && npm run build",
     "contract:emit": "prisma contract emit",
     "db:update": "prisma db update",
     "db:verify": "prisma db verify",
@@ -22,25 +41,8 @@
     "db:migrate": "prisma db migrate",
     "postinstall": "prisma skills sync || exit 0"
   },
-  "keywords": [
-    "blood",
-    "donate",
-    "aid",
-    "blood-donate"
-  ],
-  "author": "Polas Chandra Barmon",
-  "license": "ISC",
-  "packageManager": "pnpm@11.24.0",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "11.24.0",
-      "onFail": "download"
-    }
-  },
-  "type": "module",
   "dependencies": {
-    "@prisma/orm-postgres": "8.0.0-rc.8",
+    "@prisma/orm-postgres": "^8.0.0-rc.8",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.3.0",
     "bowser": "^2.14.1",
@@ -59,14 +61,13 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "redis": "^6.2.1",
-    "runtime": "link:@prisma/orm-postgres/runtime",
     "slugify": "^1.6.9",
     "stripe": "^22.6.1",
     "temporal-polyfill": "^1.0.4",
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@prisma/cli-engine": "0.2.3",
+    "@prisma/cli-engine": "^0.2.3",
     "@types/bcrypt": "^6.0.0",
     "@types/body-parser": "^1.19.6",
     "@types/cookie-parser": "^1.4.10",
@@ -81,9 +82,16 @@
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
     "oxlint": "^1.81.0",
-    "prisma": "8.0.0-rc.10",
+    "prisma": "^8.0.0-rc.10",
     "tsup": "^8.5.1",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.27.7": true,
+    "msgpackr-extract@3.0.4": true,
+    "workerd@1.20260704.1": true
   }
 }
