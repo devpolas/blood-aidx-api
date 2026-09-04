@@ -8,6 +8,10 @@
       "model": "Account",
       "namespace": "public"
     },
+    "locations": {
+      "model": "Location",
+      "namespace": "public"
+    },
     "sessions": {
       "model": "Session",
       "namespace": "public"
@@ -247,6 +251,153 @@
               "table": "accounts"
             }
           },
+          "Location": {
+            "fields": {
+              "addressLine": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "city": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "country": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "district": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "division": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "latitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "longitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "postalCode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "village": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "locationId"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "addressLine": {
+                  "column": "addressLine"
+                },
+                "city": {
+                  "column": "city"
+                },
+                "country": {
+                  "column": "country"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "district": {
+                  "column": "district"
+                },
+                "division": {
+                  "column": "division"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "latitude": {
+                  "column": "latitude"
+                },
+                "longitude": {
+                  "column": "longitude"
+                },
+                "postalCode": {
+                  "column": "postalCode"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "village": {
+                  "column": "village"
+                }
+              },
+              "namespaceId": "public",
+              "table": "locations"
+            }
+          },
           "Session": {
             "fields": {
               "createdAt": {
@@ -435,6 +586,13 @@
                   "kind": "scalar"
                 }
               },
+              "locationId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
@@ -476,6 +634,21 @@
                 },
                 "to": {
                   "model": "Account",
+                  "namespace": "public"
+                }
+              },
+              "location": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "locationId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Location",
                   "namespace": "public"
                 }
               },
@@ -523,6 +696,9 @@
                 },
                 "image": {
                   "column": "image"
+                },
+                "locationId": {
+                  "column": "locationId"
                 },
                 "name": {
                   "column": "name"
@@ -661,6 +837,134 @@
                   ]
                 }
               ]
+            },
+            "locations": {
+              "columns": {
+                "addressLine": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "city": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "country": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "district": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "division": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "latitude": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "longitude": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "postalCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "village": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "city"
+                  ],
+                  "name": "locations_city_idx_40fed80d",
+                  "prefix": "locations_city_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "country",
+                    "division",
+                    "district",
+                    "city"
+                  ],
+                  "name": "locations_country_division_district_city_idx_2693022c",
+                  "prefix": "locations_country_division_district_city_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "country"
+                  ],
+                  "name": "locations_country_idx_c3994778",
+                  "prefix": "locations_country_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "district"
+                  ],
+                  "name": "locations_district_idx_1728c727",
+                  "prefix": "locations_district_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "division"
+                  ],
+                  "name": "locations_division_idx_a8a149d8",
+                  "prefix": "locations_division_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "postalCode"
+                  ],
+                  "name": "locations_postalCode_idx_0fcc3c6f",
+                  "prefix": "locations_postalCode_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "sessions": {
               "columns": {
@@ -833,6 +1137,11 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "locationId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -859,7 +1168,25 @@
                   "nullable": false
                 }
               },
-              "foreignKeys": [],
+              "foreignKeys": [
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "locationId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "locations"
+                  }
+                }
+              ],
               "indexes": [],
               "primaryKey": {
                 "columns": [
@@ -867,6 +1194,11 @@
                 ]
               },
               "uniques": [
+                {
+                  "columns": [
+                    "locationId"
+                  ]
+                },
                 {
                   "columns": [
                     "email"
@@ -910,10 +1242,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c110ad0a4d7faba22c687301e208b2ffe6bb0ec1b0c595aac0ddb2d370b10239"
+    "storageHash": "2d4154b721174418c0044e6a03907162b120748bbb82934b391f0f41c2a02b41"
   },
   "execution": {
-    "executionHash": "70031956e5f220ce0fb29d05f0786f0d9f80a8da698cc0feb0c90f3ac7d8b22f",
+    "executionHash": "fdfa571e998b0055338d6e9b6b7e142bd80b96e0650c6c1951d278a8586b84b2",
     "mutations": {
       "defaults": [
         {
@@ -940,6 +1272,32 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "accounts"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "locations"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "locations"
           }
         },
         {

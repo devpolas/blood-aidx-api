@@ -48,6 +48,10 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  locationId String?
+  location Location @relation(fields:[locationId], references:[id], onDelete:Cascade)
+
+  @@unique([locationId])
   @@unique([email])
   @@map("users")
 }
@@ -97,4 +101,35 @@ model Account {
   @@unique([providerId, accountId])
   @@index([userId])
   @@map("accounts")
+}
+
+
+model Location {
+  id String @id @default(uuid())
+
+  latitude  String?
+  longitude String?
+
+  country    String
+  division   String
+  district   String
+  city       String
+  village    String
+  postalCode String
+
+  addressLine String?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAt()
+
+  user User?
+
+  @@index([country])
+  @@index([division])
+  @@index([district])
+  @@index([city])
+  @@index([postalCode])
+  @@index([country,division,district,city])
+
+  @@map("locations")
 }
