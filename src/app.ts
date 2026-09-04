@@ -11,6 +11,7 @@ import notFound from "./middleware/absent.middleware";
 import globalErrorController from "./middleware/error.middleware";
 import { sendResponse } from "./utils/sendResponse";
 import authRouter from "./modules/auth/auth.routes";
+import locationRouter from "./modules/location/location.routes";
 import "temporal-polyfill/full/global";
 import "./modules/auth/passport/local.strategy";
 
@@ -89,6 +90,7 @@ app.get("/version", (_req: Request, res: Response) => {
 });
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/location", locationRouter);
 
 app.use(notFound);
 app.use(globalErrorController);
