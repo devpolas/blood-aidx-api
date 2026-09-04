@@ -64,6 +64,7 @@
     "slugify": "^1.6.9",
     "stripe": "^22.6.1",
     "temporal-polyfill": "^1.0.4",
+    "tsup": "^8.5.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -83,7 +84,6 @@
     "@types/passport-local": "^1.0.38",
     "oxlint": "^1.81.0",
     "prisma": "^8.0.0-rc.10",
-    "tsup": "^8.5.1",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   },
