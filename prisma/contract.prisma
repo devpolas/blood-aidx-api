@@ -49,7 +49,7 @@ model User {
 
   locationId    String?              @unique
 
-  location      Location?            @relation(fields:[locationId], references:[id], onDelete: Cascade)
+  location      Location?            @relation(fields:[locationId], references:[id], onDelete: SetNull)
 
   @@unique([email])
   @@map("users")

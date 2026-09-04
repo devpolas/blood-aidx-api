@@ -763,7 +763,7 @@
     "execute": [
       {
         "description": "add FK \"users_locationId_fkey\"",
-        "sql": "ALTER TABLE \"public\".\"users\"\nADD CONSTRAINT \"users_locationId_fkey\"\nFOREIGN KEY (\"locationId\")\nREFERENCES \"public\".\"locations\" (\"id\")\nON DELETE CASCADE"
+        "sql": "ALTER TABLE \"public\".\"users\"\nADD CONSTRAINT \"users_locationId_fkey\"\nFOREIGN KEY (\"locationId\")\nREFERENCES \"public\".\"locations\" (\"id\")\nON DELETE SET NULL"
       }
     ],
     "postcheck": [

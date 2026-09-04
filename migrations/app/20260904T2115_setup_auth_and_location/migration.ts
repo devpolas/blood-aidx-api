@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/2d4154b721174418c0044e6a03907162b120748bbb82934b391f0f41c2a02b41/contract';
-import endContract from '../../snapshots/2d4154b721174418c0044e6a03907162b120748bbb82934b391f0f41c2a02b41/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/aa9414942bfd58974d2157117b2f4ee56ae8536cccdaec13ffd5b2e9fc47545e/contract';
+import endContract from '../../snapshots/aa9414942bfd58974d2157117b2f4ee56ae8536cccdaec13ffd5b2e9fc47545e/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -248,7 +248,7 @@ export default class M extends Migration<never, End> {
           name: 'users_locationId_fkey',
           columns: ['locationId'],
           references: { schema: 'public', table: 'locations', columns: ['id'] },
-          onDelete: 'cascade',
+          onDelete: 'setNull',
         },
       }),
     ];
