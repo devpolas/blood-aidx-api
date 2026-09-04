@@ -56,6 +56,45 @@
     ]
   },
   {
+    "id": "table.locations",
+    "label": "Create table \"locations\"",
+    "summary": "Creates table \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"locations\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"locations\"",
+        "sql": "CREATE TABLE \"public\".\"locations\" (\n  \"addressLine\" text,\n  \"city\" text NOT NULL,\n  \"country\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"district\" text NOT NULL,\n  \"division\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"latitude\" text,\n  \"longitude\" text,\n  \"postalCode\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"village\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"locations\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations\""
+        ]
+      }
+    ]
+  },
+  {
     "id": "table.sessions",
     "label": "Create table \"sessions\"",
     "summary": "Creates table \"sessions\"",
@@ -119,7 +158,7 @@
     "execute": [
       {
         "description": "create table \"users\"",
-        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"banExpires\" timestamptz,\n  \"banReason\" text,\n  \"banned\" bool DEFAULT false NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"gender\" text,\n  \"id\" text NOT NULL,\n  \"image\" text,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'donor' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"users_gender_check_78d2beda\" CHECK (\"gender\" IN ('men', 'women', 'unisex')),\n  CONSTRAINT \"users_role_check_13016f52\" CHECK (\"role\" IN ('donor', 'recipient', 'volunteer', 'hospital', 'blood_bank', 'moderator', 'admin'))\n)",
+        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"banExpires\" timestamptz,\n  \"banReason\" text,\n  \"banned\" bool DEFAULT false NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"gender\" text,\n  \"id\" text NOT NULL,\n  \"image\" text,\n  \"locationId\" text,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'donor' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"users_gender_check_78d2beda\" CHECK (\"gender\" IN ('men', 'women', 'unisex')),\n  CONSTRAINT \"users_role_check_13016f52\" CHECK (\"role\" IN ('donor', 'recipient', 'volunteer', 'hospital', 'blood_bank', 'moderator', 'admin'))\n)",
         "params": []
       }
     ],
@@ -218,6 +257,48 @@
     ]
   },
   {
+    "id": "unique.users.users_locationId_key",
+    "label": "Add unique constraint on \"users\" (locationId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_locationId_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_locationId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_locationId_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"users_locationId_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_locationId_key\" UNIQUE (\"locationId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_locationId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_locationId_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
     "id": "unique.users.users_email_key",
     "label": "Add unique constraint on \"users\" (email)",
     "operationClass": "additive",
@@ -294,6 +375,240 @@
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
         "params": [
           "\"public\".\"accounts_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_city_idx_40fed80d",
+    "label": "Create index \"locations_city_idx_40fed80d\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_city_idx_40fed80d",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_city_idx_40fed80d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_city_idx_40fed80d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_city_idx_40fed80d\"",
+        "sql": "CREATE INDEX \"locations_city_idx_40fed80d\" ON \"public\".\"locations\" (\"city\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_city_idx_40fed80d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_city_idx_40fed80d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_country_division_district_city_idx_2693022c",
+    "label": "Create index \"locations_country_division_district_city_idx_2693022c\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_country_division_district_city_idx_2693022c",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_country_division_district_city_idx_2693022c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_division_district_city_idx_2693022c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_country_division_district_city_idx_2693022c\"",
+        "sql": "CREATE INDEX \"locations_country_division_district_city_idx_2693022c\" ON \"public\".\"locations\" (\"country\", \"division\", \"district\", \"city\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_country_division_district_city_idx_2693022c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_division_district_city_idx_2693022c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_country_idx_c3994778",
+    "label": "Create index \"locations_country_idx_c3994778\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_country_idx_c3994778",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_country_idx_c3994778\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_idx_c3994778\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_country_idx_c3994778\"",
+        "sql": "CREATE INDEX \"locations_country_idx_c3994778\" ON \"public\".\"locations\" (\"country\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_country_idx_c3994778\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_idx_c3994778\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_district_idx_1728c727",
+    "label": "Create index \"locations_district_idx_1728c727\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_district_idx_1728c727",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_district_idx_1728c727\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_district_idx_1728c727\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_district_idx_1728c727\"",
+        "sql": "CREATE INDEX \"locations_district_idx_1728c727\" ON \"public\".\"locations\" (\"district\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_district_idx_1728c727\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_district_idx_1728c727\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_division_idx_a8a149d8",
+    "label": "Create index \"locations_division_idx_a8a149d8\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_division_idx_a8a149d8",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_division_idx_a8a149d8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_division_idx_a8a149d8\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_division_idx_a8a149d8\"",
+        "sql": "CREATE INDEX \"locations_division_idx_a8a149d8\" ON \"public\".\"locations\" (\"division\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_division_idx_a8a149d8\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_division_idx_a8a149d8\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_postalCode_idx_0fcc3c6f",
+    "label": "Create index \"locations_postalCode_idx_0fcc3c6f\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_postalCode_idx_0fcc3c6f",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_postalCode_idx_0fcc3c6f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_postalCode_idx_0fcc3c6f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_postalCode_idx_0fcc3c6f\"",
+        "sql": "CREATE INDEX \"locations_postalCode_idx_0fcc3c6f\" ON \"public\".\"locations\" (\"postalCode\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_postalCode_idx_0fcc3c6f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_postalCode_idx_0fcc3c6f\""
         ]
       }
     ]
@@ -417,6 +732,48 @@
           "sessions_userId_fkey",
           "public",
           "\"public\".\"sessions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.users.users_locationId_fkey",
+    "label": "Add foreign key \"users_locationId_fkey\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "users_locationId_fkey",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"users_locationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_locationId_fkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"users_locationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"users\"\nADD CONSTRAINT \"users_locationId_fkey\"\nFOREIGN KEY (\"locationId\")\nREFERENCES \"public\".\"locations\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"users_locationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_locationId_fkey",
+          "public",
+          "\"public\".\"users\""
         ]
       }
     ]

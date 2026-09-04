@@ -47,10 +47,10 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  locationId    String?
-  location      Location             @relation(fields:[locationId], references:[id], onDelete: Cascade)
+  locationId    String?              @unique
 
-  @@unique([locationId])
+  location      Location?            @relation(fields:[locationId], references:[id], onDelete: Cascade)
+
   @@unique([email])
   @@map("users")
 }

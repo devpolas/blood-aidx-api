@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/c110ad0a4d7faba22c687301e208b2ffe6bb0ec1b0c595aac0ddb2d370b10239/contract';
-import endContract from '../../snapshots/c110ad0a4d7faba22c687301e208b2ffe6bb0ec1b0c595aac0ddb2d370b10239/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/2d4154b721174418c0044e6a03907162b120748bbb82934b391f0f41c2a02b41/contract';
+import endContract from '../../snapshots/2d4154b721174418c0044e6a03907162b120748bbb82934b391f0f41c2a02b41/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -45,6 +45,32 @@ export default class M extends Migration<never, End> {
             codecRef: { codecId: 'pg/timestamptz-temporal@1' },
           }),
           col('userId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+        ],
+        constraints: [primaryKey(['id'])],
+      }),
+      this.createTable({
+        schema: 'public',
+        table: 'locations',
+        columns: [
+          col('addressLine', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('city', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('country', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('district', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('division', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('latitude', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('longitude', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('postalCode', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-temporal@1' },
+          }),
+          col('village', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
         ],
         constraints: [primaryKey(['id'])],
       }),
@@ -99,6 +125,7 @@ export default class M extends Migration<never, End> {
           col('gender', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('image', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('locationId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('name', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('role', 'text', {
             notNull: true,
@@ -137,6 +164,12 @@ export default class M extends Migration<never, End> {
       this.addUnique({
         schema: 'public',
         table: 'users',
+        constraint: 'users_locationId_key',
+        columns: ['locationId'],
+      }),
+      this.addUnique({
+        schema: 'public',
+        table: 'users',
         constraint: 'users_email_key',
         columns: ['email'],
       }),
@@ -145,6 +178,42 @@ export default class M extends Migration<never, End> {
         table: 'accounts',
         index: 'accounts_userId_idx_a489d58a',
         columns: ['userId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_city_idx_40fed80d',
+        columns: ['city'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_country_division_district_city_idx_2693022c',
+        columns: ['country', 'division', 'district', 'city'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_country_idx_c3994778',
+        columns: ['country'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_district_idx_1728c727',
+        columns: ['district'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_division_idx_a8a149d8',
+        columns: ['division'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_postalCode_idx_0fcc3c6f',
+        columns: ['postalCode'],
       }),
       this.createIndex({
         schema: 'public',
@@ -169,6 +238,16 @@ export default class M extends Migration<never, End> {
           name: 'sessions_userId_fkey',
           columns: ['userId'],
           references: { schema: 'public', table: 'users', columns: ['id'] },
+          onDelete: 'cascade',
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
+        table: 'users',
+        foreignKey: {
+          name: 'users_locationId_fkey',
+          columns: ['locationId'],
+          references: { schema: 'public', table: 'locations', columns: ['id'] },
           onDelete: 'cascade',
         },
       }),
