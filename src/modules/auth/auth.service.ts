@@ -1,4 +1,3 @@
-import { db } from "../../../prisma/db";
 import { deleteCache, getCache, setCache } from "../../lib/redis";
 import config from "../../config";
 import { otpService } from "./otp.service";
@@ -16,6 +15,7 @@ import { createJWT, verifyToken } from "../../utils/jwt";
 import { generateToken, hashToken } from "../../utils/token";
 import ms from "ms";
 import { sendEmail } from "../../utils/sendEmail";
+import { db } from "../../lib/db";
 
 // Constants
 const CREDENTIAL_PROVIDER = config.auth_credential_provider;
