@@ -17,6 +17,10 @@ import "./modules/auth/passport/local.strategy";
 
 const app: Application = express();
 
+const isProduction = config.node_env === "production";
+
+app.set("trust proxy", isProduction ? true : 1);
+
 const allowedOrigins = config.origin_urls ?? [];
 
 app.use(
