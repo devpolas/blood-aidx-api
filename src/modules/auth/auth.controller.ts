@@ -181,6 +181,7 @@ export const AuthController = {
         url,
       },
     });
+    res.redirect(url);
   }),
 
   // Google OAuth Callback
