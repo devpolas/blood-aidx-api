@@ -11,7 +11,6 @@ export interface GoogleProfile {
   emailVerified: boolean;
   name: string | null;
   picture: string | null;
-  dateOfBirth: string | null;
 }
 
 type GoogleOAuthClient = InstanceType<typeof google.auth.OAuth2>;
@@ -115,37 +114,12 @@ export const getGoogleProfile = async (
   if (!profile.id || !profile.email) {
     throw new AppError("Google account information is incomplete.", 400);
   }
-
-  // 4. Get birthday
-  const people = google.people({
-    version: "v1",
-    auth: client,
-  });
-
-  const { data: person } = await people.people.get({
-    resourceName: "people/me",
-    personFields: "birthdays",
-  });
-
-  const birthday = person.birthdays?.find(
-    (item) => item.date?.year && item.date?.month && item.date?.day,
-  );
-
-  const dateOfBirth = birthday?.date
-    ? [
-        birthday.date.year,
-        String(birthday.date.month).padStart(2, "0"),
-        String(birthday.date.day).padStart(2, "0"),
-      ].join("-")
-    : null;
-
-  // 5. Return normalized profile
+  // 4. Return normalized profile
   return {
     id: profile.id,
     email: profile.email,
     emailVerified: profile.verified_email ?? false,
     name: profile.name ?? null,
     picture: profile.picture ?? null,
-    dateOfBirth,
   };
 };
