@@ -214,7 +214,6 @@ export const getCredentialAccount = async (
 ): Promise<CredentialAccount | null> => {
   const account = await db.orm.public.Account.where({
     userId,
-    providerId: CREDENTIAL_PROVIDER,
   }).first();
 
   if (!account) {
@@ -631,10 +630,6 @@ export const createAuthTokens = async (
 
   if (!account) {
     throw new AppError("Credential account not found", 404);
-  }
-
-  if (!account.password) {
-    throw new AppError("Password authentication is not configured", 400);
   }
 
   const accessToken = createJWT(
