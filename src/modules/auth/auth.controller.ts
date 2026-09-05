@@ -232,6 +232,7 @@ export const AuthController = {
         session: session.session,
       },
     });
+    res.redirect(`${config.website_url}/auth/google/success`);
   }),
 
   // Current User
