@@ -172,15 +172,6 @@ export const AuthController = {
 
   googleSignIn: catchAsync(async (_req: Request, res: Response) => {
     const url = await googleAuthUrl();
-
-    sendResponse(res, {
-      success: true,
-      message: "Google authentication URL generated successfully",
-      statusCode: 200,
-      data: {
-        url,
-      },
-    });
     res.redirect(url);
   }),
 
@@ -223,15 +214,6 @@ export const AuthController = {
       maxAge: REFRESH_TOKEN_MAX_AGE,
     });
 
-    sendResponse(res, {
-      success: true,
-      message: "Signed in with Google successfully",
-      statusCode: 200,
-      data: {
-        user,
-        session: session.session,
-      },
-    });
     res.redirect(`${config.website_url}/auth/google/success`);
   }),
 
