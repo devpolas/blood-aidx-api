@@ -11,10 +11,15 @@ const router: ExpressRouter = Router();
 
 // Public Routes
 
-router.post("/signup", AuthController.signup);
-router.post("/signin", AuthController.signin);
+// social auth handlers
+
 router.get("/social/google", AuthController.googleSignIn);
 router.get("/google/callback", AuthController.googleCallback);
+
+// credential auth handlers
+
+router.post("/signup", AuthController.signup);
+router.post("/signin", AuthController.signin);
 router.post("/verify-email", AuthController.verifyEmail);
 router.post("/resend-verification", AuthController.resendVerification);
 
