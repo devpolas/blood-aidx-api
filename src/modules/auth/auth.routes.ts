@@ -13,8 +13,8 @@ const router: ExpressRouter = Router();
 
 router.post("/signup", AuthController.signup);
 router.post("/signin", AuthController.signin);
-router.post("/social/google", AuthController.googleSignIn);
-router.post("/google/callback", AuthController.googleCallback);
+router.get("/social/google", AuthController.googleSignIn);
+router.get("/google/callback", AuthController.googleCallback);
 router.post("/verify-email", AuthController.verifyEmail);
 router.post("/resend-verification", AuthController.resendVerification);
 
