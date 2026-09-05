@@ -37,6 +37,7 @@ import {
   sendResponseToCookies,
 } from "../../utils/sendResponse";
 import { AppError } from "../../utils/appError";
+import { googleAuthUrl, handleGoogleCallback } from "./oauth.service";
 
 // Constants
 
@@ -168,6 +169,69 @@ export const AuthController = {
       },
     )(req, res, next);
   },
+
+  googleSignIn: catchAsync(async (_req: Request, res: Response) => {
+    const url = await googleAuthUrl();
+
+    sendResponse(res, {
+      success: true,
+      message: "Google authentication URL generated successfully",
+      statusCode: 200,
+      data: {
+        url,
+      },
+    });
+  }),
+
+  // Google OAuth Callback
+  googleCallback: catchAsync(async (req: Request, res: Response) => {
+    const { code, state } = req.query;
+
+    if (typeof code !== "string" || typeof state !== "string") {
+      throw new AppError("Invalid Google OAuth callback parameters", 400);
+    }
+
+    const user = await handleGoogleCallback({
+      code,
+      state,
+    });
+
+    const session = await createSession(
+      user.id,
+      getClientIp(req),
+      getUserAgent(req),
+    );
+
+    const tokens = await createAuthTokens(user.id);
+
+    sendResponseToCookies(res, {
+      cookieKey: SESSION_COOKIE_NAME,
+      keyValue: session.token,
+      maxAge: SESSION_MAX_AGE,
+    });
+
+    sendResponseToCookies(res, {
+      cookieKey: ACCESS_TOKEN_COOKIE_NAME,
+      keyValue: tokens.accessToken,
+      maxAge: ACCESS_TOKEN_MAX_AGE,
+    });
+
+    sendResponseToCookies(res, {
+      cookieKey: REFRESH_TOKEN_COOKIE_NAME,
+      keyValue: tokens.refreshToken,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
+    });
+
+    sendResponse(res, {
+      success: true,
+      message: "Signed in with Google successfully",
+      statusCode: 200,
+      data: {
+        user,
+        session: session.session,
+      },
+    });
+  }),
 
   // Current User
 
