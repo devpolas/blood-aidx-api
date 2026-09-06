@@ -4,6 +4,7 @@ import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
 
 import type { CreateNotificationInput } from "./notification.schema";
+import { emitNotification } from "../../socket/socket.emitter";
 
 const getNotificationById = async (notificationId: string, userId: string) => {
   const notification = await db.orm.public.Notification.where({
@@ -33,16 +34,20 @@ const createNotification = async (data: CreateNotificationInput) => {
     throw new AppError("User not found", httpStatus.NOT_FOUND);
   }
 
-  return db.orm.public.Notification.create({
+  const notification = await db.orm.public.Notification.create({
     userId: data.userId,
     type: data.type,
     title: data.title,
     message: data.message,
-
     ...(data.data !== undefined && {
       data: data.data,
     }),
   });
+
+  // Realtime notification
+  emitNotification(data.userId, notification);
+
+  return notification;
 };
 
 const getMyNotifications = async (userId: string) => {

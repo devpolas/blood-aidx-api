@@ -104,3 +104,28 @@ export type AppServer = Server<
   Record<string, never>,
   SocketData
 >;
+
+export interface ServerToClientEvents {
+  "message:new": (message: unknown) => void;
+  "message:updated": (message: unknown) => void;
+
+  "message:deleted": (data: {
+    conversationId: string;
+    messageId: string;
+  }) => void;
+
+  "conversation:read": (data: {
+    conversationId: string;
+    userId: string;
+    lastReadAt: string;
+  }) => void;
+
+  "typing:start": (data: { conversationId: string; userId: string }) => void;
+
+  "typing:stop": (data: { conversationId: string; userId: string }) => void;
+
+  // NEW
+  "notification:new": (notification: unknown) => void;
+
+  "socket:error": (data: { message: string }) => void;
+}

@@ -1,8 +1,10 @@
 import type { Server as HttpServer } from "node:http";
+
 import { Server } from "socket.io";
 
 import { socketAuth } from "./socket.auth";
 import { registerSocketEvents } from "./socket.events";
+import { setSocketServer } from "./socket.emitter";
 
 import type {
   AppServer,
@@ -24,12 +26,13 @@ export const initializeSocket = (httpServer: HttpServer): AppServer => {
     },
   });
 
-  // Authentication
+  // Register Socket.IO instance
+  setSocketServer(io);
 
+  // Authentication
   io.use(socketAuth);
 
   // Connection
-
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id} | user=${socket.data.user.id}`);
 
