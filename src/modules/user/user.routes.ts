@@ -5,8 +5,8 @@ const router: ExpressRouter = Router();
 
 // Current User
 
-router.get("/me", protect, requireActiveUser, UserController.getMe);
-router.patch("/me", protect, requireActiveUser, UserController.updateMe);
-router.delete("/me", protect, requireActiveUser, UserController.deleteMe);
+router.get("/", protect, requireActiveUser, UserController.getMe);
+router.patch("/", protect, requireActiveUser, UserController.updateMe);
+router.delete("/", protect, requireActiveUser, UserController.deleteMe);
 
 export default router;
