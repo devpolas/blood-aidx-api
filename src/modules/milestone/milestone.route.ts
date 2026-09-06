@@ -1,5 +1,5 @@
 import { Router, type Router as ExpressRouter } from "express";
-import { MilestoneController } from "./milestone.controller";
+
 import {
   protect,
   requireActiveUser,
@@ -7,33 +7,36 @@ import {
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
 
+import { MilestoneController } from "./milestone.controller";
+
 const router: ExpressRouter = Router();
 
-// Current User
-
-router.get(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  MilestoneController.getMyMilestones,
-);
-
-// User Milestones
-
-router.get("/user/:userId", MilestoneController.getUserMilestones);
-
-// Public
+// Public Routes
 
 router.get("/", MilestoneController.getMilestones);
 router.get("/:milestoneId", MilestoneController.getMilestoneById);
+
+// Protected Routes
+
+router.use(protect, requireActiveUser);
+
+// Current User
+
+router.get("/my", requireVerifiedEmail, MilestoneController.getMyMilestones);
+
+// Moderator / Admin
+
+router.get(
+  "/user/:userId",
+  requireVerifiedEmail,
+  requireRole("moderator", "admin"),
+  MilestoneController.getUserMilestones,
+);
 
 // Admin
 
 router.post(
   "/",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
   requireRole("admin"),
   MilestoneController.createMilestone,
@@ -41,8 +44,6 @@ router.post(
 
 router.patch(
   "/:milestoneId",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
   requireRole("admin"),
   MilestoneController.updateMilestone,
@@ -50,8 +51,6 @@ router.patch(
 
 router.delete(
   "/:milestoneId",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
   requireRole("admin"),
   MilestoneController.deleteMilestone,

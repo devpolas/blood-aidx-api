@@ -1,11 +1,87 @@
 import crypto from "node:crypto";
+import httpStatus from "http-status";
+
 import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
+
 import type {
   CreateMilestoneInput,
   UpdateMilestoneInput,
 } from "./milestone.schema";
 
+// Types
+
+type GlobalRole =
+  | "donor"
+  | "recipient"
+  | "volunteer"
+  | "hospital"
+  | "blood_bank"
+  | "moderator"
+  | "admin";
+
+type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 // Helpers
+
+const getUserById = async (userId: string) => {
+  const user = await db.orm.public.User.where({
+    id: userId,
+  }).first();
+
+  if (!user) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+
+  return user;
+};
+
+const requireDonor = async (userId: string) => {
+  const user = await getUserById(userId);
+
+  if ((user.role as GlobalRole) !== "donor") {
+    throw new AppError("Donor access required", httpStatus.FORBIDDEN);
+  }
+
+  return user;
+};
+
+const requireModerator = async (userId: string) => {
+  const user = await getUserById(userId);
+
+  const role = user.role as GlobalRole;
+
+  if (role !== "moderator" && role !== "admin") {
+    throw new AppError(
+      "Moderator or admin access required",
+      httpStatus.FORBIDDEN,
+    );
+  }
+
+  return user;
+};
+
+const requireAdmin = async (userId: string) => {
+  const user = await getUserById(userId);
+
+  if ((user.role as GlobalRole) !== "admin") {
+    throw new AppError("Admin access required", httpStatus.FORBIDDEN);
+  }
+
+  return user;
+};
+
+const getMilestoneById = async (milestoneId: string) => {
+  const milestone = await db.orm.public.DonationMilestone.where({
+    id: milestoneId,
+  }).first();
+
+  if (!milestone) {
+    throw new AppError("Milestone not found", httpStatus.NOT_FOUND);
+  }
+
+  return milestone;
+};
 
 const generateCertificateNo = (): string => {
   return `MILESTONE-${new Date().getFullYear()}-${crypto
@@ -21,21 +97,33 @@ const generateVerificationCode = (): string => {
 
 // Milestone CRUD
 
-const createMilestone = async (input: CreateMilestoneInput) => {
+const createMilestone = async (userId: string, input: CreateMilestoneInput) => {
+  await requireAdmin(userId);
+
   const existing = await db.orm.public.DonationMilestone.where({
     donationCount: input.donationCount,
   }).first();
 
   if (existing) {
-    throw new Error("A milestone with this donation count already exists");
+    throw new AppError(
+      "A milestone with this donation count already exists",
+      httpStatus.CONFLICT,
+    );
   }
 
   return db.orm.public.DonationMilestone.create({
     name: input.name,
+
     description: input.description,
+
     donationCount: input.donationCount,
-    badgeUrl: input.badgeUrl ?? null,
+
+    ...(input.badgeUrl !== undefined && {
+      badgeUrl: input.badgeUrl,
+    }),
+
     createdAt: new Date().toISOString(),
+
     updatedAt: Temporal.Now.instant(),
   });
 };
@@ -46,39 +134,52 @@ const getMilestones = async () => {
   return milestones.toSorted((a, b) => a.donationCount - b.donationCount);
 };
 
-const getMilestoneById = async (milestoneId: string) => {
-  const milestone = await db.orm.public.DonationMilestone.where({
-    id: milestoneId,
-  }).first();
-
-  if (!milestone) {
-    throw new Error("Milestone not found");
-  }
-
-  return milestone;
+const getMilestone = async (milestoneId: string) => {
+  return getMilestoneById(milestoneId);
 };
 
 const updateMilestone = async (
+  userId: string,
   milestoneId: string,
   input: UpdateMilestoneInput,
 ) => {
+  await requireAdmin(userId);
+
   const milestone = await getMilestoneById(milestoneId);
 
-  // Prevent duplicate donation thresholds
+  // Prevent changing the threshold after the milestone
+  // has already been awarded.
+
   if (
     input.donationCount !== undefined &&
     input.donationCount !== milestone.donationCount
   ) {
+    const awarded = await db.orm.public.UserMilestone.where({
+      milestoneId,
+    }).first();
+
+    if (awarded) {
+      throw new AppError(
+        "Donation threshold cannot be changed after this milestone has been awarded",
+        httpStatus.BAD_REQUEST,
+      );
+    }
+
     const existing = await db.orm.public.DonationMilestone.where({
       donationCount: input.donationCount,
     }).first();
 
     if (existing && existing.id !== milestoneId) {
-      throw new Error("A milestone with this donation count already exists");
+      throw new AppError(
+        "A milestone with this donation count already exists",
+        httpStatus.CONFLICT,
+      );
     }
   }
 
-  const updateData = {
+  return db.orm.public.DonationMilestone.where({
+    id: milestoneId,
+  }).update({
     ...(input.name !== undefined && {
       name: input.name,
     }),
@@ -96,22 +197,23 @@ const updateMilestone = async (
     }),
 
     updatedAt: Temporal.Now.instant(),
-  };
-
-  return db.orm.public.DonationMilestone.where({
-    id: milestoneId,
-  }).update(updateData);
+  });
 };
 
-const deleteMilestone = async (milestoneId: string) => {
+const deleteMilestone = async (userId: string, milestoneId: string) => {
+  await requireAdmin(userId);
+
   await getMilestoneById(milestoneId);
 
-  const userMilestones = await db.orm.public.UserMilestone.where({
+  const awarded = await db.orm.public.UserMilestone.where({
     milestoneId,
-  }).all();
+  }).first();
 
-  if (userMilestones.length > 0) {
-    throw new Error("Cannot delete a milestone that has already been awarded");
+  if (awarded) {
+    throw new AppError(
+      "Cannot delete a milestone that has already been awarded",
+      httpStatus.BAD_REQUEST,
+    );
   }
 
   return db.orm.public.DonationMilestone.where({
@@ -122,105 +224,110 @@ const deleteMilestone = async (milestoneId: string) => {
 // User Milestones
 
 const getMyMilestones = async (userId: string) => {
-  const donorProfile = await db.orm.public.DonorProfile.where({
-    userId,
-  }).first();
-
-  if (!donorProfile) {
-    throw new Error("Donor profile not found");
-  }
+  await requireDonor(userId);
 
   return db.orm.public.UserMilestone.where({
     userId,
   }).all();
 };
 
-const getUserMilestones = async (userId: string) => {
+const getUserMilestones = async (actorUserId: string, targetUserId: string) => {
+  const actor = await requireModerator(actorUserId);
+
+  const isOwner = actor.id === targetUserId;
+
+  const isModerator = actor.role === "moderator" || actor.role === "admin";
+
+  if (!isOwner && !isModerator) {
+    throw new AppError(
+      "You do not have permission to view these milestones",
+      httpStatus.FORBIDDEN,
+    );
+  }
+
+  await getUserById(targetUserId);
+
   return db.orm.public.UserMilestone.where({
-    userId,
+    userId: targetUserId,
   }).all();
 };
 
 // Automatic Milestone Processing
 
-const processDonationMilestones = async (userId: string) => {
-  const [donorProfile, user] = await Promise.all([
-    db.orm.public.DonorProfile.where({ userId }).first(),
+const processDonationMilestones = async (
+  tx: TransactionClient,
+  userId: string,
+  donationCount: number,
+  donorName: string,
+) => {
+  const milestones = await tx.orm.public.DonationMilestone.all();
 
-    db.orm.public.User.where({ id: userId }).first(),
-  ]);
-
-  if (!donorProfile) {
-    throw new Error("Donor profile not found");
+  if (milestones.length === 0) {
+    return [];
   }
 
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const donationCount = donorProfile.totalDonations;
-
-  const [milestones, awardedMilestones] = await Promise.all([
-    db.orm.public.DonationMilestone.all(),
-
-    db.orm.public.UserMilestone.where({ userId }).all(),
-  ]);
+  const awardedMilestones = await tx.orm.public.UserMilestone.where({
+    userId,
+  }).all();
 
   const awardedMilestoneIds = new Set(
     awardedMilestones.map(({ milestoneId }) => milestoneId),
   );
 
-  const eligibleMilestones = milestones.filter(
-    (milestone) =>
-      milestone.donationCount <= donationCount &&
-      !awardedMilestoneIds.has(milestone.id),
-  );
+  const eligibleMilestones = milestones
+    .filter(
+      (milestone) =>
+        milestone.donationCount <= donationCount &&
+        !awardedMilestoneIds.has(milestone.id),
+    )
+    .toSorted((a, b) => a.donationCount - b.donationCount);
 
   if (eligibleMilestones.length === 0) {
     return [];
   }
 
   const newlyAwarded = await Promise.all(
-    eligibleMilestones.map((milestone) =>
-      db.transaction(async (tx) => {
-        const now = new Date().toISOString();
+    eligibleMilestones.map(async (milestone) => {
+      const now = new Date().toISOString();
 
-        const userMilestone = await tx.orm.public.UserMilestone.create({
-          userId,
+      // 1. Award milestone
+      const userMilestone = await tx.orm.public.UserMilestone.create({
+        userId,
+        milestoneId: milestone.id,
+        achievedAt: now,
+      });
+
+      // 2. Create certificate
+      const certificate = await tx.orm.public.MilestoneCertificate.create({
+        userMilestoneId: userMilestone.id,
+        certificateNo: generateCertificateNo(),
+        verificationCode: generateVerificationCode(),
+        donorName,
+        donationCount,
+        achievedAt: now,
+      });
+
+      // 3. Create notification
+      const notification = await tx.orm.public.Notification.create({
+        userId,
+        type: "milestone",
+        title: "Milestone Achieved!",
+        message: `Congratulations! You have reached the "${milestone.name}" milestone.`,
+        data: {
           milestoneId: milestone.id,
-          achievedAt: now,
-        });
-
-        const certificate = await tx.orm.public.MilestoneCertificate.create({
           userMilestoneId: userMilestone.id,
-          certificateNo: generateCertificateNo(),
-          verificationCode: generateVerificationCode(),
-          donorName: user.name,
-          donationCount,
-          achievedAt: now,
-        });
+          certificateId: certificate.id,
+        },
+        createdAt: now,
+        updatedAt: Temporal.Now.instant(),
+      });
 
-        const notification = await tx.orm.public.Notification.create({
-          userId,
-          type: "milestone",
-          title: "Milestone Achieved!",
-          message: `Congratulations! You have reached the "${milestone.name}" milestone.`,
-          data: {
-            milestoneId: milestone.id,
-            userMilestoneId: userMilestone.id,
-            certificateId: certificate.id,
-          },
-          createdAt: now,
-          updatedAt: Temporal.Now.instant(),
-        });
-
-        return {
-          milestone: userMilestone,
-          certificate,
-          notification,
-        };
-      }),
-    ),
+      return {
+        milestone: userMilestone,
+        certificate,
+        notification,
+      };
+    }),
   );
 
   return newlyAwarded;
@@ -231,7 +338,7 @@ const processDonationMilestones = async (userId: string) => {
 export const MilestoneService = {
   createMilestone,
   getMilestones,
-  getMilestoneById,
+  getMilestone,
   updateMilestone,
   deleteMilestone,
   getMyMilestones,

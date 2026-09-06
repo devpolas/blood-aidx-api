@@ -28,7 +28,7 @@ export const MilestoneSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   description: z.string(),
-  donationCount: z.number(),
+  donationCount: z.number().int(),
   badgeUrl: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
