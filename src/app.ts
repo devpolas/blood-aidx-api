@@ -18,6 +18,7 @@ import locationRouter from "./modules/location/location.routes";
 import userRouter from "./modules/user/user.routes";
 import userAdminRouter from "./modules/user/admin/admin-user.route";
 import profileRouter from "./modules/profile/profile.route";
+import donorRouter from "./modules/donor/donor.route";
 
 const app: Application = express();
 
@@ -99,7 +100,8 @@ app.get("/version", (_req: Request, res: Response) => {
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/profile", profileRouter);
+app.use("/api/v1/profiles", profileRouter);
+app.use("/api/v1/donors", donorRouter);
 app.use("/api/v1/admin/users", userAdminRouter);
 app.use("/api/v1/locations", locationRouter);
 
