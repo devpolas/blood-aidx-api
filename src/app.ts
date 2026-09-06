@@ -27,6 +27,8 @@ import milestoneRouter from "./modules/milestone/milestone.route";
 import certificateRouter from "./modules/certificate/certificate.route";
 import reportRouter from "./modules/report/report.route";
 import reviewRouter from "./modules/review/review.route";
+import conversationRouter from "./modules/conversation/conversation.route";
+import messageRouter from "./modules/message/message.route";
 import notificationRouter from "./modules/notification/notification.route";
 
 const app: Application = express();
@@ -121,6 +123,8 @@ app.use("/api/v1/milestones", milestoneRouter);
 app.use("/api/v1/certificates", certificateRouter);
 app.use("/api/v1/reports", reportRouter);
 app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/conversations", conversationRouter);
+app.use("/api/v1/messages", messageRouter);
 app.use("/api/v1/notifications", notificationRouter);
 
 app.use(notFound);
