@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'c7af2d58d9b60b8b7738a61952fb57ccee9b0775af37920efe8eb00687055004'>;
+  StorageHashBase<'06ecfa0982e254cdceaf345ca6adf054159a67c85f90787f841d9213009fffb1'>;
 export type ExecutionHash =
   ExecutionHashBase<'8223beda5c106279a9fb709c4e40044cfde825570aabd2ff420b9afd6eb6988a'>;
 export type ProfileHash =
@@ -283,7 +283,7 @@ export type FieldOutputTypes = {
       readonly requestId: CodecTypes['pg/text@1']['output'] | null;
       readonly organizationId: CodecTypes['pg/text@1']['output'] | null;
       readonly locationId: CodecTypes['pg/text@1']['output'] | null;
-      readonly donationNumber: CodecTypes['pg/int4@1']['output'];
+      readonly donationNumber: CodecTypes['pg/text@1']['output'];
       readonly bloodGroup:
         | 'a_positive'
         | 'a_negative'
@@ -599,7 +599,7 @@ export type FieldInputTypes = {
       readonly requestId: CodecTypes['pg/text@1']['input'] | null;
       readonly organizationId: CodecTypes['pg/text@1']['input'] | null;
       readonly locationId: CodecTypes['pg/text@1']['input'] | null;
-      readonly donationNumber: CodecTypes['pg/int4@1']['input'];
+      readonly donationNumber: CodecTypes['pg/text@1']['input'];
       readonly bloodGroup:
         | 'a_positive'
         | 'a_negative'
@@ -921,7 +921,7 @@ export type StorageColumnTypes = {
         | 'o_negative';
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly donatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
-      readonly donationNumber: CodecTypes['pg/int4@1']['output'];
+      readonly donationNumber: CodecTypes['pg/text@1']['output'];
       readonly donorId: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly locationId: CodecTypes['pg/text@1']['output'] | null;
@@ -1237,7 +1237,7 @@ export type StorageColumnInputTypes = {
         | 'o_negative';
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly donatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
-      readonly donationNumber: CodecTypes['pg/int4@1']['input'];
+      readonly donationNumber: CodecTypes['pg/text@1']['input'];
       readonly donorId: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly locationId: CodecTypes['pg/text@1']['input'] | null;
@@ -1746,8 +1746,8 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly donationNumber: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly bloodGroup: {
@@ -1811,7 +1811,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['donorId', 'donationNumber'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['donationNumber'] },
+                { readonly columns: readonly ['donorId', 'donationNumber'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'blood_donations_donorId_idx_e0e8e1e7';
@@ -4178,7 +4181,7 @@ type ContractBase = Omit<
               };
               readonly donationNumber: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly bloodGroup: {
                 readonly nullable: false;

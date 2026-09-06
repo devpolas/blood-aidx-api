@@ -481,7 +481,7 @@ model BloodDonation {
   requestId       String?
   organizationId  String?
   locationId      String?
-  donationNumber  Int
+  donationNumber  String               @unique
   bloodGroup      BloodGroup
   units           Int                  @default(1)
 
