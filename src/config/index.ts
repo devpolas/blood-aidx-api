@@ -7,6 +7,7 @@ dotenv.config({ path: path.join(process.cwd(), ".env") });
 export default {
   node_env: process.env.NODE_ENV,
   port: process.env.PORT,
+  socket_port: process.env.SOCKET_PORT,
   logo: process.env.LOGO as StringValue,
   database_url: process.env.DATABASE_URL,
   origin_urls: process.env.ORIGIN_URLS?.split(",") ?? [],
