@@ -1,68 +1,35 @@
 import { Router, type Router as ExpressRouter } from "express";
 
-import { LocationController } from "./location.controller";
-
 import {
   protect,
   requireActiveUser,
-  requireModerator,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
 
+import { LocationController } from "./location.controller";
+
 const router: ExpressRouter = Router();
 
-// Protected + Active + Verified Routes
+// Protected Routes
 
-// Get My Location
-router.get(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  LocationController.getMyLocation,
-);
+router.use(protect, requireActiveUser);
 
-// Create My Location
-router.post(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  LocationController.createLocation,
-);
+// My Location
 
-// Update My Location
-router.patch(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  LocationController.updateLocation,
-);
+router.get("/me", requireVerifiedEmail, LocationController.getMyLocation);
+router.post("/", requireVerifiedEmail, LocationController.createLocation);
+router.patch("/me", requireVerifiedEmail, LocationController.updateLocation);
+router.delete("/me", requireVerifiedEmail, LocationController.deleteMyLocation);
 
-// Delete My Location
-router.delete(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  LocationController.deleteMyLocation,
-);
+// Public Location
 
-// Public Routes
-
-// Get Location By ID
 router.get("/:locationId", LocationController.getLocationById);
 
-// Moderator / Admin Routes
+// Moderator / Admin
 
-// Delete Location By ID
 router.delete(
   "/:locationId",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
-  requireModerator,
   LocationController.deleteLocationById,
 );
 

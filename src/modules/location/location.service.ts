@@ -1,3 +1,5 @@
+import httpStatus from "http-status";
+
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
 
@@ -6,72 +8,109 @@ import type {
   LocationUpdateInput,
 } from "./location.schema";
 
-// Get My Location
+// Authorization
 
-export const getMyLocationFromDB = async ({ userId }: { userId: string }) => {
-  const user = await db.orm.public.User.where({
+type ActorRole =
+  | "donor"
+  | "recipient"
+  | "volunteer"
+  | "hospital"
+  | "blood_bank"
+  | "moderator"
+  | "admin";
+
+const getActor = async (userId: string) => {
+  const actor = await db.orm.public.User.where({
     id: userId,
   }).first();
 
-  if (!user) {
-    throw new AppError("User not found", 404);
+  if (!actor) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
   }
 
-  if (!user.locationId) {
-    throw new AppError("User has no location", 404);
-  }
-
-  const location = await db.orm.public.Location.where({
-    id: user.locationId,
-  }).first();
-
-  if (!location) {
-    throw new AppError("Location not found", 404);
-  }
-
-  return location;
+  return actor;
 };
 
-// Get Location By ID
+const requireModerator = async (userId: string) => {
+  const actor = await getActor(userId);
 
-export const getLocationFromDBById = async ({
-  locationId,
-}: {
-  locationId: string;
-}) => {
+  const role = actor.role as ActorRole;
+
+  if (role !== "moderator" && role !== "admin") {
+    throw new AppError(
+      "Moderator or admin access required",
+      httpStatus.FORBIDDEN,
+    );
+  }
+
+  return actor;
+};
+
+// Internal Queries
+
+const getLocationById = async (locationId: string) => {
   const location = await db.orm.public.Location.where({
     id: locationId,
   }).first();
 
   if (!location) {
-    throw new AppError("Location not found", 404);
+    throw new AppError("Location not found", httpStatus.NOT_FOUND);
   }
 
   return location;
 };
 
-// Create Location
+const getUserById = async (userId: string) => {
+  const user = await db.orm.public.User.where({
+    id: userId,
+  }).first();
 
-export const createLocationIntoDB = async ({
+  if (!user) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+
+  return user;
+};
+
+// Get My Location
+
+const getMyLocationFromDB = async ({ userId }: { userId: string }) => {
+  const user = await getUserById(userId);
+
+  if (!user.locationId) {
+    throw new AppError("User has no location", httpStatus.NOT_FOUND);
+  }
+
+  return getLocationById(user.locationId);
+};
+
+// Get Location By ID
+// Public
+
+const getLocationFromDBById = async ({
+  locationId,
+}: {
+  locationId: string;
+}) => {
+  return getLocationById(locationId);
+};
+
+// Create My Location
+
+const createLocationIntoDB = async ({
   userId,
   payload,
 }: {
   userId: string;
   payload: LocationCreateInput;
 }) => {
-  const user = await db.orm.public.User.where({
-    id: userId,
-  }).first();
-
-  if (!user) {
-    throw new AppError("User not found", 404);
-  }
+  const user = await getUserById(userId);
 
   if (user.locationId) {
-    throw new AppError("User already has a location", 400);
+    throw new AppError("User already has a location", httpStatus.BAD_REQUEST);
   }
 
-  return await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const location = await tx.orm.public.Location.create({
       country: payload.country,
       division: payload.division,
@@ -105,26 +144,22 @@ export const createLocationIntoDB = async ({
 
 // Update My Location
 
-export const updateLocationIntoDB = async ({
+const updateLocationIntoDB = async ({
   userId,
   payload,
 }: {
   userId: string;
   payload: LocationUpdateInput;
 }) => {
-  const user = await db.orm.public.User.where({
-    id: userId,
-  }).first();
-
-  if (!user) {
-    throw new AppError("User not found", 404);
-  }
+  const user = await getUserById(userId);
 
   if (!user.locationId) {
-    throw new AppError("User has no location", 404);
+    throw new AppError("User has no location", httpStatus.NOT_FOUND);
   }
 
-  const location = await db.orm.public.Location.where({
+  await getLocationById(user.locationId);
+
+  return db.orm.public.Location.where({
     id: user.locationId,
   }).update({
     ...(payload.country !== undefined && {
@@ -163,49 +198,65 @@ export const updateLocationIntoDB = async ({
       longitude: payload.longitude,
     }),
   });
-
-  return location;
 };
 
 // Delete My Location
 
-export const deleteMyLocationById = async ({ userId }: { userId: string }) => {
-  const user = await db.orm.public.User.where({
-    id: userId,
-  }).first();
-
-  if (!user) {
-    throw new AppError("User not found", 404);
-  }
+const deleteMyLocationById = async ({ userId }: { userId: string }) => {
+  const user = await getUserById(userId);
 
   if (!user.locationId) {
-    throw new AppError("User has no location", 404);
+    throw new AppError("User has no location", httpStatus.NOT_FOUND);
   }
 
-  const location = await db.orm.public.Location.where({
-    id: user.locationId,
-  }).delete();
+  const locationId = user.locationId;
 
-  return location;
+  return db.transaction(async (tx) => {
+    await tx.orm.public.User.where({
+      id: userId,
+    }).update({
+      locationId: null,
+    });
+
+    return tx.orm.public.Location.where({
+      id: locationId,
+    }).delete();
+  });
 };
 
 // Delete Location By ID
-// Admin / Moderator
+// Moderator / Admin
 
-export const deleteLocationById = async ({
+const deleteLocationById = async ({
+  userId,
   locationId,
 }: {
+  userId: string;
   locationId: string;
 }) => {
-  const existingLocation = await db.orm.public.Location.where({
-    id: locationId,
-  }).first();
+  await requireModerator(userId);
 
-  if (!existingLocation) {
-    throw new AppError("Location not found", 404);
-  }
+  await getLocationById(locationId);
 
-  return await db.orm.public.Location.where({
-    id: locationId,
-  }).delete();
+  return db.transaction(async (tx) => {
+    // Clear users referencing this location first.
+    await tx.orm.public.User.where({
+      locationId,
+    }).update({
+      locationId: null,
+    });
+
+    return tx.orm.public.Location.where({
+      id: locationId,
+    }).delete();
+  });
+};
+
+export const LocationService = {
+  getMyLocationFromDB,
+  getLocationFromDBById,
+  createLocationIntoDB,
+  updateLocationIntoDB,
+  deleteMyLocationById,
+  deleteLocationById,
 };

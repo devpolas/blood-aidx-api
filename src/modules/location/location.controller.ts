@@ -1,77 +1,38 @@
 import type { Request, Response } from "express";
-
+import httpStatus from "http-status";
 import { LocationCreateSchema, LocationUpdateSchema } from "./location.schema";
-
-import {
-  createLocationIntoDB,
-  deleteLocationById,
-  deleteMyLocationById,
-  getLocationFromDBById,
-  getMyLocationFromDB,
-  updateLocationIntoDB,
-} from "./location.service";
-
+import { LocationService } from "./location.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { AppError } from "../../utils/appError";
 import { sendResponse } from "../../utils/sendResponse";
 import { requireAuth } from "../../middleware/auth.middleware";
 
-// Location Controller
-
 export const LocationController = {
-  // Get My Location
-  // GET /locations/me
+  // My Location
 
   getMyLocation: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
-    const location = await getMyLocationFromDB({
+    const location = await LocationService.getMyLocationFromDB({
       userId: user.id,
     });
 
     sendResponse(res, {
       success: true,
       message: "Location retrieved successfully",
-      statusCode: 200,
+      statusCode: httpStatus.OK,
       data: {
         location,
       },
     });
   }),
-
-  // Get Location By ID
-  // GET /locations/:locationId
-
-  getLocationById: catchAsync(async (req: Request, res: Response) => {
-    const locationId = req.params.locationId as string;
-
-    if (!locationId) {
-      throw new AppError("Location ID is required", 400);
-    }
-
-    const location = await getLocationFromDBById({
-      locationId,
-    });
-
-    sendResponse(res, {
-      success: true,
-      message: "Location retrieved successfully",
-      statusCode: 200,
-      data: {
-        location,
-      },
-    });
-  }),
-
-  // Create Location
-  // POST /locations
 
   createLocation: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
     const data = LocationCreateSchema.parse(req.body);
 
-    const location = await createLocationIntoDB({
+    const location = await LocationService.createLocationIntoDB({
       userId: user.id,
       payload: data,
     });
@@ -79,22 +40,19 @@ export const LocationController = {
     sendResponse(res, {
       success: true,
       message: "Location created successfully",
-      statusCode: 201,
+      statusCode: httpStatus.CREATED,
       data: {
         location,
       },
     });
   }),
 
-  // Update My Location
-  // PATCH /locations/me
-
   updateLocation: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
     const data = LocationUpdateSchema.parse(req.body);
 
-    const location = await updateLocationIntoDB({
+    const location = await LocationService.updateLocationIntoDB({
       userId: user.id,
       payload: data,
     });
@@ -102,51 +60,72 @@ export const LocationController = {
     sendResponse(res, {
       success: true,
       message: "Location updated successfully",
-      statusCode: 200,
+      statusCode: httpStatus.OK,
       data: {
         location,
       },
     });
   }),
 
-  // Delete My Location
-  // DELETE /locations/me
-
   deleteMyLocation: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
-    await deleteMyLocationById({
+    await LocationService.deleteMyLocationById({
       userId: user.id,
     });
 
     sendResponse(res, {
       success: true,
       message: "Location deleted successfully",
-      statusCode: 200,
+      statusCode: httpStatus.OK,
+      data: null,
     });
   }),
 
-  // Delete Location By ID
-  // DELETE /locations/:locationId
-  // Admin / Moderator
+  // Location Discovery
+
+  getLocationById: catchAsync(async (req: Request, res: Response) => {
+    const locationId = req.params.locationId as string;
+
+    if (!locationId) {
+      throw new AppError("Location ID is required", httpStatus.BAD_REQUEST);
+    }
+
+    const location = await LocationService.getLocationFromDBById({
+      locationId,
+    });
+
+    sendResponse(res, {
+      success: true,
+      message: "Location retrieved successfully",
+      statusCode: httpStatus.OK,
+      data: {
+        location,
+      },
+    });
+  }),
+
+  // Moderator / Admin
 
   deleteLocationById: catchAsync(async (req: Request, res: Response) => {
-    requireAuth(req);
+    const { user } = requireAuth(req);
 
     const locationId = req.params.locationId as string;
 
     if (!locationId) {
-      throw new AppError("Location ID is required", 400);
+      throw new AppError("Location ID is required", httpStatus.BAD_REQUEST);
     }
 
-    await deleteLocationById({
+    await LocationService.deleteLocationById({
+      userId: user.id,
       locationId,
     });
 
     sendResponse(res, {
       success: true,
       message: "Location deleted successfully",
-      statusCode: 200,
+      statusCode: httpStatus.OK,
+      data: null,
     });
   }),
 };
