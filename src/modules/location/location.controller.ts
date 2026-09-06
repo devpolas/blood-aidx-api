@@ -14,16 +14,7 @@ import {
 import { catchAsync } from "../../utils/catchAsync";
 import { AppError } from "../../utils/appError";
 import { sendResponse } from "../../utils/sendResponse";
-
-// Helpers
-
-const requireAuth = (req: Request) => {
-  if (!req.auth?.user) {
-    throw new AppError("Please login first", 401);
-  }
-
-  return req.auth.user;
-};
+import { requireAuth } from "../../middleware/auth.middleware";
 
 // Location Controller
 
@@ -32,7 +23,7 @@ export const LocationController = {
   // GET /locations/me
 
   getMyLocation: catchAsync(async (req: Request, res: Response) => {
-    const user = requireAuth(req);
+    const { user } = requireAuth(req);
 
     const location = await getMyLocationFromDB({
       userId: user.id,
@@ -76,7 +67,7 @@ export const LocationController = {
   // POST /locations
 
   createLocation: catchAsync(async (req: Request, res: Response) => {
-    const user = requireAuth(req);
+    const { user } = requireAuth(req);
 
     const data = LocationCreateSchema.parse(req.body);
 
@@ -99,7 +90,7 @@ export const LocationController = {
   // PATCH /locations/me
 
   updateLocation: catchAsync(async (req: Request, res: Response) => {
-    const user = requireAuth(req);
+    const { user } = requireAuth(req);
 
     const data = LocationUpdateSchema.parse(req.body);
 
@@ -122,7 +113,7 @@ export const LocationController = {
   // DELETE /locations/me
 
   deleteMyLocation: catchAsync(async (req: Request, res: Response) => {
-    const user = requireAuth(req);
+    const { user } = requireAuth(req);
 
     await deleteMyLocationById({
       userId: user.id,
