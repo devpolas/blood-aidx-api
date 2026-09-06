@@ -4,7 +4,7 @@ import {
   protect,
   requireActiveUser,
   requireVerifiedEmail,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
 const router: ExpressRouter = Router();
 

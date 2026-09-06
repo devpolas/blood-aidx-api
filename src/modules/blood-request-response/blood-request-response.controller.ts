@@ -7,9 +7,9 @@ import {
 } from "./blood-request-response.schema";
 
 import { BloodRequestResponseService } from "./blood-request-response.service";
-import { catchAsync } from "../utils/catchAsync";
-import { requireAuth } from "../middleware/auth.middleware";
-import { sendResponse } from "../utils/sendResponse";
+import { catchAsync } from "../../utils/catchAsync";
+import { requireAuth } from "../../middleware/auth.middleware";
+import { sendResponse } from "../../utils/sendResponse";
 
 const createResponse = catchAsync(async (req: Request, res: Response) => {
   const requestId = req.params.requestId as string;

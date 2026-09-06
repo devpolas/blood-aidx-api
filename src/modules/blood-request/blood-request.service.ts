@@ -5,8 +5,8 @@ import type {
   UpdateBloodRequestInput,
   UpdateBloodRequestStatusInput,
 } from "./blood-request.schema";
-import { db } from "../lib/db";
-import { AppError } from "../utils/appError";
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
 
 const getMyBloodRequests = async (userId: string) => {
   return db.orm.public.BloodRequest.where({

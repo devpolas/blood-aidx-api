@@ -4,8 +4,8 @@ import type {
   CreateBloodRequestResponseInput,
   UpdateBloodRequestResponseStatusInput,
 } from "./blood-request-response.schema";
-import { db } from "../lib/db";
-import { AppError } from "../utils/appError";
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
 
 const getDonorProfile = async (userId: string) => {
   const donor = await db.orm.public.DonorProfile.where({

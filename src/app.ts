@@ -19,6 +19,8 @@ import userRouter from "./modules/user/user.routes";
 import userAdminRouter from "./modules/user/admin/admin-user.route";
 import profileRouter from "./modules/profile/profile.route";
 import donorRouter from "./modules/donor/donor.route";
+import bloodRequestRouter from "./modules/blood-request/blood-request.route";
+import bloodRequestResponseRouter from "./modules/blood-request-response/blood-request-response.route";
 
 const app: Application = express();
 
@@ -102,6 +104,8 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/profiles", profileRouter);
 app.use("/api/v1/donors", donorRouter);
+app.use("/api/v1/blood-requests", bloodRequestRouter);
+app.use("/api/v1/blood-request-responses", bloodRequestResponseRouter);
 app.use("/api/v1/admin/users", userAdminRouter);
 app.use("/api/v1/locations", locationRouter);
 
