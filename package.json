@@ -64,6 +64,7 @@
     "passport-local": "^1.0.0",
     "redis": "^6.2.1",
     "slugify": "^1.6.9",
+    "socket.io": "^4.8.3",
     "stripe": "^22.6.1",
     "temporal-polyfill": "^1.0.4",
     "tsup": "^8.5.1",
