@@ -1,5 +1,7 @@
 import * as z from "zod";
 
+// Enums
+
 export const BloodGroupSchema = z.enum([
   "a_positive",
   "a_negative",
@@ -20,6 +22,8 @@ export const BloodRequestStatusSchema = z.enum([
   "cancelled",
   "expired",
 ]);
+
+// Create Blood Request
 
 export const CreateBloodRequestSchema = z
   .object({
@@ -47,6 +51,8 @@ export const CreateBloodRequestSchema = z
     }
   });
 
+// Update Blood Request
+
 export const UpdateBloodRequestSchema = z
   .object({
     locationId: z.uuid().nullable().optional(),
@@ -59,13 +65,31 @@ export const UpdateBloodRequestSchema = z
     expiresAt: z.iso.datetime().optional(),
     description: z.string().trim().max(2000).nullable().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.requiredAt !== undefined && data.expiresAt !== undefined) {
+      const requiredAt = new Date(data.requiredAt);
+      const expiresAt = new Date(data.expiresAt);
+
+      if (expiresAt <= requiredAt) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["expiresAt"],
+          message: "Expiration time must be after required time",
+        });
+      }
+    }
+  });
+
+// Update Status
 
 export const UpdateBloodRequestStatusSchema = z
   .object({
     status: BloodRequestStatusSchema,
   })
   .strict();
+
+// Response
 
 export const BloodRequestSchema = z.object({
   id: z.uuid(),
@@ -76,14 +100,16 @@ export const BloodRequestSchema = z.object({
   unitsFulfilled: z.number().int(),
   priority: PrioritySchema,
   status: BloodRequestStatusSchema,
-  patientName: z.string(),
-  hospitalName: z.string(),
-  requiredAt: z.date(),
-  expiresAt: z.date(),
+  patientName: z.string().nullable(),
+  hospitalName: z.string().nullable(),
+  requiredAt: z.string().nullable(),
+  expiresAt: z.string().nullable(),
   description: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
+
+// Types
 
 export type CreateBloodRequestInput = z.infer<typeof CreateBloodRequestSchema>;
 export type UpdateBloodRequestInput = z.infer<typeof UpdateBloodRequestSchema>;
