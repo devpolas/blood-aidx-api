@@ -4,6 +4,8 @@ import { CreateMessageSchema, UpdateMessageSchema } from "./message.schema";
 import { MessageService } from "./message.service";
 import { requireAuth } from "../../middleware/auth.middleware";
 
+// Send Message
+
 const sendMessage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { user } = requireAuth(req);
@@ -21,6 +23,8 @@ const sendMessage = async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 };
+
+// Get Conversation Messages
 
 const getConversationMessages = async (
   req: Request,
@@ -44,6 +48,8 @@ const getConversationMessages = async (
   }
 };
 
+// Get Message By ID
+
 const getMessageById = async (
   req: Request,
   res: Response,
@@ -65,6 +71,9 @@ const getMessageById = async (
     next(error);
   }
 };
+
+// Update Message
+// Sender only
 
 const updateMessage = async (
   req: Request,
@@ -92,6 +101,9 @@ const updateMessage = async (
   }
 };
 
+// Delete Message
+// Sender only
+
 const deleteMessage = async (
   req: Request,
   res: Response,
@@ -110,6 +122,33 @@ const deleteMessage = async (
     next(error);
   }
 };
+
+// Moderate Delete Message
+// Moderator / Admin
+
+const moderateDeleteMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { user } = requireAuth(req);
+
+    await MessageService.moderateDeleteMessage(
+      req.params.messageId as string,
+      user.id,
+    );
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: "Message removed by moderation",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark Message As Read
 
 const markMessageAsRead = async (
   req: Request,
@@ -134,6 +173,8 @@ const markMessageAsRead = async (
   }
 };
 
+// Mark Conversation As Read
+
 const markConversationMessagesAsRead = async (
   req: Request,
   res: Response,
@@ -156,6 +197,8 @@ const markConversationMessagesAsRead = async (
     next(error);
   }
 };
+
+// Get Unread Count
 
 const getUnreadCount = async (
   req: Request,
@@ -185,6 +228,7 @@ export const MessageController = {
   getMessageById,
   updateMessage,
   deleteMessage,
+  moderateDeleteMessage,
   markMessageAsRead,
   markConversationMessagesAsRead,
   getUnreadCount,

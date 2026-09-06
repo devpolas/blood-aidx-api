@@ -1,17 +1,19 @@
 import { Router, type Router as ExpressRouter } from "express";
 
 import { MessageController } from "./message.controller";
+
 import {
   protect,
   requireActiveUser,
   requireVerifiedEmail,
+  requireRole,
 } from "../../middleware/auth.middleware";
 
 const router: ExpressRouter = Router();
 
 router.use(protect, requireActiveUser, requireVerifiedEmail);
 
-// Conversation messages
+// Conversation Messages
 
 router.post("/", MessageController.sendMessage);
 
@@ -30,7 +32,16 @@ router.get(
   MessageController.getUnreadCount,
 );
 
-// Individual message
+// Moderation
+// Must be before /:messageId
+
+router.delete(
+  "/:messageId/moderate",
+  requireRole("moderator", "admin"),
+  MessageController.moderateDeleteMessage,
+);
+
+// Individual Message
 
 router.get("/:messageId", MessageController.getMessageById);
 router.patch("/:messageId", MessageController.updateMessage);
