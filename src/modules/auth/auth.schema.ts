@@ -12,7 +12,12 @@ export const UserRoleSchema = z.enum([
   "admin",
 ]);
 
-export const GenderSchema = z.enum(["men", "women", "unisex"]);
+export const GenderSchema = z.enum([
+  "male",
+  "female",
+  "other",
+  "prefer_not_to_say",
+]);
 
 // Public Signup Roles
 // Admin and moderator should not be selectable during signup
