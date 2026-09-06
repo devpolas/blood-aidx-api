@@ -1,6 +1,6 @@
-// Get certificate by ID
-
 import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
+import httpStatus from "http-status";
 
 const getCertificateById = async (certificateId: string) => {
   const certificate = await db.orm.public.MilestoneCertificate.where({
@@ -8,13 +8,11 @@ const getCertificateById = async (certificateId: string) => {
   }).first();
 
   if (!certificate) {
-    throw new Error("Certificate not found");
+    throw new AppError("Certificate not found", httpStatus.NOT_FOUND);
   }
 
   return certificate;
 };
-
-// Get certificate by public number
 
 const getCertificateByNumber = async (certificateNo: string) => {
   const certificate = await db.orm.public.MilestoneCertificate.where({
@@ -22,18 +20,32 @@ const getCertificateByNumber = async (certificateNo: string) => {
   }).first();
 
   if (!certificate) {
-    throw new Error("Certificate not found");
+    throw new AppError("Certificate not found", httpStatus.NOT_FOUND);
   }
 
   return certificate;
 };
 
-// Get user's certificates
+const getUserMilestone = async (userMilestoneId: string) => {
+  const userMilestone = await db.orm.public.UserMilestone.where({
+    id: userMilestoneId,
+  }).first();
+
+  if (!userMilestone) {
+    throw new AppError("Milestone achievement not found", httpStatus.NOT_FOUND);
+  }
+
+  return userMilestone;
+};
 
 const getMyCertificates = async (userId: string) => {
   const userMilestones = await db.orm.public.UserMilestone.where({
     userId,
   }).all();
+
+  if (userMilestones.length === 0) {
+    return [];
+  }
 
   const certificates = await Promise.all(
     userMilestones.map((userMilestone) =>
@@ -49,62 +61,49 @@ const getMyCertificates = async (userId: string) => {
   );
 };
 
-// Get user's certificate by ID
-
 const getMyCertificateById = async (userId: string, certificateId: string) => {
   const certificate = await getCertificateById(certificateId);
 
-  const userMilestone = await db.orm.public.UserMilestone.where({
-    id: certificate.userMilestoneId,
-  }).first();
-
-  if (!userMilestone) {
-    throw new Error("Milestone achievement not found");
-  }
+  const userMilestone = await getUserMilestone(certificate.userMilestoneId);
 
   if (userMilestone.userId !== userId) {
-    throw new Error("You cannot access this certificate");
+    throw new AppError(
+      "You cannot access this certificate",
+      httpStatus.FORBIDDEN,
+    );
   }
 
   return certificate;
 };
 
-// Public verification
-
 const verifyCertificate = async (certificateNumber: string) => {
   const certificate = await getCertificateByNumber(certificateNumber);
 
-  const userMilestone = await db.orm.public.UserMilestone.where({
-    id: certificate.userMilestoneId,
-  }).first();
+  const userMilestone = await getUserMilestone(certificate.userMilestoneId);
 
-  if (!userMilestone) {
-    throw new Error("Certificate achievement record not found");
-  }
+  const [milestone, user] = await Promise.all([
+    db.orm.public.DonationMilestone.where({
+      id: userMilestone.milestoneId,
+    }).first(),
 
-  const milestone = await db.orm.public.DonationMilestone.where({
-    id: userMilestone.milestoneId,
-  }).first();
+    db.orm.public.User.where({
+      id: userMilestone.userId,
+    }).first(),
+  ]);
 
   if (!milestone) {
-    throw new Error("Milestone not found");
+    throw new AppError("Milestone not found", httpStatus.NOT_FOUND);
   }
-
-  const user = await db.orm.public.User.where({
-    id: userMilestone.userId,
-  }).first();
 
   if (!user) {
-    throw new Error("Certificate owner not found");
+    throw new AppError("Certificate owner not found", httpStatus.NOT_FOUND);
   }
-
-  // Public verification DTO
-  // Don't expose email, phone, etc.
 
   return {
     valid: true,
     certificateNumber: certificate.certificateNo,
     issuedAt: certificate.issuedAt,
+
     milestone: {
       id: milestone.id,
       name: milestone.name,
@@ -120,8 +119,6 @@ const verifyCertificate = async (certificateNumber: string) => {
 };
 
 export const CertificateService = {
-  getCertificateById,
-  getCertificateByNumber,
   getMyCertificates,
   getMyCertificateById,
   verifyCertificate,

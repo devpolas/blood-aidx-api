@@ -1,21 +1,19 @@
 import type { Request, Response } from "express";
+
 import { CertificateService } from "./certificate.service";
 import { requireAuth } from "../../middleware/auth.middleware";
-
-// My Certificates
+import httpStatus from "http-status";
 
 const getMyCertificates = async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
   const certificates = await CertificateService.getMyCertificates(user.id);
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     data: certificates,
   });
 };
-
-// My Certificate
 
 const getMyCertificateById = async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
@@ -25,20 +23,18 @@ const getMyCertificateById = async (req: Request, res: Response) => {
     req.params.certificateId as string,
   );
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     data: certificate,
   });
 };
-
-// Public certificate verification
 
 const verifyCertificate = async (req: Request, res: Response) => {
   const result = await CertificateService.verifyCertificate(
     req.params.certificateNumber as string,
   );
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     data: result,
   });

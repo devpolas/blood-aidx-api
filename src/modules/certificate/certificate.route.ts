@@ -1,5 +1,7 @@
 import { Router, type Router as ExpressRouter } from "express";
+
 import { CertificateController } from "./certificate.controller";
+
 import {
   protect,
   requireActiveUser,
@@ -15,22 +17,10 @@ router.get(
   CertificateController.verifyCertificate,
 );
 
-// Current User
+// Protected
 
-router.get(
-  "/me",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  CertificateController.getMyCertificates,
-);
-
-router.get(
-  "/me/:certificateId",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  CertificateController.getMyCertificateById,
-);
+router.use(protect, requireActiveUser, requireVerifiedEmail);
+router.get("/me", CertificateController.getMyCertificates);
+router.get("/me/:certificateId", CertificateController.getMyCertificateById);
 
 export default router;
