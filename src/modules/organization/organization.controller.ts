@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+
 import httpStatus from "http-status";
 
 import {
@@ -8,7 +9,9 @@ import {
   UpdateOrganizationSchema,
   UpdateOrganizationStatusSchema,
 } from "./organization.schema";
+
 import { OrganizationService } from "./organization.service";
+
 import { requireAuth } from "../../middleware/auth.middleware";
 
 const getMyOrganizations = async (
@@ -122,12 +125,12 @@ const updateOrganizationStatus = async (
   try {
     const { user } = requireAuth(req);
 
-    const { status } = UpdateOrganizationStatusSchema.parse(req.body);
+    const data = UpdateOrganizationStatusSchema.parse(req.body);
 
     const result = await OrganizationService.updateOrganizationStatus(
       req.params.organizationId as string,
-      status,
       user.id,
+      data,
     );
 
     res.status(httpStatus.OK).json({
