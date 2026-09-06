@@ -17,16 +17,30 @@ const getMyProfile = async (userId: string) => {
   return profile;
 };
 
-const createMyProfile = async (userId: string, data: UpdateProfileInput) => {
+const upsertMyProfile = async (userId: string, data: UpdateProfileInput) => {
   const existingProfile = await db.orm.public.UserProfile.where({
     userId,
   }).first();
 
   if (existingProfile) {
-    throw new AppError("Profile already exists", httpStatus.CONFLICT);
+    const updateData = {
+      ...(data.phone !== undefined && {
+        phone: data.phone,
+      }),
+      ...(data.dateOfBirth !== undefined && {
+        dateOfBirth: data.dateOfBirth,
+      }),
+      ...(data.bio !== undefined && {
+        bio: data.bio,
+      }),
+    };
+
+    return db.orm.public.UserProfile.where({
+      userId,
+    }).update(updateData);
   }
 
-  const profile = await db.orm.public.UserProfile.create({
+  return db.orm.public.UserProfile.create({
     userId,
     ...(data.phone !== undefined && {
       phone: data.phone,
@@ -38,44 +52,14 @@ const createMyProfile = async (userId: string, data: UpdateProfileInput) => {
       bio: data.bio,
     }),
   });
-
-  return profile;
-};
-
-const updateMyProfile = async (userId: string, data: UpdateProfileInput) => {
-  const existingProfile = await db.orm.public.UserProfile.where({
-    userId,
-  }).first();
-
-  if (!existingProfile) {
-    throw new AppError("Profile not found", httpStatus.NOT_FOUND);
-  }
-
-  const updateData = {
-    ...(data.phone !== undefined && {
-      phone: data.phone,
-    }),
-    ...(data.dateOfBirth !== undefined && {
-      dateOfBirth: data.dateOfBirth,
-    }),
-    ...(data.bio !== undefined && {
-      bio: data.bio,
-    }),
-  };
-
-  const updatedProfile = await db.orm.public.UserProfile.where({
-    userId,
-  }).update(updateData);
-
-  return updatedProfile;
 };
 
 const deleteMyProfile = async (userId: string) => {
-  const existingProfile = await db.orm.public.UserProfile.where({
+  const profile = await db.orm.public.UserProfile.where({
     userId,
   }).first();
 
-  if (!existingProfile) {
+  if (!profile) {
     throw new AppError("Profile not found", httpStatus.NOT_FOUND);
   }
 
@@ -88,7 +72,6 @@ const deleteMyProfile = async (userId: string) => {
 
 export const ProfileService = {
   getMyProfile,
-  createMyProfile,
-  updateMyProfile,
+  upsertMyProfile,
   deleteMyProfile,
 };

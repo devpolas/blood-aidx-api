@@ -6,22 +6,13 @@ import { protect, requireActiveUser } from "../../middleware/auth.middleware";
 
 const router: ExpressRouter = Router();
 
-// My Profile
-
 router.get("/me", protect, requireActiveUser, ProfileController.getMyProfile);
 
-router.post(
+router.put(
   "/me",
   protect,
   requireActiveUser,
-  ProfileController.createMyProfile,
-);
-
-router.patch(
-  "/me",
-  protect,
-  requireActiveUser,
-  ProfileController.updateMyProfile,
+  ProfileController.upsertMyProfile,
 );
 
 router.delete(
