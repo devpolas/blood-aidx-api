@@ -10,10 +10,13 @@ import config from "./config";
 import notFound from "./middleware/absent.middleware";
 import globalErrorController from "./middleware/error.middleware";
 import { sendResponse } from "./utils/sendResponse";
-import authRouter from "./modules/auth/auth.routes";
-import locationRouter from "./modules/location/location.routes";
 import "temporal-polyfill/full/global";
 import "./modules/auth/passport/local.strategy";
+
+import authRouter from "./modules/auth/auth.routes";
+import locationRouter from "./modules/location/location.routes";
+import userRouter from "./modules/user/user.routes";
+import userAdminRouter from "./modules/user/admin//admin-user.route";
 
 const app: Application = express();
 
@@ -94,7 +97,9 @@ app.get("/version", (_req: Request, res: Response) => {
 });
 
 app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/location", locationRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/admin/users", userAdminRouter);
+app.use("/api/v1/locations", locationRouter);
 
 app.use(notFound);
 app.use(globalErrorController);
