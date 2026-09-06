@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+
 import httpStatus from "http-status";
 
 import {
@@ -7,13 +8,26 @@ import {
 } from "./blood-request-response.schema";
 
 import { BloodRequestResponseService } from "./blood-request-response.service";
-import { catchAsync } from "../../utils/catchAsync";
+
 import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 
+// Create Response
+
 const createResponse = catchAsync(async (req: Request, res: Response) => {
-  const requestId = req.params.requestId as string;
   const { user } = requireAuth(req);
+
+  const requestId = req.params.requestId as string;
+
+  if (!requestId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Blood request ID is required",
+      data: null,
+    });
+  }
 
   const data = CreateBloodRequestResponseSchema.parse(req.body);
 
@@ -31,6 +45,8 @@ const createResponse = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Get My Responses
+
 const getMyResponses = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
@@ -44,10 +60,22 @@ const getMyResponses = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Get Responses For Request
+
 const getResponsesForRequest = catchAsync(
   async (req: Request, res: Response) => {
-    const requestId = req.params.requestId as string;
     const { user } = requireAuth(req);
+
+    const requestId = req.params.requestId as string;
+
+    if (!requestId) {
+      return sendResponse(res, {
+        statusCode: httpStatus.BAD_REQUEST,
+        success: false,
+        message: "Blood request ID is required",
+        data: null,
+      });
+    }
 
     const responses = await BloodRequestResponseService.getResponsesForRequest(
       user.id,
@@ -63,9 +91,21 @@ const getResponsesForRequest = catchAsync(
   },
 );
 
+// Get Response By ID
+
 const getResponseById = catchAsync(async (req: Request, res: Response) => {
-  const responseId = req.params.responseId as string;
   const { user } = requireAuth(req);
+
+  const responseId = req.params.responseId as string;
+
+  if (!responseId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Response ID is required",
+      data: null,
+    });
+  }
 
   const response = await BloodRequestResponseService.getResponseByIdForUser(
     user.id,
@@ -80,9 +120,21 @@ const getResponseById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Update Response Status
+
 const updateResponseStatus = catchAsync(async (req: Request, res: Response) => {
-  const responseId = req.params.responseId as string;
   const { user } = requireAuth(req);
+
+  const responseId = req.params.responseId as string;
+
+  if (!responseId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Response ID is required",
+      data: null,
+    });
+  }
 
   const data = UpdateBloodRequestResponseStatusSchema.parse(req.body);
 
@@ -100,9 +152,21 @@ const updateResponseStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Cancel My Response
+
 const cancelMyResponse = catchAsync(async (req: Request, res: Response) => {
-  const responseId = req.params.responseId as string;
   const { user } = requireAuth(req);
+
+  const responseId = req.params.responseId as string;
+
+  if (!responseId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Response ID is required",
+      data: null,
+    });
+  }
 
   const response = await BloodRequestResponseService.cancelMyResponse(
     user.id,
@@ -117,9 +181,21 @@ const cancelMyResponse = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Delete My Response
+
 const deleteMyResponse = catchAsync(async (req: Request, res: Response) => {
-  const responseId = req.params.responseId as string;
   const { user } = requireAuth(req);
+
+  const responseId = req.params.responseId as string;
+
+  if (!responseId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Response ID is required",
+      data: null,
+    });
+  }
 
   await BloodRequestResponseService.deleteMyResponse(user.id, responseId);
 
@@ -130,6 +206,8 @@ const deleteMyResponse = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
+
+// Export
 
 export const BloodRequestResponseController = {
   createResponse,
