@@ -1,12 +1,15 @@
 import type { Request, Response } from "express";
+
 import httpStatus from "http-status";
 
 import { DonorService } from "./donor.service";
 import { UpdateDonorProfileSchema } from "./donor.schema";
 
+import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import { requireAuth } from "../../middleware/auth.middleware";
+
+// My Donor Profile
 
 const getMyDonorProfile = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
@@ -49,10 +52,12 @@ const deleteMyDonorProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getDonorById = catchAsync(async (req: Request, res: Response) => {
-  const donorId = req.params.donorId as string;
+// Donor Discovery
 
-  const donor = await DonorService.getDonorById(donorId);
+const getDonorById = catchAsync(async (req: Request, res: Response) => {
+  const donorId = req.params.donorId;
+
+  const donor = await DonorService.getDonorById(donorId as string);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -62,8 +67,10 @@ const getDonorById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getDonors = catchAsync(async (_req: Request, res: Response) => {
-  const donors = await DonorService.getDonors();
+const getDonors = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+
+  const donors = await DonorService.getDonors(user.id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -73,10 +80,58 @@ const getDonors = catchAsync(async (_req: Request, res: Response) => {
   });
 });
 
+// Moderator / Admin
+
+const updateDonorProfileById = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
+
+    const donorId = req.params.donorId as string;
+
+    const data = UpdateDonorProfileSchema.parse(req.body);
+
+    const donor = await DonorService.updateDonorProfileById(
+      user.id,
+      donorId,
+      data,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Donor profile updated successfully",
+      data: donor,
+    });
+  },
+);
+
+const deleteDonorProfileById = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
+
+    const donorId = req.params.donorId as string;
+
+    await DonorService.deleteDonorProfileById(user.id, donorId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Donor profile deleted successfully",
+      data: null,
+    });
+  },
+);
+
+// Export
+
 export const DonorController = {
   getMyDonorProfile,
   upsertMyDonorProfile,
   deleteMyDonorProfile,
+
   getDonorById,
   getDonors,
+
+  updateDonorProfileById,
+  deleteDonorProfileById,
 };

@@ -20,9 +20,7 @@ export const DonorAvailabilitySchema = z.enum([
 export const UpdateDonorProfileSchema = z
   .object({
     bloodGroup: BloodGroupSchema.optional(),
-
     availability: DonorAvailabilitySchema.optional(),
-
     lastDonationAt: z.iso.datetime().nullable().optional(),
   })
   .strict();
@@ -32,15 +30,10 @@ export const DonorProfileSchema = z.object({
   userId: z.uuid(),
 
   bloodGroup: BloodGroupSchema,
-
   availability: DonorAvailabilitySchema,
-
   lastDonationAt: z.string().nullable(),
-
   totalDonations: z.number(),
-
   isEligible: z.boolean(),
-
   eligibilityCheckedAt: z.string().nullable(),
 
   createdAt: z.date(),
@@ -48,5 +41,4 @@ export const DonorProfileSchema = z.object({
 });
 
 export type UpdateDonorProfileInput = z.infer<typeof UpdateDonorProfileSchema>;
-
 export type DonorProfileResponse = z.infer<typeof DonorProfileSchema>;
