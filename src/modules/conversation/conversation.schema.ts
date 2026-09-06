@@ -13,7 +13,6 @@ export const ConversationTypeSchema = z.enum([
 export const CreateConversationSchema = z
   .object({
     type: ConversationTypeSchema,
-
     participantIds: z.array(z.uuid()).min(1).max(50),
   })
   .strict()

@@ -8,7 +8,21 @@ import type {
   CreateConversationInput,
 } from "./conversation.schema";
 
-// Get Conversation
+// User
+
+const getUserById = async (userId: string) => {
+  const user = await db.orm.public.User.where({
+    id: userId,
+  }).first();
+
+  if (!user) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+
+  return user;
+};
+
+// Conversation
 
 const getConversation = async (conversationId: string) => {
   const conversation = await db.orm.public.Conversation.where({
@@ -22,7 +36,7 @@ const getConversation = async (conversationId: string) => {
   return conversation;
 };
 
-// Get Participant
+// Participant
 
 const getParticipant = async (conversationId: string, userId: string) => {
   return db.orm.public.ConversationParticipant.where({
@@ -30,8 +44,6 @@ const getParticipant = async (conversationId: string, userId: string) => {
     userId,
   }).first();
 };
-
-// Require Participant
 
 const requireParticipant = async (conversationId: string, userId: string) => {
   const participant = await getParticipant(conversationId, userId);
@@ -52,9 +64,9 @@ const validateUsers = async (userIds: string[]) => {
   const uniqueIds = [...new Set(userIds)];
 
   const users = await Promise.all(
-    uniqueIds.map((id) =>
+    uniqueIds.map((userId) =>
       db.orm.public.User.where({
-        id,
+        id: userId,
       }).first(),
     ),
   );
@@ -75,13 +87,16 @@ const createConversation = async (
   creatorId: string,
   data: CreateConversationInput,
 ) => {
-  // Prepare participants
   const participantIds = [creatorId, ...data.participantIds];
+
   const uniqueParticipantIds = [...new Set(participantIds)];
 
+  // Validate all users in parallel.
   await validateUsers(uniqueParticipantIds);
 
+  // ==========================================================
   // Direct Conversation
+  // ==========================================================
 
   if (data.type === "direct") {
     if (uniqueParticipantIds.length !== 2) {
@@ -91,7 +106,7 @@ const createConversation = async (
       );
     }
 
-    const [, otherUserId] = uniqueParticipantIds;
+    const otherUserId = uniqueParticipantIds.find((id) => id !== creatorId);
 
     if (!otherUserId) {
       throw new AppError(
@@ -105,6 +120,7 @@ const createConversation = async (
         userId: creatorId,
       }).all();
 
+    // Check possible direct conversations in parallel.
     const existingConversations = await Promise.all(
       existingParticipants.map(async (participant) => {
         const conversation = await db.orm.public.Conversation.where({
@@ -117,15 +133,11 @@ const createConversation = async (
         }
 
         const otherParticipant = await getParticipant(
-          participant.conversationId,
+          conversation.id,
           otherUserId,
         );
 
-        if (!otherParticipant) {
-          return undefined;
-        }
-
-        return conversation;
+        return otherParticipant ? conversation : undefined;
       }),
     );
 
@@ -138,13 +150,17 @@ const createConversation = async (
     }
   }
 
+  // ==========================================================
   // Create Conversation
+  // ==========================================================
 
   const conversation = await db.orm.public.Conversation.create({
     type: data.type,
   });
 
+  // ==========================================================
   // Create Participants
+  // ==========================================================
 
   const joinedAt = new Date().toISOString();
 
@@ -164,9 +180,15 @@ const createConversation = async (
 // Get My Conversations
 
 const getMyConversations = async (userId: string) => {
+  await getUserById(userId);
+
   const participants = await db.orm.public.ConversationParticipant.where({
     userId,
   }).all();
+
+  if (participants.length === 0) {
+    return [];
+  }
 
   const conversations = await Promise.all(
     participants.map((participant) =>
@@ -174,7 +196,9 @@ const getMyConversations = async (userId: string) => {
     ),
   );
 
-  return conversations;
+  return conversations.toSorted((a, b) =>
+    Temporal.Instant.compare(b.updatedAt, a.updatedAt),
+  );
 };
 
 // Get Conversation For User
@@ -202,7 +226,8 @@ const addParticipant = async (
 
   await requireParticipant(conversationId, requesterId);
 
-  // Direct conversations can never have additional users.
+  // Direct conversations cannot have more participants.
+
   if (conversation.type === "direct") {
     throw new AppError(
       "Participants cannot be added to a direct conversation",
@@ -210,19 +235,28 @@ const addParticipant = async (
     );
   }
 
-  const user = await db.orm.public.User.where({
-    id: data.userId,
-  }).first();
+  // Cannot add yourself.
 
-  if (!user) {
-    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  if (data.userId === requesterId) {
+    throw new AppError(
+      "You are already a participant of this conversation",
+      httpStatus.BAD_REQUEST,
+    );
   }
+
+  // Validate target user.
+
+  await getUserById(data.userId);
+
+  // Prevent duplicate participant.
 
   const existingParticipant = await getParticipant(conversationId, data.userId);
 
   if (existingParticipant) {
     throw new AppError("User is already a participant", httpStatus.CONFLICT);
   }
+
+  // Add participant.
 
   return db.orm.public.ConversationParticipant.create({
     conversationId,
@@ -238,9 +272,11 @@ const removeParticipant = async (
   requesterId: string,
   userId: string,
 ) => {
-  await getConversation(conversationId);
+  const conversation = await getConversation(conversationId);
 
   await requireParticipant(conversationId, requesterId);
+
+  // Cannot remove yourself.
 
   if (userId === requesterId) {
     throw new AppError(
@@ -249,11 +285,24 @@ const removeParticipant = async (
     );
   }
 
+  // Direct conversations cannot remove participants.
+
+  if (conversation.type === "direct") {
+    throw new AppError(
+      "Participants cannot be removed from a direct conversation",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  // Find participant.
+
   const participant = await getParticipant(conversationId, userId);
 
   if (!participant) {
     throw new AppError("Participant not found", httpStatus.NOT_FOUND);
   }
+
+  // Remove participant.
 
   await db.orm.public.ConversationParticipant.where({
     id: participant.id,

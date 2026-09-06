@@ -1,12 +1,17 @@
 import type { NextFunction, Request, Response } from "express";
+
 import httpStatus from "http-status";
+
 import {
   AddParticipantSchema,
   CreateConversationSchema,
 } from "./conversation.schema";
 
 import { ConversationService } from "./conversation.service";
+
 import { requireAuth } from "../../middleware/auth.middleware";
+
+// Create Conversation
 
 const createConversation = async (
   req: Request,
@@ -30,6 +35,8 @@ const createConversation = async (
   }
 };
 
+// Get My Conversations
+
 const getMyConversations = async (
   req: Request,
   res: Response,
@@ -48,6 +55,8 @@ const getMyConversations = async (
     next(error);
   }
 };
+
+// Get Conversation
 
 const getConversation = async (
   req: Request,
@@ -70,6 +79,8 @@ const getConversation = async (
     next(error);
   }
 };
+
+// Add Participant
 
 const addParticipant = async (
   req: Request,
@@ -97,6 +108,8 @@ const addParticipant = async (
   }
 };
 
+// Remove Participant
+
 const removeParticipant = async (
   req: Request,
   res: Response,
@@ -120,6 +133,8 @@ const removeParticipant = async (
   }
 };
 
+// Leave Conversation
+
 const leaveConversation = async (
   req: Request,
   res: Response,
@@ -141,6 +156,8 @@ const leaveConversation = async (
     next(error);
   }
 };
+
+// Export
 
 export const ConversationController = {
   createConversation,
