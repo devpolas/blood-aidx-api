@@ -12,6 +12,8 @@ import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 
+// Donor
+
 const createDonation = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
@@ -40,20 +42,10 @@ const getMyDonations = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getDonations = catchAsync(async (_req: Request, res: Response) => {
-  const donations = await DonationService.getDonations();
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Donations retrieved successfully",
-    data: donations,
-  });
-});
-
 const getDonationById = catchAsync(async (req: Request, res: Response) => {
-  const donationId = req.params.donationId as string;
   const { user } = requireAuth(req);
+
+  const donationId = req.params.donationId as string;
 
   const donation = await DonationService.getDonationByIdForUser(
     user.id,
@@ -68,10 +60,40 @@ const getDonationById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const verifyDonation = catchAsync(async (req: Request, res: Response) => {
+const cancelMyDonation = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+
   const donationId = req.params.donationId as string;
 
+  const donation = await DonationService.cancelMyDonation(user.id, donationId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Donation cancelled successfully",
+    data: donation,
+  });
+});
+
+// Verifier / Moderator / Admin
+
+const getDonations = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
+
+  const donations = await DonationService.getDonations(user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Donations retrieved successfully",
+    data: donations,
+  });
+});
+
+const verifyDonation = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+
+  const donationId = req.params.donationId as string;
 
   const data = UpdateDonationStatusSchema.parse(req.body);
 
@@ -89,26 +111,12 @@ const verifyDonation = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const cancelMyDonation = catchAsync(async (req: Request, res: Response) => {
-  const donationId = req.params.donationId as string;
-
-  const { user } = requireAuth(req);
-
-  const donation = await DonationService.cancelMyDonation(user.id, donationId);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Donation cancelled successfully",
-    data: donation,
-  });
-});
-
 export const DonationController = {
   createDonation,
   getMyDonations,
-  getDonations,
   getDonationById,
-  verifyDonation,
   cancelMyDonation,
+
+  getDonations,
+  verifyDonation,
 };

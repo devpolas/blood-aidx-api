@@ -1,65 +1,47 @@
 import { Router, type Router as ExpressRouter } from "express";
+
 import {
   protect,
   requireActiveUser,
   requireVerifiedEmail,
-  requireRole,
 } from "../../middleware/auth.middleware";
+
 import { DonationController } from "./donation.controller";
 
 const router: ExpressRouter = Router();
 
-const requireVerifier = requireRole(
-  "hospital",
-  "blood_bank",
-  "moderator",
-  "admin",
-);
+// Authentication
 
-// Authenticated donor
+router.use(protect, requireActiveUser);
 
-router.get(
-  "/me",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  DonationController.getMyDonations,
-);
+// My Donations
 
-router.post(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  DonationController.createDonation,
-);
+router.get("/me", requireVerifiedEmail, DonationController.getMyDonations);
+
+router.post("/", requireVerifiedEmail, DonationController.createDonation);
 
 router.post(
   "/:donationId/cancel",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
   DonationController.cancelMyDonation,
 );
 
-// Individual donation
+// Donation Management
 
+// Hospital / Blood Bank / Moderator / Admin
+router.get("/", requireVerifiedEmail, DonationController.getDonations);
+
+// Donor can only access their own donation
 router.get(
   "/:donationId",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
   DonationController.getDonationById,
 );
 
-// Verification
-
+// Hospital / Blood Bank / Moderator / Admin
 router.patch(
   "/:donationId/verify",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
-  requireVerifier,
   DonationController.verifyDonation,
 );
 

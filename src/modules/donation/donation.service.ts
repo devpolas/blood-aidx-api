@@ -8,6 +8,51 @@ import type {
   UpdateDonationStatusInput,
 } from "./donation.schema";
 
+// Authorization
+
+type ActorRole = "donor" | "hospital" | "blood_bank" | "moderator" | "admin";
+
+const getActor = async (userId: string) => {
+  const actor = await db.orm.public.User.where({
+    id: userId,
+  }).first();
+
+  if (!actor) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+
+  return actor;
+};
+
+const requireDonor = async (userId: string) => {
+  const actor = await getActor(userId);
+
+  if ((actor.role as ActorRole) !== "donor") {
+    throw new AppError("Donor access required", httpStatus.FORBIDDEN);
+  }
+
+  return actor;
+};
+
+const requireVerifier = async (userId: string) => {
+  const actor = await getActor(userId);
+
+  const verifierRoles: ActorRole[] = [
+    "hospital",
+    "blood_bank",
+    "moderator",
+    "admin",
+  ];
+
+  if (!verifierRoles.includes(actor.role as ActorRole)) {
+    throw new AppError("Verifier access required", httpStatus.FORBIDDEN);
+  }
+
+  return actor;
+};
+
+// Internal Queries
+
 const getDonorProfile = async (userId: string) => {
   const donor = await db.orm.public.DonorProfile.where({
     userId,
@@ -32,7 +77,11 @@ const getDonationById = async (donationId: string) => {
   return donation;
 };
 
+// Create Donation
+
 const createDonation = async (userId: string, data: CreateDonationInput) => {
+  await requireDonor(userId);
+
   const donor = await getDonorProfile(userId);
 
   if (donor.availability !== "available") {
@@ -43,11 +92,8 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
   }
 
   // Optional blood request
-
-  let request = null;
-
   if (data.requestId) {
-    request = await db.orm.public.BloodRequest.where({
+    const request = await db.orm.public.BloodRequest.where({
       id: data.requestId,
     }).first();
 
@@ -130,8 +176,6 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
     }
   }
 
-  // Create donation
-
   const donationNumber = `DON-${crypto
     .randomUUID()
     .replace(/-/g, "")
@@ -154,13 +198,9 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
     }),
 
     donationNumber,
-
     bloodGroup: donor.bloodGroup,
-
     units: data.units,
-
     donatedAt: data.donatedAt,
-
     status: "pending",
 
     ...(data.notes !== undefined && {
@@ -169,7 +209,11 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
   });
 };
 
+// Own Donations
+
 const getMyDonations = async (userId: string) => {
+  await requireDonor(userId);
+
   const donor = await getDonorProfile(userId);
 
   return db.orm.public.BloodDonation.where({
@@ -178,8 +222,9 @@ const getMyDonations = async (userId: string) => {
 };
 
 const getDonationByIdForUser = async (userId: string, donationId: string) => {
-  const donation = await getDonationById(donationId);
+  await requireDonor(userId);
 
+  const donation = await getDonationById(donationId);
   const donor = await getDonorProfile(userId);
 
   if (donation.donorId !== donor.id) {
@@ -192,15 +237,24 @@ const getDonationByIdForUser = async (userId: string, donationId: string) => {
   return donation;
 };
 
-const getDonations = async () => {
+// Donation Management
+// Hospital / Blood Bank / Moderator / Admin
+
+const getDonations = async (userId: string) => {
+  await requireVerifier(userId);
+
   return db.orm.public.BloodDonation.all();
 };
+
+// Verify Donation
 
 const verifyDonation = async (
   verifierId: string,
   donationId: string,
   data: UpdateDonationStatusInput,
 ) => {
+  await requireVerifier(verifierId);
+
   const donation = await getDonationById(donationId);
 
   if (
@@ -214,83 +268,73 @@ const verifyDonation = async (
     );
   }
 
-  if (data.status === "verified") {
-    return db.transaction(async (tx) => {
-      const updatedDonation = await tx.orm.public.BloodDonation.where({
-        id: donationId,
-      }).update({
-        status: "verified",
+  return db.transaction(async (tx) => {
+    const updatedDonation = await tx.orm.public.BloodDonation.where({
+      id: donationId,
+    }).update({
+      status: data.status,
+
+      ...(data.status === "verified" && {
         verifiedById: verifierId,
         verifiedAt: new Date().toISOString(),
+      }),
 
-        ...(data.verificationNotes !== undefined && {
-          verificationNotes: data.verificationNotes,
-        }),
-      });
+      ...(data.verificationNotes !== undefined && {
+        verificationNotes: data.verificationNotes,
+      }),
+    });
 
-      if (donation.requestId) {
-        const request = await tx.orm.public.BloodRequest.where({
-          id: donation.requestId,
-        }).first();
+    if (data.status === "verified" && donation.requestId) {
+      const request = await tx.orm.public.BloodRequest.where({
+        id: donation.requestId,
+      }).first();
 
-        if (!request) {
-          throw new AppError(
-            "Associated blood request not found",
-            httpStatus.NOT_FOUND,
-          );
-        }
-
-        const newFulfilledUnits = request.unitsFulfilled + donation.units;
-
-        const newStatus =
-          newFulfilledUnits >= request.unitsRequired
-            ? "fulfilled"
-            : "partially_fulfilled";
-
-        await tx.orm.public.BloodRequest.where({
-          id: donation.requestId,
-        }).update({
-          unitsFulfilled: newFulfilledUnits,
-          status: newStatus,
-        });
-
-        const response = await tx.orm.public.BloodRequestResponse.where({
-          requestId: donation.requestId,
-          donorId: donation.donorId,
-        }).first();
-
-        if (response && response.status === "accepted") {
-          await tx.orm.public.BloodRequestResponse.where({
-            id: response.id,
-          }).update({
-            status: "completed",
-            completedAt: new Date().toISOString(),
-          });
-        }
+      if (!request) {
+        throw new AppError(
+          "Associated blood request not found",
+          httpStatus.NOT_FOUND,
+        );
       }
 
-      return updatedDonation;
-    });
-  }
+      const newFulfilledUnits = request.unitsFulfilled + donation.units;
 
-  return db.orm.public.BloodDonation.where({
-    id: donationId,
-  }).update({
-    status: data.status,
+      const newStatus =
+        newFulfilledUnits >= request.unitsRequired
+          ? "fulfilled"
+          : "partially_fulfilled";
 
-    verifiedById: verifierId,
+      await tx.orm.public.BloodRequest.where({
+        id: donation.requestId,
+      }).update({
+        unitsFulfilled: newFulfilledUnits,
+        status: newStatus,
+      });
 
-    verifiedAt: new Date().toISOString(),
+      const response = await tx.orm.public.BloodRequestResponse.where({
+        requestId: donation.requestId,
+        donorId: donation.donorId,
+      }).first();
 
-    ...(data.verificationNotes !== undefined && {
-      verificationNotes: data.verificationNotes,
-    }),
+      if (response && response.status === "accepted") {
+        await tx.orm.public.BloodRequestResponse.where({
+          id: response.id,
+        }).update({
+          status: "completed",
+          completedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    return updatedDonation;
   });
 };
 
-const cancelMyDonation = async (userId: string, donationId: string) => {
-  const donation = await getDonationById(donationId);
+// Cancel Own Donation
 
+const cancelMyDonation = async (userId: string, donationId: string) => {
+  await requireDonor(userId);
+
+  const donation = await getDonationById(donationId);
   const donor = await getDonorProfile(userId);
 
   if (donation.donorId !== donor.id) {
