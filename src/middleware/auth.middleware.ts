@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../utils/appError";
 import { getSessionByToken } from "../modules/auth/auth.service";
 import type { UserRole } from "../modules/auth/auth.schema";
+import httpStatus from "http-status";
 const SESSION_COOKIE_NAME = "session_token";
 
 const getSessionToken = (req: Request): string | null => {
@@ -132,6 +133,13 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
       next(error);
     }
   };
+};
+
+export const requireAuth = (req: Request) => {
+  if (!req.auth) {
+    throw new AppError("Authentication required", httpStatus.UNAUTHORIZED);
+  }
+  return req.auth;
 };
 
 export const requireAdmin = requireRole("admin");
