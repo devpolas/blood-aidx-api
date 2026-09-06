@@ -23,6 +23,7 @@ import bloodRequestRouter from "./modules/blood-request/blood-request.route";
 import bloodRequestResponseRouter from "./modules/blood-request-response/blood-request-response.route";
 import donationRouter from "./modules/donation/donation.route";
 import organizationRouter from "./modules/organization/organization.route";
+import milestoneRouter from "./modules/milestone/milestone.route";
 
 const app: Application = express();
 
@@ -112,6 +113,7 @@ app.use("/api/v1/donations", donationRouter);
 app.use("/api/v1/admin/users", userAdminRouter);
 app.use("/api/v1/organizations", organizationRouter);
 app.use("/api/v1/locations", locationRouter);
+app.use("/api/v1/milestones", milestoneRouter);
 
 app.use(notFound);
 app.use(globalErrorController);
