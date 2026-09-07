@@ -6,18 +6,13 @@ import { CloudinaryController } from "./upload.controller";
 const router = Router();
 
 router.post(
-  "/upload",
+  "/",
   protect,
   requireActiveUser,
   upload.single("file"),
   CloudinaryController.uploadFile,
 );
 
-router.delete(
-  "/delete",
-  protect,
-  requireActiveUser,
-  CloudinaryController.deleteFile,
-);
+router.delete("/", protect, requireActiveUser, CloudinaryController.deleteFile);
 
 export default router;
