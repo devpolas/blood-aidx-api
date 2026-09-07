@@ -24,6 +24,7 @@ export default {
     process.env.AUTH_USER_CACHE_DURATION_MINUTES,
   ),
   stripe_secret: process.env.STRIPE_SECRET as StringValue,
+  stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET as StringValue,
   website_url: process.env.WEBSITE_URL as StringValue,
   nodemailer_user: process.env.NODEMAILER_USER as StringValue,
   nodemailer_app_password: process.env.NODEMAILER_APP_PASSWORD as StringValue,
