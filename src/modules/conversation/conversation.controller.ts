@@ -1,163 +1,107 @@
-import type { NextFunction, Request, Response } from "express";
-
+import type { Request, Response } from "express";
 import httpStatus from "http-status";
 
 import {
   AddParticipantSchema,
   CreateConversationSchema,
 } from "./conversation.schema";
-
 import { ConversationService } from "./conversation.service";
 
 import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
 
-// Create Conversation
+const createConversation = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+  const data = CreateConversationSchema.parse(req.body);
 
-const createConversation = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+  const result = await ConversationService.createConversation(user.id, data);
 
-    const data = CreateConversationSchema.parse(req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Conversation created successfully",
+    data: result,
+  });
+});
 
-    const result = await ConversationService.createConversation(user.id, data);
+const getMyConversations = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    res.status(httpStatus.CREATED).json({
-      success: true,
-      message: "Conversation created successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  const result = await ConversationService.getMyConversations(user.id);
 
-// Get My Conversations
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Conversations retrieved successfully",
+    data: result,
+  });
+});
 
-const getMyConversations = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const getConversation = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const result = await ConversationService.getMyConversations(user.id);
+  const result = await ConversationService.getConversationForUser(
+    req.params.conversationId as string,
+    user.id,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Conversation retrieved successfully",
+    data: result,
+  });
+});
 
-// Get Conversation
+const addParticipant = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+  const data = AddParticipantSchema.parse(req.body);
 
-const getConversation = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+  const result = await ConversationService.addParticipant(
+    req.params.conversationId as string,
+    user.id,
+    data,
+  );
 
-    const result = await ConversationService.getConversationForUser(
-      req.params.conversationId as string,
-      user.id,
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Participant added successfully",
+    data: result,
+  });
+});
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const removeParticipant = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-// Add Participant
+  await ConversationService.removeParticipant(
+    req.params.conversationId as string,
+    user.id,
+    req.params.userId as string,
+  );
 
-const addParticipant = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Participant removed successfully",
+  });
+});
 
-    const data = AddParticipantSchema.parse(req.body);
+const leaveConversation = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const result = await ConversationService.addParticipant(
-      req.params.conversationId as string,
-      user.id,
-      data,
-    );
+  await ConversationService.leaveConversation(
+    req.params.conversationId as string,
+    user.id,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Participant added successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Remove Participant
-
-const removeParticipant = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
-
-    await ConversationService.removeParticipant(
-      req.params.conversationId as string,
-      user.id,
-      req.params.userId as string,
-    );
-
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Participant removed successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Leave Conversation
-
-const leaveConversation = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
-
-    await ConversationService.leaveConversation(
-      req.params.conversationId as string,
-      user.id,
-    );
-
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Left conversation successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Export
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Left conversation successfully",
+  });
+});
 
 export const ConversationController = {
   createConversation,

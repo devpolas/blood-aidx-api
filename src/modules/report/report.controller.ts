@@ -1,122 +1,99 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
+
 import httpStatus from "http-status";
+
 import { CreateReportSchema, UpdateReportStatusSchema } from "./report.schema";
+
 import { ReportService } from "./report.service";
+
 import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
 
 // Create
 
-const createReport = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const createReport = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const data = CreateReportSchema.parse(req.body);
+  const data = CreateReportSchema.parse(req.body);
 
-    const result = await ReportService.createReport(user.id, data);
+  const result = await ReportService.createReport(user.id, data);
 
-    res.status(httpStatus.CREATED).json({
-      success: true,
-      message: "Report submitted successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Report submitted successfully",
+    data: result,
+  });
+});
 
 // My reports
 
-const getMyReports = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const getMyReports = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const result = await ReportService.getMyReports(user.id);
+  const result = await ReportService.getMyReports(user.id);
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Reports retrieved successfully",
+    data: result,
+  });
+});
 
 // Get report
 
-const getReport = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { user } = requireAuth(req);
+const getReport = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const result = await ReportService.getReportForUser(
-      req.params.reportId as string,
-      user.id,
-    );
+  const result = await ReportService.getReportForUser(
+    req.params.reportId as string,
+    user.id,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Report retrieved successfully",
+    data: result,
+  });
+});
 
 // Update status
 
-const updateReportStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const updateReportStatus = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const data = UpdateReportStatusSchema.parse(req.body);
+  const data = UpdateReportStatusSchema.parse(req.body);
 
-    const result = await ReportService.updateReportStatus(
-      req.params.reportId as string,
-      user.id,
-      data,
-    );
+  const result = await ReportService.updateReportStatus(
+    req.params.reportId as string,
+    user.id,
+    data,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Report status updated successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Report status updated successfully",
+    data: result,
+  });
+});
 
 // Delete
 
-const deleteReport = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const deleteReport = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    await ReportService.deleteReport(req.params.reportId as string, user.id);
+  await ReportService.deleteReport(req.params.reportId as string, user.id);
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Report deleted successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Report deleted successfully",
+  });
+});
 
 // Export
 

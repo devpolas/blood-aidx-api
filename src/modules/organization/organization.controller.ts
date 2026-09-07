@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
 
@@ -13,116 +13,82 @@ import {
 import { OrganizationService } from "./organization.service";
 
 import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
 
-const getMyOrganizations = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const getMyOrganizations = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const result = await OrganizationService.getMyOrganizations(user.id);
+  const result = await OrganizationService.getMyOrganizations(user.id);
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organizations retrieved successfully",
+    data: result,
+  });
+});
 
-const getOrganizations = async (
-  _req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const result = await OrganizationService.getOrganizations();
+const getOrganizations = catchAsync(async (_req: Request, res: Response) => {
+  const result = await OrganizationService.getOrganizations();
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organizations retrieved successfully",
+    data: result,
+  });
+});
 
-const getOrganization = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const result = await OrganizationService.getOrganization(
-      req.params.organizationId as string,
-    );
+const getOrganization = catchAsync(async (req: Request, res: Response) => {
+  const result = await OrganizationService.getOrganization(
+    req.params.organizationId as string,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization retrieved successfully",
+    data: result,
+  });
+});
 
-const createOrganization = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const createOrganization = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const data = CreateOrganizationSchema.parse(req.body);
+  const data = CreateOrganizationSchema.parse(req.body);
 
-    const result = await OrganizationService.createOrganization(user.id, data);
+  const result = await OrganizationService.createOrganization(user.id, data);
 
-    res.status(httpStatus.CREATED).json({
-      success: true,
-      message: "Organization created successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Organization created successfully",
+    data: result,
+  });
+});
 
-const updateOrganization = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const updateOrganization = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const data = UpdateOrganizationSchema.parse(req.body);
+  const data = UpdateOrganizationSchema.parse(req.body);
 
-    const result = await OrganizationService.updateOrganization(
-      req.params.organizationId as string,
-      user.id,
-      data,
-    );
+  const result = await OrganizationService.updateOrganization(
+    req.params.organizationId as string,
+    user.id,
+    data,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Organization updated successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization updated successfully",
+    data: result,
+  });
+});
 
-const updateOrganizationStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+const updateOrganizationStatus = catchAsync(
+  async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
     const data = UpdateOrganizationStatusSchema.parse(req.body);
@@ -133,127 +99,100 @@ const updateOrganizationStatus = async (
       data,
     );
 
-    res.status(httpStatus.OK).json({
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
       success: true,
       message: "Organization status updated successfully",
       data: result,
     });
-  } catch (error) {
-    next(error);
-  }
-};
+  },
+);
 
-const deleteOrganization = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const deleteOrganization = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    await OrganizationService.deleteOrganization(
-      req.params.organizationId as string,
-      user.id,
-    );
+  await OrganizationService.deleteOrganization(
+    req.params.organizationId as string,
+    user.id,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Organization deleted successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization deleted successfully",
+  });
+});
 
-const addMember = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { user } = requireAuth(req);
+const addMember = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const data = AddOrganizationMemberSchema.parse(req.body);
+  const data = AddOrganizationMemberSchema.parse(req.body);
 
-    const result = await OrganizationService.addMember(
-      req.params.organizationId as string,
-      user.id,
-      data,
-    );
+  const result = await OrganizationService.addMember(
+    req.params.organizationId as string,
+    user.id,
+    data,
+  );
 
-    res.status(httpStatus.CREATED).json({
-      success: true,
-      message: "Organization member added successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Organization member added successfully",
+    data: result,
+  });
+});
 
-const getMembers = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { user } = requireAuth(req);
+const getMembers = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const result = await OrganizationService.getMembers(
-      req.params.organizationId as string,
-      user.id,
-    );
+  const result = await OrganizationService.getMembers(
+    req.params.organizationId as string,
+    user.id,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization members retrieved successfully",
+    data: result,
+  });
+});
 
-const updateMember = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const updateMember = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    const data = UpdateOrganizationMemberSchema.parse(req.body);
+  const data = UpdateOrganizationMemberSchema.parse(req.body);
 
-    const result = await OrganizationService.updateMember(
-      req.params.organizationId as string,
-      req.params.memberUserId as string,
-      user.id,
-      data,
-    );
+  const result = await OrganizationService.updateMember(
+    req.params.organizationId as string,
+    req.params.memberUserId as string,
+    user.id,
+    data,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Organization member updated successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization member updated successfully",
+    data: result,
+  });
+});
 
-const removeMember = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { user } = requireAuth(req);
+const removeMember = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
 
-    await OrganizationService.removeMember(
-      req.params.organizationId as string,
-      req.params.memberUserId as string,
-      user.id,
-    );
+  await OrganizationService.removeMember(
+    req.params.organizationId as string,
+    req.params.memberUserId as string,
+    user.id,
+  );
 
-    res.status(httpStatus.OK).json({
-      success: true,
-      message: "Organization member removed successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization member removed successfully",
+  });
+});
 
 export const OrganizationController = {
   getMyOrganizations,
