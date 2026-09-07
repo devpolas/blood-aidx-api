@@ -171,6 +171,30 @@ enum AuditAction {
   RESTORE = "restore"
 }
 
+enum PaymentStatus {
+  @@type("pg/text@1")
+
+  PENDING = "pending"
+  PROCESSING = "processing"
+  SUCCEEDED = "succeeded"
+  FAILED = "failed"
+  CANCELLED = "cancelled"
+  REFUNDED = "refunded"
+  PARTIALLY_REFUNDED = "partially_refunded"
+}
+
+enum PaymentType {
+  @@type("pg/text@1")
+
+  DONOR_COFFEE = "donor_coffee"
+}
+
+enum PaymentProvider {
+  @@type("pg/text@1")
+
+  STRIPE = "stripe"
+}
+
 // USER
 model User {
   id                       String                    @id @default(uuid())
@@ -229,6 +253,8 @@ model User {
   milestones               UserMilestone[]
 
   auditLogs                AuditLog[]
+
+  paymentsMade             Payment[]                 @relation("PaymentPayer")
 
   // Indexes
   @@unique([email])
@@ -381,6 +407,8 @@ model DonorProfile {
   donations            BloodDonation[]
 
   responses            BloodRequestResponse[]
+
+  paymentsReceived     Payment[]              @relation("DonorPayments")
 
   @@index([bloodGroup])
   @@index([availability])
@@ -853,4 +881,47 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Payment {
+  id                      String               @id @default(uuid())
+
+  payerId                 String
+  donorId                 String
+
+  type                    PaymentType          @default(DONOR_COFFEE)
+  provider                PaymentProvider      @default(STRIPE)
+  status                  PaymentStatus        @default(PENDING)
+
+  amount                  Int
+  currency                String               @default("usd")
+
+  stripePaymentIntentId   String?              @unique
+  stripeCheckoutSessionId String?              @unique
+  stripeCustomerId        String?
+
+  description             String?
+
+  paidAt                  TimestamptzString?
+  refundedAt              TimestamptzString?
+
+  metadata                Json?
+
+  createdAt               TimestamptzString    @default(now())
+  updatedAt               temporal.updatedAt()
+
+  payer                   User                 @relation("PaymentPayer", fields:[payerId], references:[id], onDelete: Cascade)
+
+  donor                   DonorProfile         @relation("DonorPayments", fields:[donorId], references:[id], onDelete: Cascade)
+
+  @@index([payerId])
+  @@index([donorId])
+  @@index([status])
+  @@index([type])
+  @@index([provider])
+
+  @@index([donorId, status, createdAt])
+  @@index([payerId, status, createdAt])
+
+  @@map("payments")
 }
