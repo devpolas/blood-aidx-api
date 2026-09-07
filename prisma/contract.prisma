@@ -893,14 +893,19 @@ model Payment {
   provider                PaymentProvider      @default(STRIPE)
   status                  PaymentStatus        @default(PENDING)
 
-  amount                  Int
+  // Major currency unit.
+  // Example: 10.50 USD = 10.50
+  amount                  Float
+  refundedAmount          Float                @default("0")
+
   currency                String               @default("usd")
+
+  message                 String?
+  description             String?
 
   stripePaymentIntentId   String?              @unique
   stripeCheckoutSessionId String?              @unique
   stripeCustomerId        String?
-
-  description             String?
 
   paidAt                  TimestamptzString?
   refundedAt              TimestamptzString?
@@ -919,9 +924,7 @@ model Payment {
   @@index([status])
   @@index([type])
   @@index([provider])
-
   @@index([donorId, status, createdAt])
   @@index([payerId, status, createdAt])
-
   @@map("payments")
 }

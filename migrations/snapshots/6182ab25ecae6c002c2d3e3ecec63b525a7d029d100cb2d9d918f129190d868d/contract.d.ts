@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0037a031af7d0b40003bd38caa2963276e9b7130216863ab4acf1f39498d317a'>;
+  StorageHashBase<'6182ab25ecae6c002c2d3e3ecec63b525a7d029d100cb2d9d918f129190d868d'>;
 export type ExecutionHash =
   ExecutionHashBase<'b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6'>;
 export type ProfileHash =
@@ -501,14 +501,13 @@ export type FieldOutputTypes = {
         | 'cancelled'
         | 'refunded'
         | 'partially_refunded';
-      readonly amount: CodecTypes['pg/float8@1']['output'];
-      readonly refundedAmount: CodecTypes['pg/float8@1']['output'];
+      readonly amount: CodecTypes['pg/int4@1']['output'];
       readonly currency: CodecTypes['pg/text@1']['output'];
-      readonly message: CodecTypes['pg/text@1']['output'] | null;
-      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly message: CodecTypes['pg/text@1']['output'];
       readonly stripePaymentIntentId: CodecTypes['pg/text@1']['output'] | null;
       readonly stripeCheckoutSessionId: CodecTypes['pg/text@1']['output'] | null;
       readonly stripeCustomerId: CodecTypes['pg/text@1']['output'] | null;
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly paidAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly refundedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly metadata: CodecTypes['pg/json@1']['output'] | null;
@@ -845,14 +844,13 @@ export type FieldInputTypes = {
         | 'cancelled'
         | 'refunded'
         | 'partially_refunded';
-      readonly amount: CodecTypes['pg/float8@1']['input'];
-      readonly refundedAmount: CodecTypes['pg/float8@1']['input'];
+      readonly amount: CodecTypes['pg/int4@1']['input'];
       readonly currency: CodecTypes['pg/text@1']['input'];
-      readonly message: CodecTypes['pg/text@1']['input'] | null;
-      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly message: CodecTypes['pg/text@1']['input'];
       readonly stripePaymentIntentId: CodecTypes['pg/text@1']['input'] | null;
       readonly stripeCheckoutSessionId: CodecTypes['pg/text@1']['input'] | null;
       readonly stripeCustomerId: CodecTypes['pg/text@1']['input'] | null;
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly paidAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly refundedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly metadata: CodecTypes['pg/json@1']['input'] | null;
@@ -1176,18 +1174,17 @@ export type StorageColumnTypes = {
       readonly website: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly payments: {
-      readonly amount: CodecTypes['pg/float8@1']['output'];
+      readonly amount: CodecTypes['pg/int4@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly currency: CodecTypes['pg/text@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly donorId: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
-      readonly message: CodecTypes['pg/text@1']['output'] | null;
+      readonly message: CodecTypes['pg/text@1']['output'];
       readonly metadata: CodecTypes['pg/json@1']['output'] | null;
       readonly paidAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly payerId: CodecTypes['pg/text@1']['output'];
       readonly provider: 'stripe';
-      readonly refundedAmount: CodecTypes['pg/float8@1']['output'];
       readonly refundedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly status:
         | 'pending'
@@ -1520,18 +1517,17 @@ export type StorageColumnInputTypes = {
       readonly website: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly payments: {
-      readonly amount: CodecTypes['pg/float8@1']['input'];
+      readonly amount: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly currency: CodecTypes['pg/text@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly donorId: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
-      readonly message: CodecTypes['pg/text@1']['input'] | null;
+      readonly message: CodecTypes['pg/text@1']['input'];
       readonly metadata: CodecTypes['pg/json@1']['input'] | null;
       readonly paidAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly payerId: CodecTypes['pg/text@1']['input'];
       readonly provider: 'stripe';
-      readonly refundedAmount: CodecTypes['pg/float8@1']['input'];
       readonly refundedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly status:
         | 'pending'
@@ -3362,18 +3358,9 @@ type ContractBase = Omit<
                   };
                 };
                 readonly amount: {
-                  readonly nativeType: 'float8';
-                  readonly codecId: 'pg/float8@1';
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
-                };
-                readonly refundedAmount: {
-                  readonly nativeType: 'float8';
-                  readonly codecId: 'pg/float8@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/float8@1', '0'>;
-                  };
                 };
                 readonly currency: {
                   readonly nativeType: 'text';
@@ -3387,12 +3374,7 @@ type ContractBase = Omit<
                 readonly message: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                };
-                readonly description: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                 };
                 readonly stripePaymentIntentId: {
                   readonly nativeType: 'text';
@@ -3405,6 +3387,11 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly stripeCustomerId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly description: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -5910,22 +5897,14 @@ type ContractBase = Omit<
               };
               readonly amount: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
-              };
-              readonly refundedAmount: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
               readonly currency: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly message: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly description: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly stripePaymentIntentId: {
@@ -5937,6 +5916,10 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly stripeCustomerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly description: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -6005,13 +5988,12 @@ type ContractBase = Omit<
                 readonly provider: { readonly column: 'provider' };
                 readonly status: { readonly column: 'status' };
                 readonly amount: { readonly column: 'amount' };
-                readonly refundedAmount: { readonly column: 'refundedAmount' };
                 readonly currency: { readonly column: 'currency' };
                 readonly message: { readonly column: 'message' };
-                readonly description: { readonly column: 'description' };
                 readonly stripePaymentIntentId: { readonly column: 'stripePaymentIntentId' };
                 readonly stripeCheckoutSessionId: { readonly column: 'stripeCheckoutSessionId' };
                 readonly stripeCustomerId: { readonly column: 'stripeCustomerId' };
+                readonly description: { readonly column: 'description' };
                 readonly paidAt: { readonly column: 'paidAt' };
                 readonly refundedAt: { readonly column: 'refundedAt' };
                 readonly metadata: { readonly column: 'metadata' };

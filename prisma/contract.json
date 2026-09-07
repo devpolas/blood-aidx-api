@@ -3126,7 +3126,7 @@
               "amount": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/float8@1",
                   "kind": "scalar"
                 }
               },
@@ -3165,6 +3165,13 @@
                   "kind": "scalar"
                 }
               },
+              "message": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "metadata": {
                 "nullable": true,
                 "type": {
@@ -3197,6 +3204,13 @@
                   "entityName": "PaymentProvider",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "refundedAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
                 }
               },
               "refundedAt": {
@@ -3313,6 +3327,9 @@
                 "id": {
                   "column": "id"
                 },
+                "message": {
+                  "column": "message"
+                },
                 "metadata": {
                   "column": "metadata"
                 },
@@ -3324,6 +3341,9 @@
                 },
                 "provider": {
                   "column": "provider"
+                },
+                "refundedAmount": {
+                  "column": "refundedAmount"
                 },
                 "refundedAt": {
                   "column": "refundedAt"
@@ -6779,8 +6799,8 @@
               ],
               "columns": {
                 "amount": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
                   "nullable": false
                 },
                 "createdAt": {
@@ -6816,6 +6836,11 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "message": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "metadata": {
                   "codecId": "pg/json@1",
                   "nativeType": "json",
@@ -6845,6 +6870,15 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
+                },
+                "refundedAmount": {
+                  "codecId": "pg/float8@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nativeType": "float8",
+                  "nullable": false
                 },
                 "refundedAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -8016,7 +8050,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3f300db8a505a65b57fa14e5b70713fa55c6c56acd4dcc83d1767f7b3793b68d"
+    "storageHash": "0037a031af7d0b40003bd38caa2963276e9b7130216863ab4acf1f39498d317a"
   },
   "execution": {
     "executionHash": "b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6",
