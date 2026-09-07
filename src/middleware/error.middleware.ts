@@ -1,11 +1,16 @@
 import type { ErrorRequestHandler, Response } from "express";
 import { isStructuredError } from "@prisma/orm-postgres/utils/structured-error";
 import { ZodError } from "zod";
+
 import { AppError } from "../utils/appError";
+
+// JWT Error
 
 const handleJWTError = (): AppError => {
   return new AppError("Please login first!", 401);
 };
+
+// Zod Error
 
 const handleZodError = (err: ZodError): AppError => {
   const message = err.issues
@@ -18,6 +23,8 @@ const handleZodError = (err: ZodError): AppError => {
   return new AppError(message, 400);
 };
 
+// Prisma 8 Error Mapping
+
 const prismaNamespaceStatus: Record<string, number> = {
   ORM: 400,
   RUNTIME: 500,
@@ -29,26 +36,42 @@ const prismaNamespaceStatus: Record<string, number> = {
 };
 
 const prismaErrorStatus: Record<string, number> = {
+  // ORM
+
   "ORM.ARGUMENT_INVALID": 400,
   "ORM.FIELD_UNKNOWN": 400,
   "ORM.FILTER_UNSUPPORTED": 400,
   "ORM.MUTATION_DATA_MISSING": 400,
 
-  "RUNTIME.NO_ROWS": 404,
+  // Not Found
+
   "ORM.MUTATION_ROW_MISSING": 404,
+  "RUNTIME.NO_ROWS": 404,
+
+  // Driver / Database
+
+  "DRIVER.CONNECTION_FAILED": 503,
+
+  // Runtime
+
+  "RUNTIME.CONNECTION_CLOSED": 503,
+
+  // Request Timeout
+
+  "BUDGET.TIMEOUT": 408,
 };
+
+// Prisma Error Handler
 
 const handlePrismaError = (err: unknown): AppError | null => {
   if (!isStructuredError(err)) {
     return null;
   }
 
-  const [namespace] = err.code.split(".");
+  const namespace = err.code.split(".")[0] ?? "";
 
   const statusCode =
-    prismaErrorStatus[err.code] ??
-    prismaNamespaceStatus[namespace ?? ""] ??
-    500;
+    prismaErrorStatus[err.code] ?? prismaNamespaceStatus[namespace] ?? 500;
 
   return new AppError(
     process.env.NODE_ENV === "development"
@@ -57,6 +80,8 @@ const handlePrismaError = (err: unknown): AppError | null => {
     statusCode,
   );
 };
+
+// Development Error Response
 
 const sendDevError = (
   err: Error & {
@@ -74,6 +99,8 @@ const sendDevError = (
     stack: err.stack,
   });
 };
+
+// Production Error Response
 
 const sendProductionError = (err: AppError, res: Response): void => {
   if (err.isOperational) {
@@ -95,32 +122,53 @@ const sendProductionError = (err: AppError, res: Response): void => {
   });
 };
 
-const globalErrorController: ErrorRequestHandler = (err, _, res) => {
+// Global Error Handler
+
+const globalErrorController: ErrorRequestHandler = (err, _req, res, _next) => {
+  // Development
+
   if (process.env.NODE_ENV === "development") {
     sendDevError(err, res);
     return;
   }
 
+  // Normalize Error
+
   let error: AppError;
 
+  // Zod
   if (err instanceof ZodError) {
     error = handleZodError(err);
-  } else if (
+  }
+
+  // JWT
+  else if (
     err?.name === "JsonWebTokenError" ||
     err?.name === "TokenExpiredError"
   ) {
     error = handleJWTError();
-  } else {
+  }
+
+  // Prisma 8
+  else {
     const prismaError = handlePrismaError(err);
 
     if (prismaError) {
       error = prismaError;
-    } else if (err instanceof AppError) {
+    }
+
+    // Application error
+    else if (err instanceof AppError) {
       error = err;
-    } else {
+    }
+
+    // Unknown error
+    else {
       error = new AppError("Something went very wrong!", 500);
     }
   }
+
+  // Production Response
 
   sendProductionError(error, res);
 };
