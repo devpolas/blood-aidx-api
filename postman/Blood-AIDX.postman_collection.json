@@ -11,7 +11,10 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });"
+          "pm.request.headers.upsert({",
+          "  key: 'Accept',",
+          "  value: 'application/json'",
+          "});"
         ]
       }
     },
@@ -34,14 +37,34 @@
   "variable": [
     {
       "key": "URL",
-      "value": ""
+      "value": "http://localhost:8000"
     },
     {
       "key": "accessToken",
       "value": ""
     },
     {
+      "key": "email",
+      "value": "rahim@example.com"
+    },
+    {
+      "key": "password",
+      "value": "Password@123"
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    },
+    {
+      "key": "sessionId",
+      "value": ""
+    },
+    {
       "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "memberUserId",
       "value": ""
     },
     {
@@ -99,10 +122,6 @@
     {
       "key": "notificationId",
       "value": ""
-    },
-    {
-      "key": "memberUserId",
-      "value": ""
     }
   ],
   "item": [
@@ -153,7 +172,7 @@
             "description": "POST /api/v1/auth/signup",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"Rahim Ahmed\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"gender\": \"male\",\n  \"role\": \"donor\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -177,7 +196,7 @@
             "description": "POST /api/v1/auth/signin",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -194,7 +213,11 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "const token = json?.data?.accessToken ?? json?.accessToken;",
-                  "if (token) pm.collectionVariables.set('accessToken', token);"
+                  "",
+                  "if (token) {",
+                  "  pm.collectionVariables.set('accessToken', token);",
+                  "  console.log('Access token saved to collection variables.');",
+                  "}"
                 ]
               }
             }
@@ -214,7 +237,7 @@
             "description": "POST /api/v1/auth/verify-email",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"123456\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -238,7 +261,7 @@
             "description": "POST /api/v1/auth/resend-verification",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -262,7 +285,7 @@
             "description": "POST /api/v1/auth/forgot-password",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -286,7 +309,7 @@
             "description": "POST /api/v1/auth/verify-password-reset",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"123456\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -310,7 +333,7 @@
             "description": "POST /api/v1/auth/reset-password",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"resetToken\": \"{{resetToken}}\",\n  \"password\": \"NewPassword@123\",\n  \"confirmPassword\": \"NewPassword@123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -393,7 +416,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -461,7 +484,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"currentSessionId\": \"{{sessionId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -529,7 +552,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"NewPassword@123\",\n  \"confirmPassword\": \"NewPassword@123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -593,7 +616,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"Rahim Ahmed\",\n  \"image\": \"https://example.com/images/rahim.jpg\",\n  \"gender\": \"male\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -682,7 +705,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"phone\": \"+8801712345678\",\n  \"dateOfBirth\": \"1998-05-15T00:00:00.000Z\",\n  \"bio\": \"Regular blood donor from Dhaka.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -766,7 +789,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"phone\": \"+8801712345678\",\n  \"dateOfBirth\": \"1998-05-15T00:00:00.000Z\",\n  \"bio\": \"Regular blood donor from Dhaka.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -855,7 +878,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"bloodGroup\": \"o_positive\",\n  \"availability\": \"available\",\n  \"lastDonationAt\": \"2026-07-10T10:00:00.000Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -964,7 +987,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"bloodGroup\": \"o_positive\",\n  \"availability\": \"available\",\n  \"lastDonationAt\": \"2026-07-10T10:00:00.000Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1083,7 +1106,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"locationId\": \"{{locationId}}\",\n  \"bloodGroup\": \"a_positive\",\n  \"unitsRequired\": 2,\n  \"priority\": \"urgent\",\n  \"patientName\": \"Mohammad Karim\",\n  \"hospitalName\": \"Dhaka Medical College Hospital\",\n  \"requiredAt\": \"2026-09-08T10:00:00.000Z\",\n  \"expiresAt\": \"2026-09-09T10:00:00.000Z\",\n  \"description\": \"Urgently required for scheduled surgery.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1117,7 +1140,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"locationId\": \"{{locationId}}\",\n  \"bloodGroup\": \"a_positive\",\n  \"unitsRequired\": 2,\n  \"priority\": \"urgent\",\n  \"patientName\": \"Mohammad Karim\",\n  \"hospitalName\": \"Dhaka Medical College Hospital\",\n  \"requiredAt\": \"2026-09-08T10:00:00.000Z\",\n  \"expiresAt\": \"2026-09-09T10:00:00.000Z\",\n  \"description\": \"Urgently required for scheduled surgery.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1151,7 +1174,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"status\": \"partially_fulfilled\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1274,7 +1297,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"message\": \"I am available to donate and can reach the hospital within one hour.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1358,7 +1381,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"status\": \"accepted\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1481,7 +1504,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"requestId\": \"{{requestId}}\",\n  \"organizationId\": \"{{organizationId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"units\": 1,\n  \"donatedAt\": \"2026-09-07T10:30:00.000Z\",\n  \"notes\": \"Successfully donated one unit.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1599,7 +1622,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"status\": \"verified\",\n  \"verificationNotes\": \"Donation verified by authorized staff.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1688,7 +1711,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"Rahim Ahmed\",\n  \"image\": \"https://example.com/images/rahim.jpg\",\n  \"gender\": \"male\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1722,7 +1745,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"role\": \"volunteer\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1756,7 +1779,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"reason\": \"Repeated violation of community guidelines.\",\n  \"expiresAt\": \"2026-10-07T00:00:00.000Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1909,7 +1932,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"Dhaka Blood Bank\",\n  \"slug\": \"dhaka-blood-bank\",\n  \"type\": \"blood_bank\",\n  \"locationId\": \"{{locationId}}\",\n  \"description\": \"A blood bank serving patients across Dhaka.\",\n  \"phone\": \"+880212345678\",\n  \"email\": \"contact@dhakabloodbank.org\",\n  \"website\": \"https://dhakabloodbank.org\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1943,7 +1966,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"Dhaka Blood Bank\",\n  \"slug\": \"dhaka-blood-bank\",\n  \"type\": \"blood_bank\",\n  \"locationId\": \"{{locationId}}\",\n  \"description\": \"A blood bank serving patients across Dhaka.\",\n  \"phone\": \"+880212345678\",\n  \"email\": \"contact@dhakabloodbank.org\",\n  \"website\": \"https://dhakabloodbank.org\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2002,7 +2025,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"status\": \"verified\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2061,7 +2084,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"userId\": \"{{memberUserId}}\",\n  \"role\": \"staff\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2095,7 +2118,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"role\": \"admin\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2184,7 +2207,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"latitude\": \"23.8103\",\n  \"longitude\": \"90.4125\",\n  \"country\": \"Bangladesh\",\n  \"division\": \"Dhaka\",\n  \"district\": \"Dhaka\",\n  \"city\": \"Dhaka\",\n  \"village\": \"Dhanmondi\",\n  \"postalCode\": \"1205\",\n  \"addressLine\": \"Road 27, Dhanmondi, Dhaka\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2218,7 +2241,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"latitude\": \"23.8103\",\n  \"longitude\": \"90.4125\",\n  \"country\": \"Bangladesh\",\n  \"division\": \"Dhaka\",\n  \"district\": \"Dhaka\",\n  \"city\": \"Dhaka\",\n  \"village\": \"Dhanmondi\",\n  \"postalCode\": \"1205\",\n  \"addressLine\": \"Road 27, Dhanmondi, Dhaka\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2412,7 +2435,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"First Donation\",\n  \"description\": \"Awarded after completing your first blood donation.\",\n  \"donationCount\": 1,\n  \"badgeUrl\": \"https://example.com/badges/first-donation.png\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2446,7 +2469,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"name\": \"First Donation\",\n  \"description\": \"Awarded after completing your first blood donation.\",\n  \"donationCount\": 1,\n  \"badgeUrl\": \"https://example.com/badges/first-donation.png\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2580,7 +2603,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"type\": \"user\",\n  \"targetId\": \"{{userId}}\",\n  \"reason\": \"Inappropriate behavior\",\n  \"description\": \"The user repeatedly sent inappropriate messages.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2689,7 +2712,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"status\": \"resolved\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2783,7 +2806,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"revieweeId\": \"{{userId}}\",\n  \"rating\": 5,\n  \"comment\": \"Very helpful and reliable blood donor.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2842,7 +2865,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Very helpful and reliable blood donor.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2901,7 +2924,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"status\": \"published\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2965,7 +2988,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"type\": \"direct\",\n  \"participantIds\": [\n    \"{{userId}}\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2999,7 +3022,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"userId\": \"{{memberUserId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3122,7 +3145,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"content\": \"Hello, I am available to donate blood.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3290,7 +3313,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"content\": \"Hello, I am available to donate blood.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
