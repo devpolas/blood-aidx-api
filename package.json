@@ -39,7 +39,8 @@
     "migration:plan": "prisma migration plan",
     "migration:status": "prisma migration status",
     "db:migrate": "prisma db migrate",
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma skills sync || exit 0",
+    "generate:postman": "npx tsx postman/generate-postman.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",
