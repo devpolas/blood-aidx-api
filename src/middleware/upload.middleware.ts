@@ -15,10 +15,13 @@ const upload = multer({
       "image/png",
       "image/webp",
       "image/avif",
+      "application/pdf",
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error("Only jpeg, png, webp and avif images are allowed"));
+      return cb(
+        new Error("Only jpeg, png, webp, avif and pdf files are allowed"),
+      );
     }
 
     cb(null, true);
