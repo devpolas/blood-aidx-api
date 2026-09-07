@@ -31,6 +31,8 @@ import conversationRouter from "./modules/conversation/conversation.route";
 import messageRouter from "./modules/message/message.route";
 import notificationRouter from "./modules/notification/notification.route";
 import uploadRouter from "./modules/upload/upload.routes";
+import paymentRouter from "./modules/payment/payment.route";
+import paymentWebhookRouter from "./modules/payment/payment.webhook.route";
 
 const app: Application = express();
 
@@ -69,6 +71,12 @@ app.use(
 );
 
 app.use(cookieParser());
+
+app.use(
+  "/api/v1/webhook",
+  express.raw({ type: "application/json" }),
+  paymentWebhookRouter,
+);
 
 app.use(
   express.json({
@@ -128,6 +136,7 @@ app.use("/api/v1/conversations", conversationRouter);
 app.use("/api/v1/messages", messageRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/uploads", uploadRouter);
+app.use("/api/v1/payments", paymentRouter);
 
 app.use(notFound);
 app.use(globalErrorController);
