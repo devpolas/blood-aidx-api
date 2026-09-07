@@ -30,6 +30,7 @@ import reviewRouter from "./modules/review/review.route";
 import conversationRouter from "./modules/conversation/conversation.route";
 import messageRouter from "./modules/message/message.route";
 import notificationRouter from "./modules/notification/notification.route";
+import uploadRouter from "./modules/upload/upload.routes";
 
 const app: Application = express();
 
@@ -126,6 +127,7 @@ app.use("/api/v1/reviews", reviewRouter);
 app.use("/api/v1/conversations", conversationRouter);
 app.use("/api/v1/messages", messageRouter);
 app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/uploads", uploadRouter);
 
 app.use(notFound);
 app.use(globalErrorController);
