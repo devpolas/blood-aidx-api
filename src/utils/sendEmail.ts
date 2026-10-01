@@ -115,29 +115,89 @@ const createHeader = (): string => {
         align="center"
         style="
           background:${EMAIL.colors.header};
-          padding:36px 24px 32px;
+          padding:32px 24px 30px;
         "
       >
-        <img
-          src="${logoUrl}"
-          alt="${EMAIL.brand}"
-          width="48"
+        <table
+          cellpadding="0"
+          cellspacing="0"
+          border="0"
+          role="presentation"
           style="
-            display:block;
-            width:48px;
-            max-width:100%;
-            height:auto;
             margin:0 auto;
-            border:0;
-            outline:none;
-            text-decoration:none;
           "
-        />
+        >
+          <tr>
+            <td
+              valign="middle"
+              style="
+                padding:0;
+                font-family:Arial, Helvetica, sans-serif;
+                font-size:24px;
+                line-height:28px;
+                font-weight:800;
+                letter-spacing:-0.5px;
+                color:${EMAIL.colors.primary};
+                white-space:nowrap;
+                margin-top:6px;
+              "
+            >
+              Blood
+            </td>
+
+            <td
+              valign="middle"
+              style="
+                padding:0 4px;
+                font-size:0;
+                line-height:0;
+              "
+            >
+              <img
+                src="${logoUrl}"
+                alt=""
+                width="24"
+                height="24"
+                style="
+                  display:block;
+                  width:24px;
+                  height:24px;
+                  object-fit:contain;
+                  border:0;
+                  outline:none;
+                  text-decoration:none;
+                "
+              />
+            </td>
+
+            <td
+              valign="middle"
+              style="
+                padding:0;
+                font-family:Arial, Helvetica, sans-serif;
+                font-size:24px;
+                line-height:28px;
+                font-weight:800;
+                letter-spacing:-0.5px;
+                color:#ffffff;
+                white-space:nowrap;
+                margin-top:6px;
+              "
+            >
+              A<span
+                style="
+                  color:${EMAIL.colors.primary};
+                "
+              >i</span>dX
+            </td>
+          </tr>
+        </table>
 
         <p
           style="
-            margin:16px 0 0;
+            margin:14px 0 0;
             padding:0;
+            font-family:Arial, Helvetica, sans-serif;
             font-size:13px;
             line-height:20px;
             color:#d1d5db;
@@ -151,7 +211,7 @@ const createHeader = (): string => {
     <tr>
       <td
         style="
-          height:5px;
+          height:4px;
           background:${EMAIL.colors.primary};
           font-size:0;
           line-height:0;
@@ -345,19 +405,31 @@ const createFooter = (): string => {
           style="
             margin:0 0 8px;
             padding:0;
+            font-family:Arial, Helvetica, sans-serif;
             font-size:15px;
             line-height:22px;
-            font-weight:700;
+            font-weight:800;
+            letter-spacing:-0.2px;
             color:${EMAIL.colors.heading};
           "
         >
-          ${EMAIL.footerTitle}
+          <span style="color:${EMAIL.colors.primary};">
+            Blood
+          </span>
+          <span style="color:${EMAIL.colors.heading};">
+          A<span
+          style="
+            color:${EMAIL.colors.primary};
+          "
+        >i</span>dX
+          </span>
         </p>
 
         <p
           style="
             margin:0;
             padding:0;
+            font-family:Arial, Helvetica, sans-serif;
             font-size:13px;
             line-height:21px;
             color:${EMAIL.colors.muted};
@@ -370,6 +442,7 @@ const createFooter = (): string => {
           style="
             margin:18px 0 0;
             padding:0;
+            font-family:Arial, Helvetica, sans-serif;
             font-size:12px;
             line-height:18px;
             color:${EMAIL.colors.light};
