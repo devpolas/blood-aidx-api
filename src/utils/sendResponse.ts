@@ -50,10 +50,8 @@ export const sendResponse = <T>(
 
 export const sendResponseToCookies = (
   res: Response,
-  response: CookieResponse,
+  { cookieKey, keyValue, maxAge }: CookieResponse,
 ): Response => {
-  const { cookieKey, keyValue, maxAge } = response;
-
   res.cookie(cookieKey, keyValue, {
     ...AUTH_COOKIE_OPTIONS,
     maxAge,
