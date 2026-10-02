@@ -214,7 +214,7 @@ export const AuthController = {
       maxAge: REFRESH_TOKEN_MAX_AGE,
     });
 
-    res.redirect(`${config.website_url}/auth/google/success`);
+    res.redirect(`${config.website_url}`);
   }),
 
   // Current User
