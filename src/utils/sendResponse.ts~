@@ -54,12 +54,10 @@ export const sendResponseToCookies = (
 ): Response => {
   const { cookieKey, keyValue, maxAge } = response;
 
-  res.cookie(cookieKey, keyValue, {
+  return res.cookie(cookieKey, keyValue, {
     ...AUTH_COOKIE_OPTIONS,
     maxAge,
   });
-
-  return res;
 };
 
 export const clearAuthCookies = (res: Response): void => {

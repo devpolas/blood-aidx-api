@@ -45,11 +45,14 @@ const allowedOrigins = config.origin_urls ?? [];
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
         return;
       }
-
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
@@ -63,6 +66,7 @@ app.use(
       "X-Client-Session",
       "X-Request-ID",
     ],
+    exposedHeaders: ["Set-Cookie"],
   }),
 );
 
