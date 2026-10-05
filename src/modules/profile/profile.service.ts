@@ -5,14 +5,7 @@ import { AppError } from "../../utils/appError";
 
 import type { UpdateProfileInput } from "./profile.schema";
 
-type ActorRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type ActorRole = "user" | "moderator" | "admin";
 
 // Helpers
 
