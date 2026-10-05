@@ -2,15 +2,7 @@ import * as z from "zod";
 
 // Enums
 
-export const UserRoleSchema = z.enum([
-  "donor",
-  "recipient",
-  "volunteer",
-  "hospital",
-  "blood_bank",
-  "moderator",
-  "admin",
-]);
+export const UserRoleSchema = z.enum(["user", "moderator", "admin"]);
 
 export const GenderSchema = z.enum([
   "male",
@@ -22,13 +14,7 @@ export const GenderSchema = z.enum([
 // Public Signup Roles
 // Admin and moderator should not be selectable during signup
 
-export const PublicUserRoleSchema = z.enum([
-  "donor",
-  "recipient",
-  "volunteer",
-  "hospital",
-  "blood_bank",
-]);
+export const PublicUserRoleSchema = z.enum(["user"]);
 
 // Common
 
@@ -53,7 +39,7 @@ export const SignUpSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
   gender: GenderSchema.optional(),
-  role: PublicUserRoleSchema.optional().default("donor"),
+  role: PublicUserRoleSchema.optional().default("user"),
 });
 
 // Signin

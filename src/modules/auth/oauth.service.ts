@@ -11,7 +11,6 @@ import { AppError } from "../../utils/appError";
 
 export const googleAuthUrl = async (): Promise<string> => {
   const state = await createGoogleOAuthState();
-
   return getGoogleAuthUrl(state);
 };
 
@@ -43,7 +42,7 @@ export const handleGoogleCallback = async ({
         email: googleUser.email,
         emailVerified: true,
         image: googleUser.picture,
-        role: "donor",
+        role: "user",
       });
 
       // Use the guaranteed User returned by create()
