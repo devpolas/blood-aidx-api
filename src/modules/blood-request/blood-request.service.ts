@@ -11,14 +11,7 @@ import { AppError } from "../../utils/appError";
 
 // Types
 
-type BloodRequestActorRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type BloodRequestActorRole = "user" | "moderator" | "admin";
 
 // Constants
 
