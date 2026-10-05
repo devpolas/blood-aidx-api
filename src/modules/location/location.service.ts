@@ -10,14 +10,7 @@ import type {
 
 // Authorization
 
-type ActorRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type ActorRole = "user" | "moderator" | "admin";
 
 const getActor = async (userId: string) => {
   const actor = await db.orm.public.User.where({
