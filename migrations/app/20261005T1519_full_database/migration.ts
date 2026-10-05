@@ -1,8 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as Start } from '../../snapshots/aa9414942bfd58974d2157117b2f4ee56ae8536cccdaec13ffd5b2e9fc47545e/contract';
-import startContract from '../../snapshots/aa9414942bfd58974d2157117b2f4ee56ae8536cccdaec13ffd5b2e9fc47545e/contract.json' with { type: 'json' };
-import type { Contract as End } from '../../snapshots/c7af2d58d9b60b8b7738a61952fb57ccee9b0775af37920efe8eb00687055004/contract';
-import endContract from '../../snapshots/c7af2d58d9b60b8b7738a61952fb57ccee9b0775af37920efe8eb00687055004/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e/contract';
+import endContract from '../../snapshots/0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -13,18 +11,43 @@ import {
   primaryKey,
 } from '@prisma/orm-postgres/migration';
 
-export default class M extends Migration<Start, End> {
-  override readonly startContractJson = startContract;
+export default class M extends Migration<never, End> {
   override readonly endContractJson = endContract;
 
   override get operations() {
     return [
-      this.dropCheckConstraint({
+      this.createSchema({ schema: 'public' }),
+      this.createTable({
         schema: 'public',
-        table: 'users',
-        constraint: 'users_gender_check_78d2beda',
+        table: 'accounts',
+        columns: [
+          col('accessToken', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('accessTokenExpiresAt', 'timestamptz', {
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('accountId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('idToken', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('password', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('providerId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('refreshToken', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('refreshTokenExpiresAt', 'timestamptz', {
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('scope', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-temporal@1' },
+          }),
+          col('userId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+        ],
+        constraints: [primaryKey(['id'])],
       }),
-      this.dropConstraint({ schema: 'public', table: 'users', constraint: 'users_locationId_key' }),
       this.createTable({
         schema: 'public',
         table: 'audit_logs',
@@ -66,7 +89,7 @@ export default class M extends Migration<Start, End> {
             notNull: true,
             codecRef: { codecId: 'pg/timestamptz-string@1' },
           }),
-          col('donationNumber', 'int4', { notNull: true, codecRef: { codecId: 'pg/int4@1' } }),
+          col('donationNumber', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('donorId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('locationId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
@@ -345,6 +368,32 @@ export default class M extends Migration<Start, End> {
       }),
       this.createTable({
         schema: 'public',
+        table: 'locations',
+        columns: [
+          col('addressLine', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('city', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('country', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('district', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('division', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('latitude', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('longitude', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('postalCode', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-temporal@1' },
+          }),
+          col('village', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+        ],
+        constraints: [primaryKey(['id'])],
+      }),
+      this.createTable({
+        schema: 'public',
         table: 'messages',
         columns: [
           col('content', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
@@ -509,6 +558,67 @@ export default class M extends Migration<Start, End> {
       }),
       this.createTable({
         schema: 'public',
+        table: 'payments',
+        columns: [
+          col('amount', 'float8', { notNull: true, codecRef: { codecId: 'pg/float8@1' } }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('currency', 'text', {
+            notNull: true,
+            default: lit('usd'),
+            codecRef: { codecId: 'pg/text@1' },
+          }),
+          col('description', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('donorId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('message', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('metadata', 'json', { codecRef: { codecId: 'pg/json@1' } }),
+          col('paidAt', 'timestamptz', { codecRef: { codecId: 'pg/timestamptz-string@1' } }),
+          col('payerId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('provider', 'text', {
+            notNull: true,
+            default: lit('stripe'),
+            codecRef: { codecId: 'pg/text@1' },
+          }),
+          col('refundedAmount', 'float8', {
+            notNull: true,
+            default: lit('0'),
+            codecRef: { codecId: 'pg/float8@1' },
+          }),
+          col('refundedAt', 'timestamptz', { codecRef: { codecId: 'pg/timestamptz-string@1' } }),
+          col('status', 'text', {
+            notNull: true,
+            default: lit('pending'),
+            codecRef: { codecId: 'pg/text@1' },
+          }),
+          col('stripeCheckoutSessionId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('stripeCustomerId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('stripePaymentIntentId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('type', 'text', {
+            notNull: true,
+            default: lit('donor_coffee'),
+            codecRef: { codecId: 'pg/text@1' },
+          }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-temporal@1' },
+          }),
+        ],
+        constraints: [
+          primaryKey(['id']),
+          checkExpression('payments_provider_check_ae06b403', '"provider" IN (\'stripe\')'),
+          checkExpression(
+            'payments_status_check_2c696f68',
+            "\"status\" IN ('pending', 'processing', 'succeeded', 'failed', 'cancelled', 'refunded', 'partially_refunded')",
+          ),
+          checkExpression('payments_type_check_6e9bcc94', '"type" IN (\'donor_coffee\')'),
+        ],
+      }),
+      this.createTable({
+        schema: 'public',
         table: 'reports',
         columns: [
           col('createdAt', 'timestamptz', {
@@ -581,6 +691,32 @@ export default class M extends Migration<Start, End> {
       }),
       this.createTable({
         schema: 'public',
+        table: 'sessions',
+        columns: [
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('expiresAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('impersonatedBy', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('ipAddress', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('token', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-temporal@1' },
+          }),
+          col('userAgent', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('userId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+        ],
+        constraints: [primaryKey(['id'])],
+      }),
+      this.createTable({
+        schema: 'public',
         table: 'user_milestones',
         columns: [
           col('achievedAt', 'timestamptz', {
@@ -614,6 +750,67 @@ export default class M extends Migration<Start, End> {
           col('userId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
         ],
         constraints: [primaryKey(['id'])],
+      }),
+      this.createTable({
+        schema: 'public',
+        table: 'users',
+        columns: [
+          col('banExpires', 'timestamptz', { codecRef: { codecId: 'pg/timestamptz-string@1' } }),
+          col('banReason', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('banned', 'bool', {
+            notNull: true,
+            default: lit(false),
+            codecRef: { codecId: 'pg/bool@1' },
+          }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz-string@1' },
+          }),
+          col('email', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('emailVerified', 'bool', {
+            notNull: true,
+            default: lit(false),
+            codecRef: { codecId: 'pg/bool@1' },
+          }),
+          col('gender', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('image', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('locationId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('name', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('role', 'text', {
+            notNull: true,
+            default: lit('user'),
+            codecRef: { codecId: 'pg/text@1' },
+          }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz-temporal@1' },
+          }),
+        ],
+        constraints: [
+          primaryKey(['id']),
+          checkExpression(
+            'users_gender_check_4048f77b',
+            "\"gender\" IN ('male', 'female', 'other', 'prefer_not_to_say')",
+          ),
+          checkExpression(
+            'users_role_check_ee95c47a',
+            "\"role\" IN ('user', 'moderator', 'admin')",
+          ),
+        ],
+      }),
+      this.addUnique({
+        schema: 'public',
+        table: 'accounts',
+        constraint: 'accounts_providerId_accountId_key',
+        columns: ['providerId', 'accountId'],
+      }),
+      this.addUnique({
+        schema: 'public',
+        table: 'blood_donations',
+        constraint: 'blood_donations_donationNumber_key',
+        columns: ['donationNumber'],
       }),
       this.addUnique({
         schema: 'public',
@@ -695,6 +892,24 @@ export default class M extends Migration<Start, End> {
       }),
       this.addUnique({
         schema: 'public',
+        table: 'payments',
+        constraint: 'payments_stripePaymentIntentId_key',
+        columns: ['stripePaymentIntentId'],
+      }),
+      this.addUnique({
+        schema: 'public',
+        table: 'payments',
+        constraint: 'payments_stripeCheckoutSessionId_key',
+        columns: ['stripeCheckoutSessionId'],
+      }),
+      this.addUnique({
+        schema: 'public',
+        table: 'sessions',
+        constraint: 'sessions_token_key',
+        columns: ['token'],
+      }),
+      this.addUnique({
+        schema: 'public',
         table: 'user_milestones',
         constraint: 'user_milestones_userId_milestoneId_key',
         columns: ['userId', 'milestoneId'],
@@ -705,17 +920,23 @@ export default class M extends Migration<Start, End> {
         constraint: 'user_profiles_userId_key',
         columns: ['userId'],
       }),
-      this.addCheckConstraint({
+      this.addUnique({
         schema: 'public',
         table: 'users',
-        constraint: 'users_gender_check_4048f77b',
-        expression: "\"gender\" IN ('male', 'female', 'other', 'prefer_not_to_say')",
+        constraint: 'users_email_key',
+        columns: ['email'],
       }),
       this.createIndex({
         schema: 'public',
         table: 'accounts',
         index: 'accounts_providerId_idx_d1904c54',
         columns: ['providerId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'accounts',
+        index: 'accounts_userId_idx_a489d58a',
+        columns: ['userId'],
       }),
       this.createIndex({
         schema: 'public',
@@ -905,6 +1126,42 @@ export default class M extends Migration<Start, End> {
       }),
       this.createIndex({
         schema: 'public',
+        table: 'locations',
+        index: 'locations_city_idx_40fed80d',
+        columns: ['city'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_country_division_district_city_idx_2693022c',
+        columns: ['country', 'division', 'district', 'city'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_country_idx_c3994778',
+        columns: ['country'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_district_idx_1728c727',
+        columns: ['district'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_division_idx_a8a149d8',
+        columns: ['division'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'locations',
+        index: 'locations_postalCode_idx_0fcc3c6f',
+        columns: ['postalCode'],
+      }),
+      this.createIndex({
+        schema: 'public',
         table: 'messages',
         index: 'messages_conversationId_createdAt_idx_44d4ac61',
         columns: ['conversationId', 'createdAt'],
@@ -1001,6 +1258,48 @@ export default class M extends Migration<Start, End> {
       }),
       this.createIndex({
         schema: 'public',
+        table: 'payments',
+        index: 'payments_donorId_idx_e0e8e1e7',
+        columns: ['donorId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'payments',
+        index: 'payments_donorId_status_createdAt_idx_f4064319',
+        columns: ['donorId', 'status', 'createdAt'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'payments',
+        index: 'payments_payerId_idx_3d3ae95d',
+        columns: ['payerId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'payments',
+        index: 'payments_payerId_status_createdAt_idx_79702fb9',
+        columns: ['payerId', 'status', 'createdAt'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'payments',
+        index: 'payments_provider_idx_faf3af28',
+        columns: ['provider'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'payments',
+        index: 'payments_status_idx_e98638ab',
+        columns: ['status'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'payments',
+        index: 'payments_type_idx_b6b604ea',
+        columns: ['type'],
+      }),
+      this.createIndex({
+        schema: 'public',
         table: 'reports',
         index: 'reports_reporterId_idx_aa245831',
         columns: ['reporterId'],
@@ -1073,6 +1372,12 @@ export default class M extends Migration<Start, End> {
       }),
       this.createIndex({
         schema: 'public',
+        table: 'sessions',
+        index: 'sessions_userId_idx_a489d58a',
+        columns: ['userId'],
+      }),
+      this.createIndex({
+        schema: 'public',
         table: 'user_milestones',
         index: 'user_milestones_milestoneId_idx_f1dac854',
         columns: ['milestoneId'],
@@ -1100,6 +1405,16 @@ export default class M extends Migration<Start, End> {
         table: 'users',
         index: 'users_role_idx_2c1ddf83',
         columns: ['role'],
+      }),
+      this.addForeignKey({
+        schema: 'public',
+        table: 'accounts',
+        foreignKey: {
+          name: 'accounts_userId_fkey',
+          columns: ['userId'],
+          references: { schema: 'public', table: 'users', columns: ['id'] },
+          onDelete: 'cascade',
+        },
       }),
       this.addForeignKey({
         schema: 'public',
@@ -1333,6 +1648,26 @@ export default class M extends Migration<Start, End> {
       }),
       this.addForeignKey({
         schema: 'public',
+        table: 'payments',
+        foreignKey: {
+          name: 'payments_payerId_fkey',
+          columns: ['payerId'],
+          references: { schema: 'public', table: 'users', columns: ['id'] },
+          onDelete: 'cascade',
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
+        table: 'payments',
+        foreignKey: {
+          name: 'payments_donorId_fkey',
+          columns: ['donorId'],
+          references: { schema: 'public', table: 'donor_profiles', columns: ['id'] },
+          onDelete: 'cascade',
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
         table: 'reports',
         foreignKey: {
           name: 'reports_reporterId_fkey',
@@ -1383,6 +1718,16 @@ export default class M extends Migration<Start, End> {
       }),
       this.addForeignKey({
         schema: 'public',
+        table: 'sessions',
+        foreignKey: {
+          name: 'sessions_userId_fkey',
+          columns: ['userId'],
+          references: { schema: 'public', table: 'users', columns: ['id'] },
+          onDelete: 'cascade',
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
         table: 'user_milestones',
         foreignKey: {
           name: 'user_milestones_userId_fkey',
@@ -1409,6 +1754,16 @@ export default class M extends Migration<Start, End> {
           columns: ['userId'],
           references: { schema: 'public', table: 'users', columns: ['id'] },
           onDelete: 'cascade',
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
+        table: 'users',
+        foreignKey: {
+          name: 'users_locationId_fkey',
+          columns: ['locationId'],
+          references: { schema: 'public', table: 'locations', columns: ['id'] },
+          onDelete: 'setNull',
         },
       }),
     ];

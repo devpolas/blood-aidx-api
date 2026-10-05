@@ -4,7 +4,7 @@
 enum UserRole {
   @@type("pg/text@1")
 
-  USER = "donor"
+  USER = "user"
   MODERATOR = "moderator"
   ADMIN = "admin"
 }

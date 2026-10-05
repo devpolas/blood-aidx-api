@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f8607c8b1a81d4a0994d2d48b9625eb5a12c21b1f3de75249dd32040983e5e72'>;
+  StorageHashBase<'0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e'>;
 export type ExecutionHash =
   ExecutionHashBase<'b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6'>;
 export type ProfileHash =
@@ -556,7 +556,7 @@ export type FieldOutputTypes = {
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly emailVerified: CodecTypes['pg/bool@1']['output'];
       readonly image: CodecTypes['pg/text@1']['output'] | null;
-      readonly role: 'donor' | 'moderator' | 'admin';
+      readonly role: 'user' | 'moderator' | 'admin';
       readonly gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
       readonly banned: CodecTypes['pg/bool@1']['output'];
       readonly banReason: CodecTypes['pg/text@1']['output'] | null;
@@ -899,7 +899,7 @@ export type FieldInputTypes = {
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly emailVerified: CodecTypes['pg/bool@1']['input'];
       readonly image: CodecTypes['pg/text@1']['input'] | null;
-      readonly role: 'donor' | 'moderator' | 'admin';
+      readonly role: 'user' | 'moderator' | 'admin';
       readonly gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
       readonly banned: CodecTypes['pg/bool@1']['input'];
       readonly banReason: CodecTypes['pg/text@1']['input'] | null;
@@ -1263,7 +1263,7 @@ export type StorageColumnTypes = {
       readonly image: CodecTypes['pg/text@1']['output'] | null;
       readonly locationId: CodecTypes['pg/text@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
-      readonly role: 'donor' | 'moderator' | 'admin';
+      readonly role: 'user' | 'moderator' | 'admin';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
   };
@@ -1606,7 +1606,7 @@ export type StorageColumnInputTypes = {
       readonly image: CodecTypes['pg/text@1']['input'] | null;
       readonly locationId: CodecTypes['pg/text@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
-      readonly role: 'donor' | 'moderator' | 'admin';
+      readonly role: 'user' | 'moderator' | 'admin';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
   };
@@ -4005,7 +4005,7 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/text@1', 'donor'>;
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'user'>;
                   };
                 };
                 readonly gender: {
@@ -4220,7 +4220,7 @@ type ContractBase = Omit<
             };
             readonly UserRole: {
               readonly kind: 'valueSet';
-              readonly values: readonly ['donor', 'moderator', 'admin'];
+              readonly values: readonly ['user', 'moderator', 'admin'];
             };
           };
         };
@@ -6704,7 +6704,7 @@ type ContractBase = Omit<
           readonly UserRole: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
-              { readonly name: 'USER'; readonly value: 'donor' },
+              { readonly name: 'USER'; readonly value: 'user' },
               { readonly name: 'MODERATOR'; readonly value: 'moderator' },
               { readonly name: 'ADMIN'; readonly value: 'admin' },
             ];

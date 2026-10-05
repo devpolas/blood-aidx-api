@@ -549,7 +549,7 @@
             "members": [
               {
                 "name": "USER",
-                "value": "donor"
+                "value": "user"
               },
               {
                 "name": "MODERATOR",
@@ -7674,8 +7674,8 @@
                   "prefix": "users_gender_check"
                 },
                 {
-                  "expression": "\"role\" IN ('donor', 'moderator', 'admin')",
-                  "name": "users_role_check_27ba731c",
+                  "expression": "\"role\" IN ('user', 'moderator', 'admin')",
+                  "name": "users_role_check_ee95c47a",
                   "prefix": "users_role_check"
                 }
               ],
@@ -7757,7 +7757,7 @@
                   "codecId": "pg/text@1",
                   "default": {
                     "kind": "literal",
-                    "value": "donor"
+                    "value": "user"
                   },
                   "nativeType": "text",
                   "nullable": false,
@@ -8019,7 +8019,7 @@
             "UserRole": {
               "kind": "valueSet",
               "values": [
-                "donor",
+                "user",
                 "moderator",
                 "admin"
               ]
@@ -8030,7 +8030,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f8607c8b1a81d4a0994d2d48b9625eb5a12c21b1f3de75249dd32040983e5e72"
+    "storageHash": "0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e"
   },
   "execution": {
     "executionHash": "b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6",
