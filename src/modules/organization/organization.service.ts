@@ -11,14 +11,7 @@ import type {
   UpdateOrganizationStatusInput,
 } from "./organization.schema";
 
-type GlobalRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type GlobalRole = "user" | "moderator" | "admin";
 
 type OrganizationMemberRole = "admin" | "staff" | "verifier";
 
