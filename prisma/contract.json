@@ -548,24 +548,8 @@
             "codecId": "pg/text@1",
             "members": [
               {
-                "name": "DONOR",
+                "name": "USER",
                 "value": "donor"
-              },
-              {
-                "name": "RECIPIENT",
-                "value": "recipient"
-              },
-              {
-                "name": "VOLUNTEER",
-                "value": "volunteer"
-              },
-              {
-                "name": "HOSPITAL",
-                "value": "hospital"
-              },
-              {
-                "name": "BLOOD_BANK",
-                "value": "blood_bank"
               },
               {
                 "name": "MODERATOR",
@@ -7690,8 +7674,8 @@
                   "prefix": "users_gender_check"
                 },
                 {
-                  "expression": "\"role\" IN ('donor', 'recipient', 'volunteer', 'hospital', 'blood_bank', 'moderator', 'admin')",
-                  "name": "users_role_check_13016f52",
+                  "expression": "\"role\" IN ('donor', 'moderator', 'admin')",
+                  "name": "users_role_check_27ba731c",
                   "prefix": "users_role_check"
                 }
               ],
@@ -8036,10 +8020,6 @@
               "kind": "valueSet",
               "values": [
                 "donor",
-                "recipient",
-                "volunteer",
-                "hospital",
-                "blood_bank",
                 "moderator",
                 "admin"
               ]
@@ -8050,7 +8030,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "0037a031af7d0b40003bd38caa2963276e9b7130216863ab4acf1f39498d317a"
+    "storageHash": "f8607c8b1a81d4a0994d2d48b9625eb5a12c21b1f3de75249dd32040983e5e72"
   },
   "execution": {
     "executionHash": "b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6",

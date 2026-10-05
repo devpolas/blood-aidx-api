@@ -4,11 +4,7 @@
 enum UserRole {
   @@type("pg/text@1")
 
-  DONOR = "donor"
-  RECIPIENT = "recipient"
-  VOLUNTEER = "volunteer"
-  HOSPITAL = "hospital"
-  BLOOD_BANK = "blood_bank"
+  USER = "donor"
   MODERATOR = "moderator"
   ADMIN = "admin"
 }
@@ -202,58 +198,35 @@ model User {
   email                    String
   emailVerified            Boolean                   @default(false)
   image                    String?
-
-  role                     UserRole                  @default(DONOR)
+  role                     UserRole                  @default(USER)
   gender                   Gender?
-
   banned                   Boolean                   @default(false)
   banReason                String?
   banExpires               TimestamptzString?
-
   locationId               String?
-
   createdAt                TimestamptzString         @default(now())
   updatedAt                temporal.updatedAt()
 
   // Relations
   location                 Location?                 @relation(fields:[locationId], references:[id], onDelete: SetNull)
-
   profile                  UserProfile?
-
   donor                    DonorProfile?
-
   sessions                 Session[]
-
   accounts                 Account[]
-
   bloodRequests            BloodRequest[]            @relation("RequestRequester")
-
   donationsVerified        BloodDonation[]           @relation("DonationVerifier")
-
   notifications            Notification[]
-
   conversationParticipants ConversationParticipant[]
-
   messages                 Message[]                 @relation("MessageSender")
-
   reviewsGiven             Review[]                  @relation("ReviewAuthor")
-
   reviewsReceived          Review[]                  @relation("ReviewTarget")
-
   organizationsOwned       Organization[]            @relation("OrganizationOwner")
-
   organizationMemberships  OrganizationMember[]
-
   organizationsVerified    Organization[]            @relation("OrganizationVerifier")
-
   reportsGiven             Report[]                  @relation("ReportReporter")
-
   reportsResolved          Report[]                  @relation("ReportResolver")
-
   milestones               UserMilestone[]
-
   auditLogs                AuditLog[]
-
   paymentsMade             Payment[]                 @relation("PaymentPayer")
 
   // Indexes
@@ -269,72 +242,54 @@ model User {
 // SESSION
 model Session {
   id             String               @id @default(uuid())
-
   token          String
-
   userId         String
-
   expiresAt      TimestamptzString
-
   ipAddress      String?
   userAgent      String?
   impersonatedBy String?
-
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
   user           User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   @@unique([token])
-
   @@index([userId])
   @@index([expiresAt])
-
   @@map("sessions")
 }
 
 // ACCOUNT
 model Account {
   id                    String               @id @default(uuid())
-
   userId                String
-
   providerId            String
   accountId             String
-
   password              String?
-
   accessToken           String?
   refreshToken          String?
   idToken               String?
   scope                 String?
-
   accessTokenExpiresAt  TimestamptzString?
   refreshTokenExpiresAt TimestamptzString?
-
   createdAt             TimestamptzString    @default(now())
   updatedAt             temporal.updatedAt()
 
   user                  User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
-
   @@index([userId])
   @@index([providerId])
-
   @@map("accounts")
 }
 
 // USER PROFILE
 model UserProfile {
   id          String               @id @default(uuid())
-
   userId      String               @unique
-
   phone       String?
   dateOfBirth TimestamptzString?
   bio         String?
-
   createdAt   TimestamptzString    @default(now())
   updatedAt   temporal.updatedAt()
 
@@ -346,28 +301,21 @@ model UserProfile {
 // LOCATION
 model Location {
   id            String               @id @default(uuid())
-
   latitude      String?
   longitude     String?
-
   country       String
   division      String
   district      String
   city          String
   village       String
   postalCode    String
-
   addressLine   String?
-
   createdAt     TimestamptzString    @default(now())
   updatedAt     temporal.updatedAt()
 
   users         User[]
-
   organizations Organization[]
-
   bloodRequests BloodRequest[]
-
   donations     BloodDonation[]
 
   @@index([country])
@@ -375,86 +323,57 @@ model Location {
   @@index([district])
   @@index([city])
   @@index([postalCode])
-
   @@index([country, division, district, city])
-
   @@map("locations")
 }
 
 // DONOR PROFILE
 model DonorProfile {
   id                   String                 @id @default(uuid())
-
   userId               String                 @unique
-
   bloodGroup           BloodGroup
-
   availability         DonorAvailability      @default(AVAILABLE)
-
   lastDonationAt       TimestamptzString?
-
   totalDonations       Int                    @default(0)
-
   isEligible           Boolean                @default(true)
-
   eligibilityCheckedAt TimestamptzString?
-
   createdAt            TimestamptzString      @default(now())
   updatedAt            temporal.updatedAt()
 
   user                 User                   @relation(fields:[userId], references:[id], onDelete: Cascade)
-
   donations            BloodDonation[]
-
   responses            BloodRequestResponse[]
-
   paymentsReceived     Payment[]              @relation("DonorPayments")
 
   @@index([bloodGroup])
   @@index([availability])
   @@index([isEligible])
-
   @@index([bloodGroup, availability, isEligible])
-
   @@map("donor_profiles")
 }
 
 // BLOOD REQUEST
 model BloodRequest {
   id             String                 @id @default(uuid())
-
   requesterId    String
-
   locationId     String?
-
   bloodGroup     BloodGroup
-
   unitsRequired  Int
   unitsFulfilled Int                    @default(0)
-
   priority       Priority               @default(LOW)
-
   status         BloodRequestStatus     @default(OPEN)
-
   patientName    String?
   patientAge     Int?
-
   hospitalName   String?
-
   requiredAt     TimestamptzString?
   expiresAt      TimestamptzString?
-
   description    String?
-
   createdAt      TimestamptzString      @default(now())
   updatedAt      temporal.updatedAt()
 
   requester      User                   @relation("RequestRequester", fields:[requesterId], references:[id], onDelete: Cascade)
-
   location       Location?              @relation(fields:[locationId], references:[id], onDelete: SetNull)
-
   responses      BloodRequestResponse[]
-
   donations      BloodDonation[]
 
   @@index([requesterId])
@@ -463,42 +382,31 @@ model BloodRequest {
   @@index([status])
   @@index([priority])
   @@index([expiresAt])
-
   @@index([bloodGroup, status, priority])
-
   @@map("blood_requests")
 }
 
 // BLOOD REQUEST RESPONSE
 model BloodRequestResponse {
   id          String                @id @default(uuid())
-
   requestId   String
   donorId     String
-
   status      RequestResponseStatus @default(PENDING)
-
   message     String?
-
   respondedAt TimestamptzString     @default(now())
   acceptedAt  TimestamptzString?
   completedAt TimestamptzString?
-
   createdAt   TimestamptzString     @default(now())
   updatedAt   temporal.updatedAt()
 
   request     BloodRequest          @relation(fields:[requestId], references:[id], onDelete: Cascade)
-
   donor       DonorProfile          @relation(fields:[donorId], references:[id], onDelete: Cascade)
 
   @@unique([requestId, donorId])
-
   @@index([requestId])
   @@index([donorId])
   @@index([status])
-
   @@index([requestId, status])
-
   @@map("blood_request_responses")
 }
 
@@ -512,45 +420,30 @@ model BloodDonation {
   donationNumber  String               @unique
   bloodGroup      BloodGroup
   units           Int                  @default(1)
-
   donatedAt       TimestamptzString
-
   status          DonationStatus       @default(PENDING)
-
   verifiedAt      TimestamptzString?
-
   verifiedById    String?
-
   rejectionReason String?
-
   notes           String?
-
   createdAt       TimestamptzString    @default(now())
   updatedAt       temporal.updatedAt()
 
   donor           DonorProfile         @relation(fields:[donorId], references:[id], onDelete: Cascade)
-
   request         BloodRequest?        @relation(fields:[requestId], references:[id], onDelete: SetNull)
-
   organization    Organization?        @relation(fields:[organizationId], references:[id], onDelete: SetNull)
-
   location        Location?            @relation(fields:[locationId], references:[id], onDelete: SetNull)
-
   verifiedBy      User?                @relation("DonationVerifier", fields:[verifiedById], references:[id], onDelete: SetNull)
-
   certificate     DonationCertificate?
 
   @@unique([donorId, donationNumber])
-
   @@index([donorId])
   @@index([requestId])
   @@index([organizationId])
   @@index([locationId])
   @@index([status])
   @@index([donatedAt])
-
   @@index([donorId, status, donatedAt])
-
   @@map("blood_donations")
 }
 
@@ -563,11 +456,9 @@ model DonationCertificate {
   donorName        String
   bloodGroup       BloodGroup
   donationNumber   Int
-
   donatedAt        TimestamptzString
   issuedAt         TimestamptzString @default(now())
   certificateUrl   String?
-
   createdAt        TimestamptzString @default(now())
 
   donation         BloodDonation     @relation(fields:[donationId], references:[id], onDelete: Cascade)
@@ -583,35 +474,25 @@ model Organization {
   verifiedById   String?
   name           String
   slug           String               @unique
-
   type           OrganizationType
   status         OrganizationStatus   @default(PENDING)
   description    String?
-
   logoUrl        String?
   coverUrl       String?
-
   phone          String?
   email          String?
   website        String?
-
   registrationNo String?
-
   verifiedAt     TimestamptzString?
-
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
   owner          User                 @relation("OrganizationOwner", fields:[ownerId], references:[id], onDelete: Restrict)
-
   location       Location?            @relation(fields:[locationId], references:[id], onDelete: SetNull)
-
   verifiedBy     User?                @relation("OrganizationVerifier", fields:[verifiedById], references:[id], onDelete: SetNull)
 
   members        OrganizationMember[]
-
   donations      BloodDonation[]
-
   reviews        Review[]
 
   @@index([ownerId])
@@ -619,9 +500,7 @@ model Organization {
   @@index([verifiedById])
   @@index([type])
   @@index([status])
-
   @@index([type, status])
-
   @@map("organizations")
 }
 
@@ -631,21 +510,16 @@ model OrganizationMember {
   organizationId String
   userId         String
   role           OrganizationMemberRole @default(STAFF)
-
   createdAt      TimestamptzString      @default(now())
   updatedAt      temporal.updatedAt()
 
   organization   Organization           @relation(fields:[organizationId], references:[id], onDelete: Cascade)
-
   user           User                   @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
-
   @@index([userId])
   @@index([role])
-
   @@index([organizationId, role])
-
   @@map("organization_members")
 }
 
@@ -656,23 +530,17 @@ model Notification {
   type      NotificationType
   title     String
   message   String
-
   read      Boolean              @default(false)
   readAt    TimestamptzString?
-
   data      Json?
-
   createdAt TimestamptzString    @default(now())
   updatedAt temporal.updatedAt()
 
   user      User                 @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   @@index([userId])
-
   @@index([userId, read])
-
   @@index([userId, read, createdAt])
-
   @@map("notifications")
 }
 
@@ -680,16 +548,13 @@ model Notification {
 model Conversation {
   id           String                    @id @default(uuid())
   type         ConversationType
-
   createdAt    TimestamptzString         @default(now())
   updatedAt    temporal.updatedAt()
 
   participants ConversationParticipant[]
-
   messages     Message[]
 
   @@index([type])
-
   @@map("conversations")
 }
 
@@ -698,21 +563,15 @@ model ConversationParticipant {
   id             String             @id @default(uuid())
   conversationId String
   userId         String
-
   joinedAt       TimestamptzString  @default(now())
-
   lastReadAt     TimestamptzString?
 
   conversation   Conversation       @relation(fields:[conversationId], references:[id], onDelete: Cascade)
-
   user           User               @relation(fields:[userId], references:[id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
-
   @@index([userId])
-
   @@index([userId, lastReadAt])
-
   @@map("conversation_participants")
 }
 
@@ -722,21 +581,16 @@ model Message {
   conversationId String
   senderId       String
   content        String
-
   isEdited       Boolean              @default(false)
   editedAt       TimestamptzString?
-
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
   conversation   Conversation         @relation(fields:[conversationId], references:[id], onDelete: Cascade)
-
   sender         User                 @relation("MessageSender", fields:[senderId], references:[id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
-
   @@index([senderId])
-
   @@map("messages")
 }
 
@@ -749,25 +603,19 @@ model Review {
   rating         Int
   comment        String?
   status         ReviewStatus         @default(PENDING)
-
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
   reviewer       User                 @relation("ReviewAuthor", fields:[reviewerId], references:[id], onDelete: Cascade)
-
   reviewee       User?                @relation("ReviewTarget", fields:[revieweeId], references:[id], onDelete: SetNull)
-
   organization   Organization?        @relation(fields:[organizationId], references:[id], onDelete: SetNull)
 
   @@index([reviewerId])
   @@index([revieweeId])
   @@index([organizationId])
   @@index([status])
-
   @@index([organizationId, status])
-
   @@index([revieweeId, status])
-
   @@map("reviews")
 }
 
@@ -778,7 +626,6 @@ model DonationMilestone {
   description   String
   donationCount Int                  @unique
   badgeUrl      String?
-
   createdAt     TimestamptzString    @default(now())
   updatedAt     temporal.updatedAt()
 
@@ -792,20 +639,15 @@ model UserMilestone {
   id          String                @id @default(uuid())
   userId      String
   milestoneId String
-
   achievedAt  TimestamptzString     @default(now())
 
   user        User                  @relation(fields:[userId], references:[id], onDelete: Cascade)
-
   milestone   DonationMilestone     @relation(fields:[milestoneId], references:[id], onDelete: Cascade)
-
   certificate MilestoneCertificate?
 
   @@unique([userId, milestoneId])
-
   @@index([userId])
   @@index([milestoneId])
-
   @@map("user_milestones")
 }
 
@@ -817,10 +659,8 @@ model MilestoneCertificate {
   verificationCode String            @unique
   donorName        String
   donationCount    Int
-
   achievedAt       TimestamptzString
   issuedAt         TimestamptzString @default(now())
-
   certificateUrl   String?
   createdAt        TimestamptzString @default(now())
 
@@ -838,24 +678,19 @@ model Report {
   targetId     String
   reason       String
   description  String?
-
   status       ReportStatus         @default(PENDING)
   resolvedAt   TimestamptzString?
-
   createdAt    TimestamptzString    @default(now())
   updatedAt    temporal.updatedAt()
 
   reporter     User                 @relation("ReportReporter", fields:[reporterId], references:[id], onDelete: Cascade)
-
   resolvedBy   User?                @relation("ReportResolver", fields:[resolvedById], references:[id], onDelete: SetNull)
 
   @@index([reporterId])
   @@index([resolvedById])
   @@index([type, targetId])
   @@index([status])
-
   @@index([status, createdAt])
-
   @@map("reports")
 }
 
@@ -875,9 +710,7 @@ model AuditLog {
   user       User?             @relation(fields:[userId], references:[id], onDelete: SetNull)
 
   @@index([userId])
-
   @@index([entityType, entityId])
-
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
@@ -885,10 +718,8 @@ model AuditLog {
 
 model Payment {
   id                      String               @id @default(uuid())
-
   payerId                 String
   donorId                 String
-
   type                    PaymentType          @default(DONOR_COFFEE)
   provider                PaymentProvider      @default(STRIPE)
   status                  PaymentStatus        @default(PENDING)
@@ -897,26 +728,19 @@ model Payment {
   // Example: 10.50 USD = 10.50
   amount                  Float
   refundedAmount          Float                @default("0")
-
   currency                String               @default("usd")
-
   message                 String?
   description             String?
-
   stripePaymentIntentId   String?              @unique
   stripeCheckoutSessionId String?              @unique
   stripeCustomerId        String?
-
   paidAt                  TimestamptzString?
   refundedAt              TimestamptzString?
-
   metadata                Json?
-
   createdAt               TimestamptzString    @default(now())
   updatedAt               temporal.updatedAt()
 
   payer                   User                 @relation("PaymentPayer", fields:[payerId], references:[id], onDelete: Cascade)
-
   donor                   DonorProfile         @relation("DonorPayments", fields:[donorId], references:[id], onDelete: Cascade)
 
   @@index([payerId])
