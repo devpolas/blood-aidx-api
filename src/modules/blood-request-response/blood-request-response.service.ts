@@ -10,14 +10,7 @@ import { AppError } from "../../utils/appError";
 
 // Types
 
-type ActorRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type ActorRole = "user" | "moderator" | "admin";
 
 type ResponseStatus =
   "pending" | "accepted" | "declined" | "cancelled" | "completed";
@@ -61,7 +54,7 @@ const getActor = async (userId: string) => {
 // Role Helpers
 
 const isDonorRole = (role: ActorRole) => {
-  return role === "donor";
+  return role === "user";
 };
 
 const isModeratorRole = (role: ActorRole) => {
