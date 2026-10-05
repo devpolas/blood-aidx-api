@@ -144,9 +144,3 @@ export const requireAuth = (req: Request) => {
 
 export const requireAdmin = requireRole("admin");
 export const requireModerator = requireRole("moderator", "admin");
-export const requireDonor = requireRole("donor");
-export const requireRecipient = requireRole("recipient");
-export const requireVolunteer = requireRole("volunteer");
-export const requireHospital = requireRole("hospital");
-export const requireBloodBank = requireRole("blood_bank");
-export const requireHospitalOrBloodBank = requireRole("hospital", "blood_bank");

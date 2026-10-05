@@ -2,14 +2,7 @@ import * as z from "zod";
 
 import { GenderSchema } from "../../auth/auth.schema";
 
-export const AdminAssignableRoleSchema = z.enum([
-  "donor",
-  "recipient",
-  "volunteer",
-  "hospital",
-  "blood_bank",
-  "moderator",
-]);
+export const AdminAssignableRoleSchema = z.enum(["user", "moderator"]);
 
 export const AdminUpdateUserSchema = z
   .object({
