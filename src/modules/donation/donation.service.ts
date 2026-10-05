@@ -10,7 +10,7 @@ import type {
 
 // Authorization
 
-type ActorRole = "donor" | "hospital" | "blood_bank" | "moderator" | "admin";
+type ActorRole = "user" | "moderator" | "admin";
 
 const getActor = async (userId: string) => {
   const actor = await db.orm.public.User.where({
@@ -27,7 +27,7 @@ const getActor = async (userId: string) => {
 const requireDonor = async (userId: string) => {
   const actor = await getActor(userId);
 
-  if ((actor.role as ActorRole) !== "donor") {
+  if ((actor.role as ActorRole) !== "user") {
     throw new AppError("Donor access required", httpStatus.FORBIDDEN);
   }
 
@@ -37,12 +37,7 @@ const requireDonor = async (userId: string) => {
 const requireVerifier = async (userId: string) => {
   const actor = await getActor(userId);
 
-  const verifierRoles: ActorRole[] = [
-    "hospital",
-    "blood_bank",
-    "moderator",
-    "admin",
-  ];
+  const verifierRoles: ActorRole[] = ["moderator", "admin"];
 
   if (!verifierRoles.includes(actor.role as ActorRole)) {
     throw new AppError("Verifier access required", httpStatus.FORBIDDEN);
