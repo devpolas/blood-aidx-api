@@ -11,14 +11,7 @@ import type {
 
 // Types
 
-type GlobalRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type GlobalRole = "user" | "moderator" | "admin";
 
 type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -39,7 +32,7 @@ const getUserById = async (userId: string) => {
 const requireDonor = async (userId: string) => {
   const user = await getUserById(userId);
 
-  if ((user.role as GlobalRole) !== "donor") {
+  if ((user.role as GlobalRole) !== "user") {
     throw new AppError("Donor access required", httpStatus.FORBIDDEN);
   }
 

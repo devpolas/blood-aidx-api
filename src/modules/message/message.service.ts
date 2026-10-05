@@ -6,14 +6,7 @@ import { ConversationService } from "../conversation/conversation.service";
 
 import type { CreateMessageInput, UpdateMessageInput } from "./message.schema";
 
-type GlobalRole =
-  | "donor"
-  | "recipient"
-  | "volunteer"
-  | "hospital"
-  | "blood_bank"
-  | "moderator"
-  | "admin";
+type GlobalRole = "user" | "moderator" | "admin";
 
 // Internal Helpers
 
