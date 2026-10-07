@@ -1,9 +1,12 @@
 import { Router, type Router as ExpressRouter } from "express";
+
 import { NotificationController } from "./notification.controller";
+
 import { protect, requireActiveUser } from "../../middleware/auth.middleware";
 
 const router: ExpressRouter = Router();
 
+// Current User
 router.get(
   "/",
   protect,
@@ -39,6 +42,7 @@ router.delete(
   NotificationController.deleteReadNotifications,
 );
 
+// Individual Notification
 router.patch(
   "/:notificationId/read",
   protect,

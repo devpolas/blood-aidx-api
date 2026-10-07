@@ -1,6 +1,6 @@
 import { Router, type Router as ExpressRouter } from "express";
-import { BloodRequestController } from "./blood-request.controller";
 
+import { BloodRequestController } from "./blood-request.controller";
 import {
   protect,
   requireActiveUser,
@@ -9,17 +9,10 @@ import {
 
 const router: ExpressRouter = Router();
 
-// Public Routes
-
-// Get all blood requests
+// Public
 router.get("/", BloodRequestController.getBloodRequests);
 
-// Get blood request by ID
-router.get("/:requestId", BloodRequestController.getBloodRequestById);
-
-// Authenticated Routes
-
-// Get current user's blood requests
+// My Blood Requests
 router.get(
   "/me",
   protect,
@@ -27,7 +20,7 @@ router.get(
   BloodRequestController.getMyBloodRequests,
 );
 
-// Create blood request
+// Create Blood Request
 router.post(
   "/",
   protect,
@@ -36,16 +29,7 @@ router.post(
   BloodRequestController.createBloodRequest,
 );
 
-// Update blood request
-router.patch(
-  "/:requestId",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  BloodRequestController.updateBloodRequest,
-);
-
-// Update blood request status
+// Update Blood Request Status
 router.patch(
   "/:requestId/status",
   protect,
@@ -54,7 +38,7 @@ router.patch(
   BloodRequestController.updateBloodRequestStatus,
 );
 
-// Cancel blood request
+// Cancel Blood Request
 router.post(
   "/:requestId/cancel",
   protect,
@@ -63,7 +47,16 @@ router.post(
   BloodRequestController.cancelBloodRequest,
 );
 
-// Delete blood request
+// Update Blood Request
+router.patch(
+  "/:requestId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  BloodRequestController.updateBloodRequest,
+);
+
+// Delete Blood Request
 router.delete(
   "/:requestId",
   protect,
@@ -71,5 +64,8 @@ router.delete(
   requireVerifiedEmail,
   BloodRequestController.deleteBloodRequest,
 );
+
+// Get Blood Request by ID
+router.get("/:requestId", BloodRequestController.getBloodRequestById);
 
 export default router;

@@ -1,6 +1,6 @@
 import { Router, type Router as ExpressRouter } from "express";
-import { BloodRequestResponseController } from "./blood-request-response.controller";
 
+import { BloodRequestResponseController } from "./blood-request-response.controller";
 import {
   protect,
   requireActiveUser,
@@ -9,55 +9,58 @@ import {
 
 const router: ExpressRouter = Router();
 
-// Authenticated Routes
-
-router.use(protect, requireActiveUser);
-
 // Current User
-
-// Get my responses
-router.get("/me", BloodRequestResponseController.getMyResponses);
+router.get(
+  "/me",
+  protect,
+  requireActiveUser,
+  BloodRequestResponseController.getMyResponses,
+);
 
 // Blood Request
-
-// Create response for a blood request
 router.post(
   "/requests/:requestId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   BloodRequestResponseController.createResponse,
 );
 
-// Get responses for a blood request
-// Request owner + moderator/admin are authorized
-// inside the service.
 router.get(
   "/requests/:requestId",
+  protect,
+  requireActiveUser,
   BloodRequestResponseController.getResponsesForRequest,
 );
 
 // Individual Response
+router.get(
+  "/:responseId",
+  protect,
+  requireActiveUser,
+  BloodRequestResponseController.getResponseById,
+);
 
-// Get individual response
-// Donor + requester + moderator/admin
-router.get("/:responseId", BloodRequestResponseController.getResponseById);
-
-// Update response status
 router.patch(
   "/:responseId/status",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   BloodRequestResponseController.updateResponseStatus,
 );
 
-// Donor cancels own response
 router.post(
   "/:responseId/cancel",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   BloodRequestResponseController.cancelMyResponse,
 );
 
-// Donor deletes own response
 router.delete(
   "/:responseId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   BloodRequestResponseController.deleteMyResponse,
 );

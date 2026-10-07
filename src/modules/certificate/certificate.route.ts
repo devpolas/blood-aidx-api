@@ -11,16 +11,26 @@ import {
 const router: ExpressRouter = Router();
 
 // Public
-
 router.get(
   "/verify/:certificateNumber",
   CertificateController.verifyCertificate,
 );
 
-// Protected
+// Current User
+router.get(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  CertificateController.getMyCertificates,
+);
 
-router.use(protect, requireActiveUser, requireVerifiedEmail);
-router.get("/me", CertificateController.getMyCertificates);
-router.get("/me/:certificateId", CertificateController.getMyCertificateById);
+router.get(
+  "/me/:certificateId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  CertificateController.getMyCertificateById,
+);
 
 export default router;

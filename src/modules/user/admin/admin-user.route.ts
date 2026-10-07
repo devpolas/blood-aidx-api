@@ -11,29 +11,12 @@ import { AdminUserController } from "./admin-user.controller";
 const router: ExpressRouter = Router();
 
 // Admin User Management
-
 router.get(
   "/",
   protect,
   requireActiveUser,
   requireAdmin,
   AdminUserController.getUsers,
-);
-
-router.get(
-  "/:userId",
-  protect,
-  requireActiveUser,
-  requireAdmin,
-  AdminUserController.getUser,
-);
-
-router.patch(
-  "/:userId",
-  protect,
-  requireActiveUser,
-  requireAdmin,
-  AdminUserController.updateUser,
 );
 
 router.patch(
@@ -58,6 +41,22 @@ router.patch(
   requireActiveUser,
   requireAdmin,
   AdminUserController.unbanUser,
+);
+
+router.get(
+  "/:userId",
+  protect,
+  requireActiveUser,
+  requireAdmin,
+  AdminUserController.getUser,
+);
+
+router.patch(
+  "/:userId",
+  protect,
+  requireActiveUser,
+  requireAdmin,
+  AdminUserController.updateUser,
 );
 
 router.delete(

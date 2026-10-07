@@ -6,18 +6,15 @@ import {
   requireRole,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
+
 import { MilestoneController } from "./milestone.controller";
 
 const router: ExpressRouter = Router();
 
 // Public
-
 router.get("/", MilestoneController.getMilestones);
 
-router.get("/:milestoneId", MilestoneController.getMilestoneById);
-
 // Current User
-
 router.get(
   "/my",
   protect,
@@ -27,7 +24,6 @@ router.get(
 );
 
 // Moderator / Admin
-
 router.get(
   "/user/:userId",
   protect,
@@ -38,7 +34,6 @@ router.get(
 );
 
 // Admin
-
 router.post(
   "/",
   protect,
@@ -65,5 +60,8 @@ router.delete(
   requireRole("admin"),
   MilestoneController.deleteMilestone,
 );
+
+// Public Milestone
+router.get("/:milestoneId", MilestoneController.getMilestoneById);
 
 export default router;

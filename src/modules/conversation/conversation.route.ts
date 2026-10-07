@@ -1,4 +1,5 @@
 import { Router, type Router as ExpressRouter } from "express";
+
 import { ConversationController } from "./conversation.controller";
 
 import {
@@ -9,33 +10,55 @@ import {
 
 const router: ExpressRouter = Router();
 
-// Protected Routes
-
-router.use(protect, requireActiveUser, requireVerifiedEmail);
-
 // Conversations
-
-router.get("/", ConversationController.getMyConversations);
-router.post("/", ConversationController.createConversation);
-
-// Participant Management
+router.get(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ConversationController.getMyConversations,
+);
 
 router.post(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ConversationController.createConversation,
+);
+
+// Participant Management
+router.post(
   "/:conversationId/participants",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
   ConversationController.addParticipant,
 );
 
 router.delete(
   "/:conversationId/participants/:userId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
   ConversationController.removeParticipant,
 );
 
-router.post("/:conversationId/leave", ConversationController.leaveConversation);
+router.post(
+  "/:conversationId/leave",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ConversationController.leaveConversation,
+);
 
 // Conversation Details
-
-// Keep this LAST because /:conversationId
-// can otherwise catch other static routes.
-router.get("/:conversationId", ConversationController.getConversation);
+router.get(
+  "/:conversationId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ConversationController.getConversation,
+);
 
 export default router;

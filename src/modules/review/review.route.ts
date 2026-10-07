@@ -1,6 +1,7 @@
 import { Router, type Router as ExpressRouter } from "express";
 
 import { ReviewController } from "./review.controller";
+
 import {
   protect,
   requireActiveUser,
@@ -13,7 +14,6 @@ const router: ExpressRouter = Router();
 const requireReviewModerator = requireRole("moderator", "admin");
 
 // Public
-
 router.get("/user/:userId", ReviewController.getReviewsForUser);
 
 router.get(
@@ -21,8 +21,7 @@ router.get(
   ReviewController.getReviewsForOrganization,
 );
 
-// Authenticated
-
+// Current User
 router.get(
   "/",
   protect,
@@ -39,6 +38,17 @@ router.post(
   ReviewController.createReview,
 );
 
+// Moderation
+router.patch(
+  "/:reviewId/status",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  requireReviewModerator,
+  ReviewController.updateReviewStatus,
+);
+
+// Individual Review
 router.get(
   "/:reviewId",
   protect,
@@ -61,17 +71,6 @@ router.delete(
   requireActiveUser,
   requireVerifiedEmail,
   ReviewController.deleteReview,
-);
-
-// Moderation
-
-router.patch(
-  "/:reviewId/status",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  requireReviewModerator,
-  ReviewController.updateReviewStatus,
 );
 
 export default router;

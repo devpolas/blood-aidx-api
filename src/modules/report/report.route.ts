@@ -11,14 +11,11 @@ import {
 
 const router: ExpressRouter = Router();
 
-// Authentication
-
-router.use(protect, requireActiveUser);
-
 // Moderation
-
 router.get(
   "/",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   requireRole("moderator", "admin"),
   ReportController.getReports,
@@ -26,24 +23,43 @@ router.get(
 
 router.patch(
   "/:reportId/status",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   requireRole("moderator", "admin"),
   ReportController.updateReportStatus,
 );
 
-// User
+// Current User
+router.post(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ReportController.createReport,
+);
 
-router.post("/", requireVerifiedEmail, ReportController.createReport);
+router.get(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ReportController.getMyReports,
+);
 
-// IMPORTANT:
-// /me must be declared before /:reportId.
-
-router.get("/me", requireVerifiedEmail, ReportController.getMyReports);
-
-router.get("/:reportId", requireVerifiedEmail, ReportController.getReport);
+// Individual Report
+router.get(
+  "/:reportId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ReportController.getReport,
+);
 
 router.delete(
   "/:reportId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   ReportController.deleteReport,
 );

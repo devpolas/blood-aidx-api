@@ -5,29 +5,52 @@ import {
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
+
 import { LocationController } from "./location.controller";
 
 const router: ExpressRouter = Router();
 
-// Public Location
-
-router.get("/:locationId", LocationController.getLocationById);
-
-// Protected Routes
-
-router.use(protect, requireActiveUser);
-
 // My Location
+router.get(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  LocationController.getMyLocation,
+);
 
-router.get("/me", requireVerifiedEmail, LocationController.getMyLocation);
-router.post("/", requireVerifiedEmail, LocationController.createLocation);
-router.patch("/me", requireVerifiedEmail, LocationController.updateLocation);
-router.delete("/me", requireVerifiedEmail, LocationController.deleteMyLocation);
+router.post(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  LocationController.createLocation,
+);
 
-// Moderator / Admin
+router.patch(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  LocationController.updateLocation,
+);
 
 router.delete(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  LocationController.deleteMyLocation,
+);
+
+// Public Location
+router.get("/:locationId", LocationController.getLocationById);
+
+// Moderator / Admin
+router.delete(
   "/:locationId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   LocationController.deleteLocationById,
 );

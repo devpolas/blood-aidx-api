@@ -6,12 +6,12 @@ import {
   requireAdmin,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
+
 import { PaymentController } from "./payment.controller";
 
 const router = Router();
 
 // User
-
 router.post(
   "/coffee",
   protect,
@@ -37,7 +37,6 @@ router.get(
 );
 
 // Admin
-
 router.get(
   "/admin/:paymentId",
   protect,
@@ -57,7 +56,6 @@ router.post(
 );
 
 // Generic Payment
-
 router.get(
   "/:paymentId",
   protect,

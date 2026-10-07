@@ -1,7 +1,6 @@
 import { Router, type Router as ExpressRouter } from "express";
 
 import { ProfileController } from "./profile.controller";
-
 import {
   protect,
   requireActiveUser,
@@ -10,40 +9,41 @@ import {
 
 const router: ExpressRouter = Router();
 
-// Public
+// My Profile
+router.get("/me", protect, requireActiveUser, ProfileController.getMyProfile);
 
+router.put(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ProfileController.upsertMyProfile,
+);
+
+router.delete(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  ProfileController.deleteMyProfile,
+);
+
+// Public
 router.get("/:userId", ProfileController.getProfileByUserId);
 
-// Authentication
-
-router.use(protect, requireActiveUser);
-
-// My Profile
-
-// IMPORTANT: /me must come before /:userId
-
-router.get("/me", ProfileController.getMyProfile);
-router.put("/me", requireVerifiedEmail, ProfileController.upsertMyProfile);
-router.delete("/me", requireVerifiedEmail, ProfileController.deleteMyProfile);
-
 // Moderator / Admin
-
-// Update another user's profile
-// Authorization is handled inside the service:
-// Moderator + Admin
-
 router.patch(
   "/:userId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   ProfileController.updateProfileByUserId,
 );
 
-// Delete another user's profile
-// Authorization is handled inside the service:
-// Admin only
-
 router.delete(
   "/:userId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   ProfileController.deleteProfileByUserId,
 );

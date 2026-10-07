@@ -5,18 +5,12 @@ import {
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
+
 import { DonorController } from "./donor.controller";
 
 const router: ExpressRouter = Router();
 
-// Public Donor Discovery
-
-router.get("/", DonorController.getDonors);
-
-router.get("/:donorId", DonorController.getDonorById);
-
-// Authenticated Donor Routes
-
+// Current User
 router.get(
   "/me",
   protect,
@@ -40,8 +34,12 @@ router.delete(
   DonorController.deleteMyDonorProfile,
 );
 
-// Moderator / Admin
+// Public Donor Discovery
+router.get("/", DonorController.getDonors);
 
+router.get("/:donorId", DonorController.getDonorById);
+
+// Moderator / Admin
 router.patch(
   "/:donorId",
   protect,

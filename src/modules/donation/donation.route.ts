@@ -5,18 +5,15 @@ import {
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
+
 import { DonationController } from "./donation.controller";
 
 const router: ExpressRouter = Router();
 
 // Public Donor Profile
-
 router.get("/donor/:donorId", DonationController.getDonorDonations);
 
-// My Donations
-
-// IMPORTANT: /me must come before /:donationId
-
+// Current User
 router.get(
   "/me",
   protect,
@@ -41,18 +38,7 @@ router.post(
   DonationController.cancelMyDonation,
 );
 
-// Donation Detail
-
-router.get(
-  "/:donationId",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  DonationController.getDonationById,
-);
-
 // Moderator / Admin
-
 router.get(
   "/",
   protect,
@@ -67,6 +53,15 @@ router.patch(
   requireActiveUser,
   requireVerifiedEmail,
   DonationController.verifyDonation,
+);
+
+// Donation Detail
+router.get(
+  "/:donationId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  DonationController.getDonationById,
 );
 
 export default router;

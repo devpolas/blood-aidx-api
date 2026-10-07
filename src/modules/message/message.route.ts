@@ -11,41 +11,81 @@ import {
 
 const router: ExpressRouter = Router();
 
-router.use(protect, requireActiveUser, requireVerifiedEmail);
-
 // Conversation Messages
-
-router.post("/", MessageController.sendMessage);
+router.post(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  MessageController.sendMessage,
+);
 
 router.get(
   "/conversation/:conversationId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
   MessageController.getConversationMessages,
 );
 
 router.patch(
   "/conversation/:conversationId/read",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
   MessageController.markConversationMessagesAsRead,
 );
 
 router.get(
   "/conversation/:conversationId/unread-count",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
   MessageController.getUnreadCount,
 );
 
 // Moderation
-// Must be before /:messageId
-
 router.delete(
   "/:messageId/moderate",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
   requireRole("moderator", "admin"),
   MessageController.moderateDeleteMessage,
 );
 
-// Individual Message
+// Individual Message Actions
+router.patch(
+  "/:messageId/read",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  MessageController.markMessageAsRead,
+);
 
-router.get("/:messageId", MessageController.getMessageById);
-router.patch("/:messageId", MessageController.updateMessage);
-router.delete("/:messageId", MessageController.deleteMessage);
-router.patch("/:messageId/read", MessageController.markMessageAsRead);
+// Individual Message
+router.get(
+  "/:messageId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  MessageController.getMessageById,
+);
+
+router.patch(
+  "/:messageId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  MessageController.updateMessage,
+);
+
+router.delete(
+  "/:messageId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  MessageController.deleteMessage,
+);
 
 export default router;
