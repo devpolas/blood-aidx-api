@@ -1,58 +1,79 @@
-# 🩸 Blood AIDX — Backend API
+I reviewed the previous README and the current repository metadata. The old README is comprehensive, but several sections are now outdated—especially the role model, Prisma commands, API authorization model, payment claims, and project scripts. The current package uses Node 24, Express 5, Prisma ORM 8 RC, Zod 4, Redis, Socket.IO, Stripe, Cloudinary, and the newer `user / moderator / admin` global role model.
 
-> A production-oriented blood donation and emergency blood request backend built with **Node.js, Express, TypeScript, PostgreSQL, Prisma, REST API, Socket.IO, and Redis**.
+Below is a **complete replacement README** that reflects the current architecture and recent API changes.
 
-Blood AIDX provides the backend infrastructure for connecting blood donors, recipients, volunteers, hospitals, blood banks, and platform administrators through a secure and scalable API.
+````md
+# 🩸 Blood AidX API
+
+> A production-oriented REST and realtime backend for blood donation, emergency blood requests, donor coordination, communication, organizations, and donation management.
+
+Blood AidX provides the backend infrastructure for connecting people who need blood with eligible donors while supporting donation tracking, organizations, realtime communication, notifications, reporting, reviews, authentication, and administrative workflows.
 
 ---
 
-## 📌 Overview
+## ✨ Overview
 
-Blood AIDX is a backend platform designed to manage the complete blood-donation workflow:
+Blood AidX is a modular backend API built with modern Node.js and TypeScript technologies.
+
+The platform is designed around a simple goal:
+
+> **Make blood donation and emergency blood coordination easier, safer, and more reliable through a secure API and realtime communication layer.**
+
+The backend provides:
 
 - User authentication and account management
-- Donor management
-- Blood requests
+- Email verification
+- Google OAuth
+- Session-based authentication
+- Donor profiles and eligibility
+- Public donor discovery
+- Blood request management
 - Blood request responses
-- Donation records
-- Organizations and blood banks
+- Donation tracking
+- Donation verification
+- Organizations and organization members
 - Locations
 - Donation milestones
-- Certificates
-- Reports
+- Donation certificates
 - Reviews
+- Reports and moderation
 - Conversations
 - Realtime messaging
 - Realtime notifications
+- Media uploads
+- Donor-support payments
 - Administrative user management
-
-The backend follows a layered architecture where HTTP APIs and realtime Socket.IO events share the same business services and authorization rules.
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Architecture
+
+Blood AidX follows a modular service-oriented backend architecture.
 
 ```text
-                         Blood AIDX Backend
-                                │
-              ┌─────────────────┴─────────────────┐
-              │                                   │
-          REST API                            Socket.IO
-              │                                   │
-              └─────────────────┬─────────────────┘
-                                │
-                           Controllers
-                                │
-                             Services
-                                │
-              ┌─────────────────┴─────────────────┐
-              │                                   │
-           Prisma                              Redis
-              │
-          PostgreSQL
+                         Blood AidX API
+                              │
+              ┌───────────────┴───────────────┐
+              │                               │
+          REST API                         Socket.IO
+              │                               │
+              └───────────────┬───────────────┘
+                              │
+                         Middleware
+                              │
+                         Controllers
+                              │
+                           Services
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+             Prisma                       Redis
+                │
+           PostgreSQL
 ```
+````
 
-### Backend layers
+### HTTP request flow
 
 ```text
 HTTP Request
@@ -67,16 +88,16 @@ HTTP Request
  Controller
      │
      ▼
- Service
+  Service
      │
      ▼
- Prisma
+  Prisma
      │
      ▼
- PostgreSQL
+PostgreSQL
 ```
 
-Realtime operations follow the same business layer:
+### Realtime flow
 
 ```text
 Socket.IO Event
@@ -97,163 +118,735 @@ Prisma / PostgreSQL
 Socket.IO Broadcast
 ```
 
-Socket.IO is treated as a **realtime transport layer**, not as a separate business-logic layer.
+Socket.IO is a transport layer. Business rules remain inside services and are shared with the REST API.
 
 ---
 
-# 🚀 Core Features
+# 🧰 Tech Stack
 
-## Authentication
+| Category         | Technology               |
+| ---------------- | ------------------------ |
+| Runtime          | Node.js 24               |
+| Language         | TypeScript               |
+| Framework        | Express 5                |
+| API              | REST                     |
+| Realtime         | Socket.IO                |
+| Database         | PostgreSQL               |
+| ORM              | Prisma ORM 8             |
+| Validation       | Zod 4                    |
+| Cache            | Redis                    |
+| Authentication   | Database-backed sessions |
+| OAuth            | Google OAuth             |
+| Email            | Nodemailer               |
+| Media            | Cloudinary               |
+| Payments         | Stripe                   |
+| Password Hashing | bcrypt                   |
+| Build            | tsup                     |
+| Runtime Dev      | tsx                      |
+| Linting          | oxlint                   |
+| Deployment       | Node.js / Vercel         |
 
-- Email/password authentication
-- Database-backed sessions
-- Session cookie authentication
-- Google OAuth
+The current package configuration targets Node.js 24 and uses Prisma ORM 8 RC, Express 5, Socket.IO, Redis, Stripe, Cloudinary, Zod, and related infrastructure.
+
+---
+
+# 📦 Core Modules
+
+```text
+src/
+├── modules/
+│   ├── auth/
+│   ├── user/
+│   ├── profile/
+│   ├── donor/
+│   ├── blood-request/
+│   ├── blood-request-response/
+│   ├── donation/
+│   ├── user-admin/
+│   ├── organization/
+│   ├── location/
+│   ├── milestone/
+│   ├── certificate/
+│   ├── report/
+│   ├── review/
+│   ├── conversation/
+│   ├── message/
+│   ├── notification/
+│   ├── payment/
+│   └── upload/
+│
+├── config/
+├── lib/
+│   ├── db/
+│   └── redis/
+│
+├── middleware/
+├── socket/
+├── utils/
+├── app.ts
+└── server.ts
+```
+
+A typical module follows:
+
+```text
+module/
+├── module.route.ts
+├── module.controller.ts
+├── module.service.ts
+├── module.schema.ts
+└── module.validation.ts
+```
+
+This keeps:
+
+- HTTP routing in routers
+- Request parsing in controllers
+- Business rules in services
+- Input validation in schemas
+- Database access in services
+- Authentication and authorization in middleware
+
+---
+
+# 🔐 Authentication
+
+Blood AidX uses database-backed sessions instead of making JWT the primary authentication mechanism.
+
+```text
+Client
+  │
+  │ session cookie
+  ▼
+Express
+  │
+  ▼
+Session Service
+  │
+  ▼
+PostgreSQL
+  │
+  ▼
+Authenticated User
+```
+
+The same authentication model is used by REST and Socket.IO.
+
+## Supported authentication
+
+- Email/password signup
+- Email/password signin
 - Email verification
-- Active-user validation
-- Account banning support
+- Resend verification code
+- Forgot password
+- Password reset
+- Password change
+- Logout
 - Session management
-
-Primary session cookie:
-
-```text
-session_token
-```
-
-The backend uses the database-backed session as the source of truth instead of relying on JWT as the primary authentication mechanism.
+- Google OAuth
+- Banned-account protection
+- Active-user validation
 
 ---
 
-## 🔐 Authorization
+# 👤 User Roles
 
-Blood AIDX uses multiple authorization levels:
-
-```text
-1. Global User Role
-        ↓
-2. Organization Member Role
-        ↓
-3. Resource Ownership
-```
-
-Global roles:
+The current global user roles are:
 
 ```text
-DONOR
-RECIPIENT
-VOLUNTEER
-HOSPITAL
-BLOOD_BANK
-MODERATOR
-ADMIN
+user
+moderator
+admin
 ```
 
-Authorization is resource-aware.
+### `user`
 
-Administrative privileges are not automatically applied to every resource. Moderator/admin permissions are explicitly required for moderation and administrative operations.
+Regular platform users can:
+
+- Maintain their profile
+- Create donor profiles
+- Search donors
+- Create blood requests
+- Respond to blood requests
+- Manage their donations
+- Participate in conversations
+- Send messages
+- Submit reports
+- Write reviews
+- Manage notifications
+
+### `moderator`
+
+Moderators can perform platform moderation operations such as:
+
+- Review reports
+- Moderate messages
+- Moderate user-generated content
+- Manage reported resources
+
+### `admin`
+
+Administrators have platform-level administrative capabilities including:
+
+- User administration
+- Moderation
+- Report management
+- Administrative workflows
 
 ---
 
-# 🩸 Blood Donation Domain
+# 🏢 Organization Roles
 
-The backend manages the complete donation workflow.
+Organization membership is separate from the global user role.
+
+A user remains:
 
 ```text
-Donor
-  │
-  ▼
-Blood Request
-  │
-  ▼
-Blood Request Response
-  │
-  ▼
-Donation
-  │
-  ▼
-Milestone
-  │
-  ▼
-Certificate
+User.role = user
 ```
 
-Supported domain modules include:
+while their organization membership can have:
 
-- Donors
+```text
+admin
+staff
+verifier
+```
+
+This separation allows the same person to participate in organizations without turning organization membership into a global application role.
+
+---
+
+# 🩸 Blood Donation Workflow
+
+The main domain workflow is:
+
+```text
+User
+ │
+ ├── Donor Profile
+ │
+ └── Blood Request
+          │
+          ▼
+   Blood Request Response
+          │
+          ▼
+       Donation
+          │
+          ├── Verification
+          │
+          ├── Milestone
+          │
+          └── Certificate
+```
+
+The backend supports:
+
+- Donor profiles
+- Blood groups
+- Donor availability
+- Eligibility tracking
+- Donation history
 - Blood requests
-- Blood request responses
-- Donations
+- Request responses
+- Donation verification
+- Donation cancellation
+- Donation certificates
+- Donation milestones
+
+---
+
+# 🧑‍🩸 Donors
+
+Donor profiles contain information required for donor discovery and donation management.
+
+Supported concepts include:
+
+- Blood group
+- Availability
+- Donation history
+- Total donations
+- Eligibility
+- Eligibility check timestamps
+- Public donor profile
+- Private donor management
+
+Example blood groups:
+
+```text
+a_positive
+a_negative
+b_positive
+b_negative
+ab_positive
+ab_negative
+o_positive
+o_negative
+```
+
+Donor availability:
+
+```text
+available
+unavailable
+temporarily_unavailable
+```
+
+---
+
+# 🚨 Blood Requests
+
+Blood requests allow users to request blood based on:
+
+- Blood group
+- Required units
+- Priority
+- Location
+- Patient information
+- Hospital information
+- Required date
+- Expiration date
+- Description
+
+Priority levels:
+
+```text
+low
+high
+urgent
+```
+
+Request lifecycle:
+
+```text
+open
+  │
+  ├── partially_fulfilled
+  │
+  ├── fulfilled
+  │
+  ├── cancelled
+  │
+  └── expired
+```
+
+---
+
+# 🤝 Blood Request Responses
+
+Donors can respond to blood requests.
+
+Response lifecycle:
+
+```text
+pending
+   │
+   ├── accepted
+   │      │
+   │      └── completed
+   │
+   ├── declined
+   │
+   └── cancelled
+```
+
+Response access is protected by resource ownership and authorization rules.
+
+A blood request owner can view responses to their request, while the responding donor can access their own response.
+
+---
+
+# 🩸 Donations
+
+Donation records track actual blood donations.
+
+A donation can contain:
+
+- Donor
+- Blood request
+- Organization
+- Location
+- Donation number
+- Blood group
+- Units
+- Donation date
+- Status
+- Verification information
+- Rejection reason
+- Notes
+
+Donation lifecycle:
+
+```text
+pending
+   │
+   ├── verified
+   │
+   ├── rejected
+   │
+   └── cancelled
+```
+
+Verified donations can contribute to:
+
+- Donation history
+- Donation statistics
 - Milestones
 - Certificates
-- Organizations
-- Locations
-- Reports
+
+---
+
+# 🏥 Organizations
+
+Organizations represent entities such as:
+
+```text
+hospital
+blood_bank
+clinic
+ngo
+other
+```
+
+Organization status:
+
+```text
+pending
+active
+verified
+suspended
+rejected
+```
+
+Organizations support:
+
+- Ownership
+- Location
+- Verification
+- Members
+- Organization roles
+- Donations
 - Reviews
+- Public discovery
+
+Organization members have:
+
+```text
+admin
+staff
+verifier
+```
 
 ---
 
-# 💬 Realtime Communication
+# 📍 Locations
 
-Blood AIDX uses **Socket.IO** for realtime communication.
+Locations provide reusable location information for:
 
-The Socket.IO server runs on the same HTTP server as Express.
+- Users
+- Donors
+- Blood requests
+- Donations
+- Organizations
 
-```text
-HTTP Server
-     │
-     ├── Express REST API
-     │
-     └── Socket.IO
-```
-
-There is no separate Socket.IO port in the current architecture.
+Locations are also used by resource discovery and geographic workflows.
 
 ---
 
-## 🔑 Socket Authentication
+# 🏆 Milestones
 
-Socket.IO uses the same database-backed session system as REST authentication.
+Blood AidX supports donation milestones for recognizing donor activity.
 
-The server extracts:
+Milestones can be based on donation counts and can be associated with users through milestone records.
+
+Typical workflow:
 
 ```text
-session_token
+Verified Donation
+       │
+       ▼
+Donation Count
+       │
+       ▼
+Milestone Evaluation
+       │
+       ▼
+User Milestone
 ```
 
-from the Socket.IO handshake cookie and validates it through the existing session service.
+---
 
-```ts
-getSessionByToken(token);
+# 📜 Certificates
+
+Donation certificates provide recognition for completed and verified donations.
+
+Certificates are associated with donation records and can be used to provide donors with formal donation recognition.
+
+---
+
+# ⭐ Reviews
+
+Reviews allow users to provide feedback about:
+
+- Users
+- Organizations
+
+Reviews support:
+
+```text
+pending
+published
+hidden
+rejected
 ```
 
-After successful authentication:
+Public review queries only expose published reviews.
+
+Reviews include:
+
+- Rating
+- Comment
+- Reviewer
+- Review target
+- Organization
+- Status
+- Timestamps
+
+---
+
+# 🚩 Reports
+
+Blood AidX includes a moderation/reporting system for platform resources.
+
+Supported report types:
+
+```text
+user
+blood_request
+donation
+organization
+message
+review
+```
+
+Report lifecycle:
+
+```text
+pending
+   │
+   ▼
+reviewing
+   │
+   ├── resolved
+   │
+   └── rejected
+```
+
+## User report workflow
+
+Authenticated and verified users can report eligible resources.
+
+A user cannot report themselves.
+
+## Message reports
+
+Message reports require the reporter to belong to the message's conversation.
+
+## Donation reports
+
+A donation can be reported by:
+
+- The donor
+- The owner of the related blood request
+
+## Duplicate active reports
+
+The service prevents the same reporter from creating another active report for the same target while an earlier report is still:
+
+```text
+pending
+```
+
+or:
+
+```text
+reviewing
+```
+
+Once a report is finalized, another report can be submitted later if necessary.
+
+## Report moderation
+
+Moderators and administrators can transition reports through valid states:
+
+```text
+pending → reviewing
+
+reviewing → resolved
+reviewing → rejected
+```
+
+Finalized reports cannot be reopened through the normal status API.
+
+---
+
+# 💬 Conversations
+
+Conversations provide persistent communication between users.
+
+Supported conversation types include:
+
+```text
+direct
+blood_request
+organization
+```
+
+Conversation access is based on membership.
+
+Typical endpoints:
+
+```text
+GET    /api/v1/conversations
+POST   /api/v1/conversations
+
+GET    /api/v1/conversations/:conversationId
+
+POST   /api/v1/conversations/:conversationId/participants
+DELETE /api/v1/conversations/:conversationId/participants/:userId
+
+POST   /api/v1/conversations/:conversationId/leave
+```
+
+---
+
+# 💬 Messages
+
+Messages belong to conversations.
+
+Supported operations include:
+
+```text
+POST   /api/v1/messages
+
+GET    /api/v1/messages/conversation/:conversationId
+
+GET    /api/v1/messages/:messageId
+
+PATCH  /api/v1/messages/:messageId
+
+DELETE /api/v1/messages/:messageId
+
+PATCH  /api/v1/messages/:messageId/read
+
+PATCH  /api/v1/messages/conversation/:conversationId/read
+
+GET    /api/v1/messages/conversation/:conversationId/unread-count
+```
+
+Messages support:
+
+- Editing
+- Deletion
+- Read state
+- Conversation membership authorization
+- Sender ownership authorization
+- Moderation deletion
+
+Message history uses cursor pagination.
+
+---
+
+# 🔔 Notifications
+
+Notifications use a persistent-first architecture.
+
+```text
+Business Event
+      │
+      ▼
+NotificationService
+      │
+      ├───────────────┐
+      ▼               ▼
+ PostgreSQL        Socket.IO
+      │               │
+      │               ▼
+      │         notification:new
+      │
+      ▼
+Persistent Notification
+```
+
+The database remains the source of truth.
+
+Supported operations include:
+
+```text
+GET    /api/v1/notifications
+GET    /api/v1/notifications/unread
+GET    /api/v1/notifications/unread-count
+
+PATCH  /api/v1/notifications/:notificationId/read
+PATCH  /api/v1/notifications/read-all
+
+DELETE /api/v1/notifications/:notificationId
+DELETE /api/v1/notifications/read
+```
+
+This means offline users do not lose notifications.
+
+---
+
+# ⚡ Socket.IO
+
+Socket.IO provides realtime communication on the same HTTP server as Express.
+
+```text
+Node HTTP Server
+       │
+       ├── Express REST API
+       │
+       └── Socket.IO
+```
+
+There is no separate Socket.IO application server in the current architecture.
+
+---
+
+# 🔑 Socket Authentication
+
+Socket authentication uses the same database-backed session system.
+
+The server authenticates the Socket.IO handshake using the session cookie.
+
+After authentication:
 
 ```ts
 socket.data.user = {
-  id: auth.user.id,
-  role: auth.user.role,
+  id: user.id,
+  role: user.role,
 };
 ```
 
 The authenticated socket identity is authoritative.
 
-Client-provided `userId` values are never trusted for identity-sensitive operations.
+Client-provided identity values are never trusted for sensitive operations.
 
 ---
 
-# 🏠 Socket Rooms
+# 🚪 Socket Rooms
 
-Blood AIDX uses two primary room types.
-
-### User room
+## User room
 
 ```text
 user:<userId>
 ```
 
-Used for private realtime notifications.
+Used for private notifications.
 
-### Conversation room
+## Conversation room
 
 ```text
 conversation:<conversationId>
@@ -306,101 +899,182 @@ socket:error
 
 ---
 
-# 💬 Messaging Architecture
+# 📬 Realtime Message Flow
 
-Conversation membership is validated through the existing conversation service:
-
-```ts
-ConversationService.getConversationForUser(conversationId, userId);
+```text
+Authenticated Socket
+        │
+        ▼
+conversation:join
+        │
+        ▼
+Verify Conversation Membership
+        │
+        ▼
+Join Conversation Room
+        │
+        ▼
+message:send
+        │
+        ▼
+Validate Payload
+        │
+        ▼
+MessageService
+        │
+        ▼
+PostgreSQL
+        │
+        ▼
+message:new
+        │
+        ▼
+Conversation Room
 ```
 
-This same authorization logic is reused by Socket.IO.
+The key rule is:
 
-### Message permissions
+> **Socket.IO never bypasses the service layer.**
 
-| Operation         | Permission               |
-| ----------------- | ------------------------ |
-| Send message      | Conversation participant |
-| Read messages     | Conversation participant |
-| Mark as read      | Conversation participant |
-| Edit message      | Message sender           |
-| Delete message    | Message sender           |
-| Moderation delete | Moderator/Admin          |
-
-Normal conversation access still requires conversation membership even when the user has a moderator/admin role.
+REST and Socket.IO use the same business rules.
 
 ---
 
-# 🔔 Notifications
+# 💳 Payments
 
-Notifications use a persistent-first architecture.
+Blood AidX supports payment workflows for donor support.
+
+Current payment infrastructure includes Stripe.
+
+The donor coffee workflow allows an authenticated user to make a payment associated with a donor.
+
+Payment concepts include:
 
 ```text
-Business Service
+Payment
+ ├── payer
+ ├── donor
+ ├── amount
+ ├── currency
+ ├── message
+ ├── provider
+ ├── type
+ └── status
+```
+
+Payment statuses include:
+
+```text
+pending
+processing
+succeeded
+failed
+cancelled
+refunded
+partially_refunded
+```
+
+Stripe webhook processing is handled separately from normal JSON request parsing so that Stripe signature verification can use the raw request body.
+
+---
+
+# ☁️ Media Uploads
+
+Cloudinary is used for managed media storage and delivery.
+
+The upload workflow supports managed assets such as:
+
+- Profile images
+- Organization images
+- Other supported platform uploads
+
+Uploaded media can be associated with Cloudinary public IDs so that assets can later be removed safely.
+
+---
+
+# 📧 Email
+
+Nodemailer is used for transactional email workflows.
+
+Email functionality supports authentication-related communication such as:
+
+- Email verification
+- Verification code delivery
+- Password reset workflows
+
+---
+
+# 🔐 Authorization Model
+
+Authorization is evaluated at multiple levels.
+
+```text
+Authenticated User
+       │
+       ▼
+Verified / Active Account
+       │
+       ▼
+Global Role
+       │
+       ▼
+Organization Membership
+       │
+       ▼
+Resource Ownership
+```
+
+Not every resource requires every level.
+
+For example:
+
+```text
+Moderator/Admin
       │
       ▼
-NotificationService
-      │
-      ├── PostgreSQL
-      │      │
-      │      └── Persistent notification
-      │
-      └── Socket.IO
-             │
-             └── notification:new
+Report moderation
 ```
 
-The database remains the source of truth.
-
-If a user is offline:
+while:
 
 ```text
-Notification → PostgreSQL
+Conversation participant
+      │
+      ▼
+Conversation messages
 ```
 
-When the user reconnects, notifications remain available through the REST API.
-
-Realtime delivery is an additional transport layer rather than the persistence mechanism.
+Resource ownership is checked independently where required.
 
 ---
 
-# ⚡ Redis
+# 🛡️ Protected API Pattern
 
-Redis is used by the backend for application-level caching and can later be used for distributed Socket.IO synchronization.
+Protected routes commonly use:
 
-Current architecture:
-
-```text
-Application
-    │
-    ├── PostgreSQL
-    │
-    └── Redis
+```ts
+router.use(protect, requireActiveUser);
 ```
 
-For a single backend instance, Socket.IO does not require Redis.
+Operations that require a verified email additionally use:
 
-For multiple Socket.IO instances behind a load balancer:
-
-```text
-                Load Balancer
-                     │
-          ┌──────────┴──────────┐
-          │                     │
-     API Instance 1        API Instance 2
-          │                     │
-          └──────────┬──────────┘
-                     │
-                  Redis
+```ts
+requireVerifiedEmail;
 ```
 
-The Socket.IO Redis adapter can then synchronize events between instances.
+Administrative operations use:
+
+```ts
+requireRole("moderator", "admin");
+```
+
+This creates a common authentication boundary before resource-specific authorization.
 
 ---
 
-# 🛣️ API Routes
+# 📡 API
 
-Base URL:
+All REST APIs are versioned under:
 
 ```text
 /api/v1
@@ -417,10 +1091,11 @@ Handles:
 - Signup
 - Signin
 - Logout
-- Session management
-- Google OAuth
+- Sessions
 - Email verification
-- Authentication-related operations
+- Password reset
+- Password change
+- Google OAuth
 
 ---
 
@@ -450,7 +1125,7 @@ User profile management.
 /api/v1/donors
 ```
 
-Donor-specific operations and donation eligibility information.
+Donor discovery and donor profile management.
 
 ---
 
@@ -460,7 +1135,7 @@ Donor-specific operations and donation eligibility information.
 /api/v1/blood-requests
 ```
 
-Blood request creation and management.
+Blood request creation, discovery, and lifecycle management.
 
 ---
 
@@ -480,7 +1155,7 @@ Donor responses to blood requests.
 /api/v1/donations
 ```
 
-Donation records and donation lifecycle operations.
+Donation records, history, cancellation, and verification.
 
 ---
 
@@ -500,7 +1175,7 @@ Administrative user management.
 /api/v1/organizations
 ```
 
-Organization and blood-bank related operations.
+Organizations, verification, members, and organization-related workflows.
 
 ---
 
@@ -510,7 +1185,7 @@ Organization and blood-bank related operations.
 /api/v1/locations
 ```
 
-Location management.
+Location management and location-related operations.
 
 ---
 
@@ -520,7 +1195,7 @@ Location management.
 /api/v1/milestones
 ```
 
-Donation and user milestone management.
+Donation milestones and user milestone records.
 
 ---
 
@@ -530,7 +1205,7 @@ Donation and user milestone management.
 /api/v1/certificates
 ```
 
-Certificate management and generation-related operations.
+Donation certificate management.
 
 ---
 
@@ -540,7 +1215,23 @@ Certificate management and generation-related operations.
 /api/v1/reports
 ```
 
-Reporting and platform data operations.
+Report submission and moderation.
+
+### User report endpoints
+
+```text
+POST   /api/v1/reports
+GET    /api/v1/reports/me
+GET    /api/v1/reports/:reportId
+DELETE /api/v1/reports/:reportId
+```
+
+### Moderator/Admin endpoints
+
+```text
+GET    /api/v1/reports
+PATCH  /api/v1/reports/:reportId/status
+```
 
 ---
 
@@ -550,7 +1241,7 @@ Reporting and platform data operations.
 /api/v1/reviews
 ```
 
-Review and feedback management.
+Review creation, discovery, moderation, and management.
 
 ---
 
@@ -560,28 +1251,7 @@ Review and feedback management.
 /api/v1/conversations
 ```
 
-Conversation creation and participant management.
-
-Current conversation operations include:
-
-```text
-GET    /
-POST   /
-
-POST   /:conversationId/participants
-DELETE /:conversationId/participants/:userId
-POST   /:conversationId/leave
-
-GET    /:conversationId
-```
-
-Conversation routes are protected by:
-
-```ts
-protect;
-requireActiveUser;
-requireVerifiedEmail;
-```
+Conversation and participant management.
 
 ---
 
@@ -591,33 +1261,7 @@ requireVerifiedEmail;
 /api/v1/messages
 ```
 
-Current message operations:
-
-```text
-POST   /
-GET    /conversation/:conversationId
-
-PATCH  /conversation/:conversationId/read
-GET    /conversation/:conversationId/unread-count
-
-GET    /:messageId
-PATCH  /:messageId
-DELETE /:messageId
-
-PATCH  /:messageId/read
-```
-
-Recommended explicit moderation endpoint:
-
-```text
-DELETE /:messageId/moderate
-```
-
-protected by:
-
-```ts
-requireRole("moderator", "admin");
-```
+Messaging and message moderation.
 
 ---
 
@@ -627,119 +1271,81 @@ requireRole("moderator", "admin");
 /api/v1/notifications
 ```
 
-Current operations:
-
-```text
-GET    /
-GET    /unread
-GET    /unread-count
-
-PATCH  /:notificationId/read
-PATCH  /read-all
-
-DELETE /:notificationId
-DELETE /read
-```
+Persistent and realtime notification management.
 
 ---
 
-# 🔒 Protected API Pattern
+## Payments
 
-Protected modules generally use:
-
-```ts
-router.use(protect, requireActiveUser, requireVerifiedEmail);
+```text
+/api/v1/payments
 ```
 
-This establishes the common authentication boundary before resource-specific authorization is applied.
+Payment creation, history, and payment administration.
 
 ---
 
-# 🧱 Backend Project Structure
+## Uploads
 
 ```text
-src/
-├── app.ts
-├── server.ts
-│
-├── config/
-│
-├── lib/
-│   ├── db/
-│   └── redis/
-│
-├── middleware/
-│
-├── modules/
-│   ├── auth/
-│   ├── user/
-│   ├── profile/
-│   ├── donor/
-│   ├── blood-request/
-│   ├── blood-request-response/
-│   ├── donation/
-│   ├── user-admin/
-│   ├── organization/
-│   ├── location/
-│   ├── milestone/
-│   ├── certificate/
-│   ├── report/
-│   ├── review/
-│   ├── conversation/
-│   ├── message/
-│   └── notification/
-│
-├── socket/
-│   ├── socket.server.ts
-│   ├── socket.auth.ts
-│   ├── socket.types.ts
-│   ├── socket.rooms.ts
-│   ├── socket.events.ts
-│   └── socket.emitter.ts
-│
-├── utils/
-│
-└── ...
+/api/v1/uploads
 ```
 
-Each module follows a separation of responsibilities:
-
-```text
-module/
-├── module.route.ts
-├── module.controller.ts
-├── module.service.ts
-├── module.schema.ts
-└── module.validation.ts
-```
+Managed media upload operations.
 
 ---
 
-# 🗄️ Database
+# 📄 Pagination
 
-Blood AIDX uses:
+Most list endpoints use offset pagination.
+
+Typical query parameters:
 
 ```text
-PostgreSQL
-     │
-   Prisma
-     │
- TypeScript
+?page=1&limit=20
 ```
 
-Prisma provides:
+Typical response metadata:
 
-- Type-safe database access
-- Schema management
-- Relations
-- Query abstraction
-- Database migrations
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 100,
+  "totalPage": 5,
+  "hasNextPage": true,
+  "hasPreviousPage": false
+}
+```
+
+Message history uses cursor pagination because conversations can contain large numbers of messages.
+
+---
+
+# 🔎 Filtering and Sorting
+
+Resource-specific list endpoints support appropriate filters and sorting.
+
+Common parameters include:
+
+```text
+page
+limit
+sortBy
+sortOrder
+status
+type
+createdAtFrom
+createdAtTo
+```
+
+The API validates query parameters using Zod before they reach the service layer.
 
 ---
 
 # ✅ Validation
 
-Request validation is handled with **Zod**.
+Request validation is implemented with Zod.
 
 Example:
 
@@ -752,95 +1358,110 @@ const CreateMessageSchema = z
   .strict();
 ```
 
-The same validation principles are applied to HTTP and realtime message operations.
+The API validates:
+
+- Request bodies
+- Query parameters
+- Route parameters
+- Authentication inputs
+- Resource-specific business input
+
+Strict schemas help prevent unexpected fields from silently entering the application.
 
 ---
 
-# 🍪 Session-Based Authentication
+# 🗄️ Database
 
-The backend uses database-backed sessions.
+Blood AidX uses PostgreSQL with Prisma ORM.
 
 ```text
-Client
-  │
-  │ session_token cookie
-  ▼
-Express / Socket.IO
-  │
-  ▼
-Session Service
-  │
-  ▼
+TypeScript
+    │
+    ▼
+ Prisma ORM
+    │
+    ▼
 PostgreSQL
-  │
-  ▼
-Authenticated User
 ```
 
-The same session mechanism is shared between:
+The database contains entities for:
 
 ```text
-REST API
-+
-Socket.IO
+Users
+Profiles
+Donors
+Blood Requests
+Request Responses
+Donations
+Organizations
+Organization Members
+Locations
+Milestones
+Certificates
+Reviews
+Reports
+Conversations
+Participants
+Messages
+Notifications
+Payments
+Sessions
+Accounts
+Audit Logs
 ```
-
-This keeps authentication behavior consistent across HTTP and realtime communication.
 
 ---
 
-# 🔐 Google OAuth
+# 🧬 Database Design Principles
 
-Google OAuth uses:
+The schema uses relational constraints and indexes for important access patterns.
 
-```text
-openid
-email
-profile
-```
+Examples include:
 
-OAuth state is stored in the server session:
+- Unique user email
+- Unique donor profile per user
+- Unique request/donor response
+- Unique organization slug
+- Unique donation number
+- Conversation membership uniqueness
+- Indexed foreign keys
+- Indexed status fields
+- Indexed date fields
+- Composite indexes for common discovery queries
 
-```ts
-req.session.googleOAuthState;
-```
-
-The callback validates the OAuth flow before establishing the authenticated application session.
-
----
-
-# 📧 Email
-
-The backend supports email-related workflows through the mail service, including authentication and verification-related communication.
+Referential actions are used to preserve appropriate ownership semantics.
 
 ---
 
-# ☁️ Media
+# 🧠 Prisma ORM 8
 
-Cloudinary is used where backend workflows require managed media storage and delivery.
+This project uses the Prisma ORM 8 toolchain.
 
----
+Common project database commands are exposed through npm scripts.
 
-# 💳 Payments
-
-The backend supports payment integrations required by Blood AIDX business workflows.
-
-Supported payment infrastructure includes:
-
-```text
-Stripe
-SSLCommerz
+```bash
+npm run contract:emit
+npm run db:update
+npm run db:verify
+npm run db:schema
+npm run migration:plan
+npm run migration:status
+npm run db:migrate
 ```
+
+The project intentionally uses the current Prisma ORM 8 workflow rather than relying on older Prisma Client patterns.
 
 ---
 
 # 🌐 CORS
 
-Allowed frontend/client origins are configured through:
+Frontend/client origins are configured through:
 
 ```env
-ORIGIN_URLS=https://blood-aidx.vercel.app,https://blood-aidx-api.vercel.app,http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174
+ORIGIN_URLS=
 ```
+
+Because authentication uses cookies, credentials are enabled for approved origins.
 
 The same origin policy is applied to:
 
@@ -849,76 +1470,24 @@ Express
 Socket.IO
 ```
 
-Credentials are enabled because authentication relies on cookies.
+Never use a wildcard origin when credentialed cookies are enabled.
 
 ---
 
-# 🔌 Shared HTTP + Socket.IO Server
+# 🔧 Environment Variables
 
-Express and Socket.IO run on the same Node HTTP server.
+Create a local environment file and configure the required values.
 
-```ts
-const server = http.createServer(app);
-
-initializeSocket(server);
-
-server.listen(config.port);
-```
-
-This provides:
-
-```text
-HTTP
-  +
-REST API
-  +
-Socket.IO
-```
-
-through the same server instance and port.
-
----
-
-# 🛡️ Graceful Shutdown
-
-The backend handles:
-
-```text
-SIGTERM
-SIGINT
-```
-
-During shutdown:
-
-```text
-Stop accepting connections
-        ↓
-Close HTTP + Socket.IO server
-        ↓
-Close Redis
-        ↓
-Close PostgreSQL
-        ↓
-Exit process
-```
-
-Startup failures also trigger database and Redis cleanup.
-
----
-
-# 🚀 Environment Variables
-
-Typical backend configuration:
+Example:
 
 ```env
-NODE_ENV=
-PORT=
+NODE_ENV=development
+PORT=5000
 
 DATABASE_URL=
-
 REDIS_URL=
 
-ORIGIN_URLS=
+ORIGIN_URLS=http://localhost:3000
 
 SESSION_SECRET=
 
@@ -931,53 +1500,125 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
 STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 
-SSLCOMMERZ_STORE_ID=
-SSLCOMMERZ_STORE_PASSWORD=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
 ```
 
-Actual environment configuration depends on the deployment environment.
+Additional variables may be required depending on the enabled deployment and integration configuration.
+
+> Never commit `.env` files or production credentials to source control.
 
 ---
 
-# 📦 Installation
+# 🚀 Getting Started
+
+## Requirements
+
+Recommended environment:
+
+```text
+Node.js 24.x
+PostgreSQL
+Redis
+npm
+```
+
+Verify Node:
 
 ```bash
-git clone <repository-url>
+node --version
+```
 
+The project currently targets Node.js 24.x.
+
+---
+
+## 1. Clone the repository
+
+```bash
+git clone git@github.com:devpolas/blood-aidx-api.git
+```
+
+```bash
 cd blood-aidx-api
+```
 
+---
+
+## 2. Install dependencies
+
+```bash
 npm install
 ```
 
-Create the environment file:
+---
 
-```bash
-cp .env.example .env
+## 3. Configure environment
+
+Create:
+
+```text
+.env
 ```
 
-Configure the required environment variables.
+and configure:
+
+```env
+DATABASE_URL=
+REDIS_URL=
+SESSION_SECRET=
+ORIGIN_URLS=
+```
+
+plus the credentials required for Google OAuth, Cloudinary, Stripe, and email services.
 
 ---
 
-# 🗃️ Prisma
+## 4. Prepare PostgreSQL
 
-Generate Prisma client:
+Create a PostgreSQL database and provide its connection string through:
 
-```bash
-npx prisma generate
+```env
+DATABASE_URL=
 ```
 
-Run migrations:
+---
 
-```bash
-npx prisma migrate dev
+## 5. Prepare Redis
+
+Start Redis locally or use a managed Redis provider.
+
+Configure:
+
+```env
+REDIS_URL=
 ```
 
-For production deployments:
+---
+
+## 6. Prepare the database
+
+Generate/emit the database contract:
 
 ```bash
-npx prisma migrate deploy
+npm run contract:emit
+```
+
+Then use the appropriate database workflow:
+
+```bash
+npm run db:update
+```
+
+You can inspect database status with:
+
+```bash
+npm run db:verify
 ```
 
 ---
@@ -987,24 +1628,86 @@ npx prisma migrate deploy
 Start the development server:
 
 ```bash
-npm run dev
+npm run start:dev
 ```
 
-Build the backend:
+The server runs using `tsx watch`.
+
+---
+
+# 🏗️ Build
+
+Create the production build:
 
 ```bash
 npm run build
 ```
 
-Start the production build:
+The compiled entry point is:
+
+```text
+dist/server.js
+```
+
+---
+
+# ▶️ Production
+
+Start the compiled server:
 
 ```bash
 npm start
 ```
 
+or:
+
+```bash
+npm run start:prod
+```
+
 ---
 
-# 🧪 Testing
+# 🧪 Verification
+
+Run TypeScript checking:
+
+```bash
+npm run typecheck
+```
+
+Run linting:
+
+```bash
+npm run lint
+```
+
+Automatically fix supported lint issues:
+
+```bash
+npm run lint:fix
+```
+
+Run the complete verification pipeline:
+
+```bash
+npm run verify
+```
+
+The verification pipeline performs:
+
+```text
+Typecheck
+   ↓
+Lint
+   ↓
+Build
+```
+
+The current package scripts expose these commands directly.
+
+---
+
+# 🧪 Testing Strategy
 
 The backend should be tested across multiple layers:
 
@@ -1019,314 +1722,582 @@ Authentication Tests
     ↓
 Authorization Tests
     ↓
-Socket.IO Tests
+Realtime Tests
 ```
 
-Important security cases include:
+Important security scenarios include:
 
 - Unauthorized requests
+- Invalid sessions
 - Expired sessions
-- Unverified users
+- Unverified accounts
 - Banned users
 - Resource ownership violations
 - Conversation membership violations
 - Message ownership violations
+- Invalid report targets
+- Invalid report status transitions
 - Moderator/admin authorization
+- Invalid payment/webhook requests
 
 ---
 
-# 📡 Realtime Message Flow
+# 🛑 Graceful Shutdown
+
+The server handles:
 
 ```text
-Authenticated Socket
-        │
-        ▼
-conversation:join
-        │
-        ▼
-Verify conversation membership
-        │
-        ▼
-Join conversation room
-        │
-        ▼
-message:send
-        │
-        ▼
-Validate payload
-        │
-        ▼
-MessageService
-        │
-        ▼
-PostgreSQL
-        │
-        ▼
-message:new
-        │
-        ▼
-Conversation Room
+SIGTERM
+SIGINT
 ```
 
-The important principle is:
-
-> **Socket.IO does not bypass the service layer.**
-
-REST and Socket.IO use the same business rules.
-
----
-
-# 🔔 Realtime Notification Flow
+Shutdown flow:
 
 ```text
-Business Event
-      │
-      ▼
-NotificationService
-      │
-      ├───────────────┐
-      ▼               ▼
-PostgreSQL        Socket.IO
-      │               │
-      │               ▼
-      │        user:<userId>
-      │               │
-      │               ▼
-      │       notification:new
-      │
-      ▼
-Persistent Notification
+Stop accepting new connections
+          ↓
+Close HTTP server
+          ↓
+Close Socket.IO
+          ↓
+Close Redis
+          ↓
+Close PostgreSQL
+          ↓
+Exit process
 ```
 
-This guarantees that realtime delivery does not replace persistence.
+Startup failures also attempt to clean up initialized resources.
 
 ---
 
 # 📈 Scaling Strategy
 
-### Current
+## Current architecture
 
 ```text
-Single Node.js Instance
-        │
-   ┌────┴────┐
-   │         │
-Express   Socket.IO
-   │         │
-   └────┬────┘
-        │
-   PostgreSQL
-        │
-      Redis
+             Node.js
+                │
+       ┌────────┴────────┐
+       │                 │
+    Express          Socket.IO
+       │                 │
+       └────────┬────────┘
+                │
+          PostgreSQL
+                │
+              Redis
 ```
 
-### Future multi-instance architecture
+This architecture is suitable for a single application instance.
+
+---
+
+## Multi-instance architecture
+
+The system can evolve toward:
 
 ```text
                   Load Balancer
                        │
-            ┌──────────┴──────────┐
-            │                     │
-       Backend #1            Backend #2
-            │                     │
-            └──────────┬──────────┘
+             ┌─────────┴─────────┐
+             │                   │
+        Backend #1          Backend #2
+             │                   │
+             └─────────┬─────────┘
                        │
                      Redis
                        │
-                Socket.IO Adapter
+              Socket.IO Adapter
                        │
                   PostgreSQL
 ```
 
-When multiple Socket.IO instances are introduced, use:
+For multiple Socket.IO instances, a Redis adapter can be introduced:
 
 ```bash
 npm install @socket.io/redis-adapter
 ```
 
-with dedicated Redis publisher/subscriber connections.
+Redis publisher/subscriber connections can then synchronize realtime events between application instances.
 
 ---
 
 # ☁️ Deployment
 
-The backend is designed to be deployable as a Node.js application and currently supports Vercel deployment.
+The application is designed to run as a Node.js backend and can be deployed to platforms capable of running the application server.
 
-The production server exposes:
+The current production deployment uses Vercel:
 
 ```text
-HTTP API
-+
-Socket.IO
+https://blood-aidx-api.vercel.app
 ```
 
-from the same application server.
+Production environments must provide the required:
 
-Production configuration must provide the appropriate:
-
-- Database URL
-- Redis URL
-- OAuth credentials
+- PostgreSQL connection
+- Redis connection
 - Session secret
 - CORS origins
+- Google OAuth credentials
 - Cloudinary credentials
-- Payment credentials
-- Email configuration
+- Stripe credentials
+- Email credentials
+
+---
+
+# 🔒 Security Principles
+
+Blood AidX follows several important security principles.
+
+### 1. Never trust client identity
+
+Sensitive operations derive identity from the authenticated session.
+
+```ts
+socket.data.user.id;
+```
+
+rather than a client-provided `userId`.
+
+### 2. Validate every request
+
+Input passes through Zod schemas before entering business logic.
+
+### 3. Check ownership
+
+Resources are only accessible to users who have the required relationship with them.
+
+### 4. Separate global and organization roles
+
+Organization membership does not change a user's global application role.
+
+### 5. Verify email where required
+
+Sensitive workflows require an active and verified account.
+
+### 6. Protect moderation endpoints
+
+Moderation operations require:
+
+```text
+moderator
+admin
+```
+
+authorization.
+
+### 7. Persist important notifications
+
+Realtime delivery never replaces database persistence.
 
 ---
 
 # 🧭 API Domain Map
 
 ```text
-Auth
- │
- ├── Users
- │    └── Profiles
- │
- ├── Donors
- │
- ├── Blood Requests
- │    └── Request Responses
- │
- ├── Donations
- │    ├── Milestones
- │    └── Certificates
- │
- ├── Organizations
- │    └── Locations
- │
- ├── Reports
- │
- ├── Reviews
- │
- ├── Conversations
- │    └── Messages
- │
- └── Notifications
-```
+                         Blood AidX
+                             │
+             ┌───────────────┼────────────────┐
+             │               │                │
+           Auth            Users          Profiles
+             │
+     ┌───────┴────────┐
+     │                │
+   Donors       Blood Requests
+                      │
+                      ▼
+              Request Responses
+                      │
+                      ▼
+                  Donations
+                   │      │
+                   │      ├── Milestones
+                   │      └── Certificates
+                   │
+             Organizations
+                   │
+                Locations
 
-Administrative operations:
+     Reports ─── Reviews ─── Moderation
 
-```text
-Admin
- └── User Management
-```
+     Conversations
+          │
+       Messages
+          │
+      Socket.IO
 
-Realtime layer:
+     Notifications
+          │
+      Socket.IO
 
-```text
-Socket.IO
- ├── Conversations
- ├── Messages
- ├── Typing
- ├── Read Status
- └── Notifications
+       Payments
+          │
+        Stripe
 ```
 
 ---
 
-# 🧠 Engineering Principles
+# 🧩 Engineering Principles
 
-Blood AIDX follows these backend principles:
+## 1. Service-first business logic
 
-### 1. Service-first business logic
+Business rules belong in services rather than controllers or Socket.IO event handlers.
 
-Business rules belong in services rather than controllers or Socket.IO handlers.
+---
 
-### 2. Shared authorization
+## 2. Thin controllers
 
-REST and Socket.IO use the same authorization services.
+Controllers should primarily:
 
-### 3. Persistent-first notifications
-
-PostgreSQL remains the source of truth for notifications.
-
-### 4. Session-based identity
-
-The authenticated session determines the current user.
-
-### 5. Never trust client identity
-
-User identity comes from:
-
-```ts
-socket.data.user.id;
+```text
+Parse
+Validate
+Call Service
+Send Response
 ```
 
-not from client-provided `userId`.
+---
 
-### 6. Resource-level authorization
+## 3. Shared business rules
 
-Access is determined by:
+REST and Socket.IO use the same services and authorization logic.
+
+---
+
+## 4. Resource-level authorization
+
+Access decisions consider the actual relationship between the authenticated user and the resource.
 
 ```text
 Global Role
 +
-Organization Role
+Organization Membership
 +
 Resource Ownership
 ```
 
 where applicable.
 
-### 7. Realtime is an additional transport
+---
 
-Socket.IO enhances the REST backend rather than replacing it.
+## 5. Persistent-first notifications
 
-### 8. Production-oriented architecture
+PostgreSQL is the source of truth.
 
-The backend is structured to support:
-
-- Secure authentication
-- Realtime communication
-- Persistent notifications
-- Horizontal scaling
-- Redis-based coordination
-- PostgreSQL persistence
-- Graceful shutdown
-- Cloud deployment
+Socket.IO provides realtime delivery.
 
 ---
 
-# 📄 API Versioning
+## 6. Session-based identity
 
-The current API is versioned under:
+The authenticated session determines the current user.
+
+---
+
+## 7. Realtime is an additional transport
+
+Socket.IO enhances the REST backend rather than replacing it.
+
+---
+
+## 8. Explicit state transitions
+
+Important resources use controlled lifecycle transitions.
+
+For example:
+
+```text
+Report:
+
+pending
+  ↓
+reviewing
+  ↓
+resolved / rejected
+```
+
+This prevents arbitrary state changes.
+
+---
+
+## 9. Resource-specific validation
+
+Schemas remain focused on their own resource instead of relying on large generic validation systems.
+
+---
+
+# 📁 Repository Structure
+
+```text
+blood-aidx-api/
+│
+├── src/
+│   ├── config/
+│   │
+│   ├── lib/
+│   │   ├── db/
+│   │   └── redis/
+│   │
+│   ├── middleware/
+│   │
+│   ├── modules/
+│   │   ├── auth/
+│   │   ├── user/
+│   │   ├── profile/
+│   │   ├── donor/
+│   │   ├── blood-request/
+│   │   ├── blood-request-response/
+│   │   ├── donation/
+│   │   ├── user-admin/
+│   │   ├── organization/
+│   │   ├── location/
+│   │   ├── milestone/
+│   │   ├── certificate/
+│   │   ├── report/
+│   │   ├── review/
+│   │   ├── conversation/
+│   │   ├── message/
+│   │   ├── notification/
+│   │   ├── payment/
+│   │   └── upload/
+│   │
+│   ├── socket/
+│   │   ├── socket.server.ts
+│   │   ├── socket.auth.ts
+│   │   ├── socket.types.ts
+│   │   ├── socket.rooms.ts
+│   │   ├── socket.events.ts
+│   │   └── socket.emitter.ts
+│   │
+│   ├── utils/
+│   │
+│   ├── app.ts
+│   └── server.ts
+│
+├── prisma/
+│   └── contract.prisma
+│
+├── postman/
+│   └── generate-postman.ts
+│
+├── package.json
+├── tsconfig.json
+├── tsup.config.ts
+└── README.md
+```
+
+---
+
+# 🔌 API Base URL
+
+Development:
+
+```text
+http://localhost:<PORT>/api/v1
+```
+
+Production:
+
+```text
+https://blood-aidx-api.vercel.app/api/v1
+```
+
+---
+
+# 📚 API Documentation
+
+The API is versioned under:
 
 ```text
 /api/v1
 ```
 
-This provides a stable namespace for future API evolution.
+The main resource groups are:
+
+```text
+/auth
+/users
+/profiles
+/donors
+/blood-requests
+/blood-request-responses
+/donations
+/admin/users
+/organizations
+/locations
+/milestones
+/certificates
+/reports
+/reviews
+/conversations
+/messages
+/notifications
+/uploads
+/payments
+```
 
 ---
 
-# 🏁 Current Backend Stack
+# 🧰 NPM Scripts
 
-| Category       | Technology                   |
-| -------------- | ---------------------------- |
-| Runtime        | Node.js                      |
-| Language       | TypeScript                   |
-| Framework      | Express                      |
-| API            | REST                         |
-| Realtime       | Socket.IO                    |
-| Database       | PostgreSQL                   |
-| ORM            | Prisma                       |
-| Validation     | Zod                          |
-| Cache          | Redis                        |
-| Authentication | Database-backed Sessions     |
-| OAuth          | Google OAuth                 |
-| Email          | NodeMailer                   |
-| Media          | Cloudinary                   |
-| Payments       | Stripe / SSLCommerz          |
-| Deployment     | Vercel / Node.js             |
-| Architecture   | Modular Service Architecture |
+| Command                    | Purpose                         |
+| -------------------------- | ------------------------------- |
+| `npm run start:dev`        | Start development server        |
+| `npm run build`            | Build production bundle         |
+| `npm start`                | Start production server         |
+| `npm run typecheck`        | TypeScript validation           |
+| `npm run lint`             | Run oxlint                      |
+| `npm run lint:fix`         | Fix supported lint issues       |
+| `npm run check`            | Typecheck + lint                |
+| `npm run verify`           | Typecheck + lint + build        |
+| `npm run contract:emit`    | Emit database contract          |
+| `npm run db:update`        | Update database                 |
+| `npm run db:verify`        | Verify database                 |
+| `npm run db:schema`        | Inspect database schema         |
+| `npm run migration:plan`   | Plan migration changes          |
+| `npm run migration:status` | Check migration status          |
+| `npm run db:migrate`       | Run database migration workflow |
+| `npm run generate:postman` | Generate Postman collection     |
 
 ---
 
-# 🎯 Backend Mission
+# 🤝 Contributing
 
-Blood AIDX is designed around one core goal:
+Contributions are welcome.
 
-> **Build a reliable backend infrastructure that makes blood donation, emergency blood requests, donor coordination, communication, and donation tracking easier to manage through secure APIs and realtime services.**
+Before submitting changes:
 
-The backend is intentionally structured so that REST APIs, realtime communication, authentication, authorization, persistence, and business logic remain independently maintainable while working together as one platform.
+```bash
+npm install
+npm run verify
+```
+
+Please keep changes:
+
+- Focused
+- Type-safe
+- Validated
+- Resource-specific
+- Consistent with the existing service architecture
+- Compatible with the current Prisma ORM API
+
+For new API resources, follow the existing module structure:
+
+```text
+route
+  ↓
+controller
+  ↓
+schema
+  ↓
+service
+  ↓
+database
+```
+
+---
+
+# 📝 Development Guidelines
+
+When adding an endpoint:
+
+1. Define the route.
+2. Define request validation.
+3. Add controller logic.
+4. Implement business rules in the service.
+5. Apply authentication middleware.
+6. Apply authorization rules.
+7. Add appropriate database indexes.
+8. Return a consistent API response.
+9. Add pagination for collection endpoints where appropriate.
+10. Run:
+
+```bash
+npm run verify
+```
+
+---
+
+# 📜 API Versioning
+
+The current API version is:
+
+```text
+/api/v1
+```
+
+Versioning provides a stable namespace for future API evolution.
+
+Future breaking API changes can be introduced under:
+
+```text
+/api/v2
+```
+
+without immediately breaking existing clients.
+
+---
+
+# 🎯 Project Mission
+
+Blood AidX exists to provide reliable infrastructure for:
+
+```text
+Finding donors
+      +
+Managing blood requests
+      +
+Coordinating donations
+      +
+Connecting people
+      +
+Communicating in realtime
+      +
+Tracking donation history
+      +
+Supporting organizations
+      +
+Moderating the platform
+```
+
+The backend is intentionally designed so that authentication, authorization, business logic, persistence, REST APIs, realtime communication, notifications, and integrations remain independently maintainable while working together as one platform.
+
+---
+
+# 👨‍💻 Author
+
+**Polas Chandra Barmon**
+
+GitHub:
+
+[https://github.com/devpolas](https://github.com/devpolas)
+
+Project:
+
+[https://github.com/devpolas/blood-aidx-api](https://github.com/devpolas/blood-aidx-api)
+
+---
+
+# 📄 License
+
+This project is currently maintained as the Blood AidX backend project.
+
+See the repository for the latest licensing and contribution information.
+
+```
+
+A couple of important corrections from the old README are intentional:
+
+- **Roles are now `user`, `moderator`, `admin`**, rather than the old donor/recipient/volunteer/hospital/blood-bank global-role model.
+- **Organization membership is separate** with `admin`, `staff`, and `verifier`.
+- **Prisma commands use the project's current Prisma ORM 8 scripts**, rather than the old `prisma generate` / `prisma migrate dev` examples.
+- **Reports now document the actual moderation lifecycle** and report types.
+- **Messages use cursor pagination**, while normal collections use offset pagination.
+- **Stripe is documented as the current payment integration** rather than presenting SSLCommerz as an implemented dependency—the current `package.json` explicitly includes Stripe but not an SSLCommerz package. :contentReference[oaicite:4]{index=4}
+- The README keeps Socket.IO, Redis, persistent notifications, Cloudinary, OAuth, and the modular service architecture from the previous README because those are still part of the repository architecture. :contentReference[oaicite:5]{index=5}
+
+The repository's current package metadata also confirms the project is `blood-aidx-api` version `0.1.0`, authored by Polas Chandra Barmon, with Node `24.x` as its engine. :contentReference[oaicite:6]{index=6}
+
+If you're replacing the existing file, I'd use this as the new `README.md` rather than trying to incrementally patch the old 1,275-line README.
+```
