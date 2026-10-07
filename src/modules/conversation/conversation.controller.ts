@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+
 import httpStatus from "http-status";
 
 import {
@@ -6,7 +7,6 @@ import {
   CreateConversationSchema,
 } from "./conversation.schema";
 import { ConversationService } from "./conversation.service";
-
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
@@ -18,7 +18,7 @@ const createConversation = catchAsync(async (req: Request, res: Response) => {
   const result = await ConversationService.createConversation(user.id, data);
 
   sendResponse(res, {
-    statusCode: httpStatus.OK,
+    statusCode: httpStatus.CREATED,
     success: true,
     message: "Conversation created successfully",
     data: result,
@@ -85,6 +85,7 @@ const removeParticipant = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Participant removed successfully",
+    data: null,
   });
 });
 
@@ -100,6 +101,7 @@ const leaveConversation = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Left conversation successfully",
+    data: null,
   });
 });
 

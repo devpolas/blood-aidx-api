@@ -14,6 +14,8 @@ interface Meta {
   limit: number;
   total: number;
   totalPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 interface SendResponse<T> {

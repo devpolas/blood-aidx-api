@@ -2,9 +2,8 @@ import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
 
+import { DonorQuerySchema, UpdateDonorProfileSchema } from "./donor.schema";
 import { DonorService } from "./donor.service";
-import { UpdateDonorProfileSchema } from "./donor.schema";
-
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
@@ -26,7 +25,6 @@ const getMyDonorProfile = catchAsync(async (req: Request, res: Response) => {
 
 const upsertMyDonorProfile = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const data = UpdateDonorProfileSchema.parse(req.body);
 
   const donor = await DonorService.upsertMyDonorProfile(user.id, data);
@@ -55,9 +53,9 @@ const deleteMyDonorProfile = catchAsync(async (req: Request, res: Response) => {
 // Donor Discovery
 
 const getDonorById = catchAsync(async (req: Request, res: Response) => {
-  const donorId = req.params.donorId;
+  const donorId = req.params.donorId as string;
 
-  const donor = await DonorService.getDonorById(donorId as string);
+  const donor = await DonorService.getDonorById(donorId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -68,15 +66,16 @@ const getDonorById = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getDonors = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+  const query = DonorQuerySchema.parse(req.query);
 
-  const donors = await DonorService.getDonors(user.id);
+  const donors = await DonorService.getDonors(query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Donors retrieved successfully",
-    data: donors,
+    data: donors.data,
+    meta: donors.meta,
   });
 });
 
@@ -85,9 +84,7 @@ const getDonors = catchAsync(async (req: Request, res: Response) => {
 const updateDonorProfileById = catchAsync(
   async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const donorId = req.params.donorId as string;
-
     const data = UpdateDonorProfileSchema.parse(req.body);
 
     const donor = await DonorService.updateDonorProfileById(
@@ -108,7 +105,6 @@ const updateDonorProfileById = catchAsync(
 const deleteDonorProfileById = catchAsync(
   async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const donorId = req.params.donorId as string;
 
     await DonorService.deleteDonorProfileById(user.id, donorId);
@@ -122,16 +118,12 @@ const deleteDonorProfileById = catchAsync(
   },
 );
 
-// Export
-
 export const DonorController = {
   getMyDonorProfile,
   upsertMyDonorProfile,
   deleteMyDonorProfile,
-
   getDonorById,
   getDonors,
-
   updateDonorProfileById,
   deleteDonorProfileById,
 };

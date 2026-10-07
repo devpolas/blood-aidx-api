@@ -1,10 +1,12 @@
 import httpStatus from "http-status";
+
 import type Stripe from "stripe";
 
+import config from "../../config";
 import { stripe } from "../../config/stripe";
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
-import config from "../../config";
+import type { PaymentQueryInput, RefundPaymentInput } from "./payment.schema";
 
 interface CreateCoffeePaymentInput {
   payerId: string;
@@ -12,11 +14,6 @@ interface CreateCoffeePaymentInput {
   amount: number;
   currency: string;
   message?: string;
-}
-
-interface RefundPaymentInput {
-  paymentId: string;
-  amount?: number;
 }
 
 // Helpers
@@ -95,6 +92,102 @@ const amountToStripeUnit = (amount: number) => {
   return Math.round(amount * 100);
 };
 
+const getPaginationMeta = (page: number, limit: number, total: number) => {
+  const totalPage = Math.ceil(total / limit);
+
+  return {
+    page,
+    limit,
+    total,
+    totalPage,
+    hasNextPage: page < totalPage,
+    hasPreviousPage: page > 1,
+  };
+};
+
+const applyPaymentFilters = (
+  query: ReturnType<typeof db.orm.public.Payment.where>,
+  filters: PaymentQueryInput,
+) => {
+  let result = query;
+
+  if (filters.status) {
+    result = result.where({
+      status: filters.status,
+    });
+  }
+
+  if (filters.type) {
+    result = result.where({
+      type: filters.type,
+    });
+  }
+
+  if (filters.provider) {
+    result = result.where({
+      provider: filters.provider,
+    });
+  }
+
+  if (filters.currency) {
+    result = result.where({
+      currency: filters.currency,
+    });
+  }
+
+  if (filters.createdAtFrom) {
+    result = result.where((fields) =>
+      fields.createdAt.gte(filters.createdAtFrom!),
+    );
+  }
+
+  if (filters.createdAtTo) {
+    result = result.where((fields) =>
+      fields.createdAt.lte(filters.createdAtTo!),
+    );
+  }
+
+  if (filters.paidAtFrom) {
+    result = result.where((fields) => fields.paidAt.gte(filters.paidAtFrom!));
+  }
+
+  if (filters.paidAtTo) {
+    result = result.where((fields) => fields.paidAt.lte(filters.paidAtTo!));
+  }
+
+  return result;
+};
+
+const getPaymentOrder = (
+  sortBy: PaymentQueryInput["sortBy"],
+  sortOrder: PaymentQueryInput["sortOrder"],
+) => {
+  const direction = sortOrder === "asc" ? "asc" : "desc";
+
+  return (fields: any) => {
+    switch (sortBy) {
+      case "updatedAt":
+        return direction === "asc"
+          ? fields.updatedAt.asc()
+          : fields.updatedAt.desc();
+
+      case "amount":
+        return direction === "asc" ? fields.amount.asc() : fields.amount.desc();
+
+      case "paidAt":
+        return direction === "asc"
+          ? fields.paidAt.asc({ nulls: "last" })
+          : fields.paidAt.desc({ nulls: "last" });
+
+      case "createdAt":
+      default:
+        return direction === "asc"
+          ? fields.createdAt.asc()
+          : fields.createdAt.desc();
+    }
+  };
+};
+
 // Create Coffee Payment
 
 const createCoffeePayment = async ({
@@ -111,7 +204,6 @@ const createCoffeePayment = async ({
   }
 
   const payer = await getUserById(payerId);
-
   const donor = await getDonorById(donorId);
 
   if (payer.id === donor.userId) {
@@ -145,7 +237,6 @@ const createCoffeePayment = async ({
     ...(message !== undefined && {
       message,
     }),
-
     description: `Coffee support for ${donorUser.name}`,
   });
 
@@ -159,36 +250,27 @@ const createCoffeePayment = async ({
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-
       line_items: [
         {
           price_data: {
             currency: normalizedCurrency,
-
             product_data: {
               name: `Buy Coffee for ${donorUser.name}`,
-
               description: message ?? "Support a blood donor",
             },
-
             unit_amount: stripeAmount,
           },
-
           quantity: 1,
         },
       ],
-
       metadata,
-
       payment_intent_data: {
         metadata,
       },
-
       success_url:
         `${config.website_url}` +
         `/payment/success` +
         `?payment_id=${payment.id}`,
-
       cancel_url:
         `${config.website_url}` +
         `/payment/cancelled` +
@@ -206,7 +288,6 @@ const createCoffeePayment = async ({
       id: payment.id,
     }).update({
       stripeCheckoutSessionId: session.id,
-
       status: "processing",
     });
 
@@ -256,21 +337,63 @@ const getPaymentByIdForAdmin = async (paymentId: string) => {
 
 // Get My Payments
 
-const getMyPayments = async (userId: string) => {
-  return db.orm.public.Payment.where({
-    payerId: userId,
-  }).all();
+const getMyPayments = async (userId: string, query: PaymentQueryInput) => {
+  const { page, limit, sortBy, sortOrder } = query;
+
+  const baseQuery = applyPaymentFilters(
+    db.orm.public.Payment.where({
+      payerId: userId,
+    }),
+    query,
+  );
+
+  const aggregate = await baseQuery.aggregate((fields) => ({
+    total: fields.count(),
+  }));
+
+  const total = Number(aggregate.total ?? 0);
+
+  const payments = await baseQuery
+    .orderBy(getPaymentOrder(sortBy, sortOrder))
+    .offset((page - 1) * limit)
+    .limit(limit)
+    .all();
+
+  return {
+    data: payments,
+    meta: getPaginationMeta(page, limit, total),
+  };
 };
 
 // Get Donor Payments
 
-const getDonorPayments = async (donorId: string) => {
+const getDonorPayments = async (donorId: string, query: PaymentQueryInput) => {
   await getDonorById(donorId);
 
-  return db.orm.public.Payment.where({
-    donorId,
-    status: "succeeded",
-  }).all();
+  const baseQuery = applyPaymentFilters(
+    db.orm.public.Payment.where({
+      donorId,
+      status: "succeeded",
+    }),
+    query,
+  );
+
+  const aggregate = await baseQuery.aggregate((fields) => ({
+    total: fields.count(),
+  }));
+
+  const total = Number(aggregate.total ?? 0);
+
+  const payments = await baseQuery
+    .orderBy(getPaymentOrder(query.sortBy, query.sortOrder))
+    .offset((query.page - 1) * query.limit)
+    .limit(query.limit)
+    .all();
+
+  return {
+    data: payments,
+    meta: getPaginationMeta(query.page, query.limit, total),
+  };
 };
 
 // Get Payment By Stripe Payment Intent
@@ -335,13 +458,9 @@ const handleCheckoutCompleted = async (
     id: payment.id,
   }).update({
     status: "succeeded",
-
     stripeCheckoutSessionId: session.id,
-
     stripePaymentIntentId: paymentIntentId,
-
     stripeCustomerId: customerId,
-
     paidAt: new Date().toISOString(),
   });
 };
@@ -448,11 +567,8 @@ const handlePaymentSucceeded = async (
     id: payment.id,
   }).update({
     status: "succeeded",
-
     stripePaymentIntentId: paymentIntent.id,
-
     stripeCustomerId: customerId,
-
     paidAt: new Date().toISOString(),
   });
 };
@@ -484,14 +600,16 @@ const handlePaymentFailed = async (
     id: payment.id,
   }).update({
     status: "failed",
-
     stripePaymentIntentId: paymentIntent.id,
   });
 };
 
 // Refund Payment
 
-const refundPayment = async ({ paymentId, amount }: RefundPaymentInput) => {
+const refundPayment = async ({
+  paymentId,
+  amount,
+}: RefundPaymentInput & { paymentId: string }) => {
   const payment = await getPaymentByIdInternal(paymentId);
 
   if (!payment.stripePaymentIntentId) {
@@ -512,9 +630,7 @@ const refundPayment = async ({ paymentId, amount }: RefundPaymentInput) => {
   }
 
   const paymentAmount = Number(payment.amount);
-
   const alreadyRefunded = Number(payment.refundedAmount);
-
   const remainingAmount = paymentAmount - alreadyRefunded;
 
   const refundAmount = amount === undefined ? remainingAmount : amount;
@@ -535,9 +651,7 @@ const refundPayment = async ({ paymentId, amount }: RefundPaymentInput) => {
 
   const refund = await stripe.refunds.create({
     payment_intent: payment.stripePaymentIntentId,
-
     amount: amountToStripeUnit(refundAmount),
-
     metadata: {
       paymentId: payment.id,
     },

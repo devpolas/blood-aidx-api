@@ -110,16 +110,13 @@ const deleteMyProfile = async (userId: string) => {
   return null;
 };
 
-// Moderator / Admin Profile Management
+// Public
 
-const getProfileByUserIdForModerator = async (
-  userId: string,
-  profileUserId: string,
-) => {
-  await requireModerator(userId);
-
+const getUserProfileByUserId = async (profileUserId: string) => {
   return getProfileByUserId(profileUserId);
 };
+
+// Moderator / Admin Profile Management
 
 const updateProfileByUserId = async (
   userId: string,
@@ -152,7 +149,7 @@ export const ProfileService = {
   upsertMyProfile,
   deleteMyProfile,
 
-  getProfileByUserIdForModerator,
+  getUserProfileByUserId,
   updateProfileByUserId,
   deleteProfileByUserId,
 };

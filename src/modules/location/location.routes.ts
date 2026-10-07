@@ -5,10 +5,13 @@ import {
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
-
 import { LocationController } from "./location.controller";
 
 const router: ExpressRouter = Router();
+
+// Public Location
+
+router.get("/:locationId", LocationController.getLocationById);
 
 // Protected Routes
 
@@ -20,10 +23,6 @@ router.get("/me", requireVerifiedEmail, LocationController.getMyLocation);
 router.post("/", requireVerifiedEmail, LocationController.createLocation);
 router.patch("/me", requireVerifiedEmail, LocationController.updateLocation);
 router.delete("/me", requireVerifiedEmail, LocationController.deleteMyLocation);
-
-// Public Location
-
-router.get("/:locationId", LocationController.getLocationById);
 
 // Moderator / Admin
 

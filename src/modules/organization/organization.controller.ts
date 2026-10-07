@@ -5,38 +5,29 @@ import httpStatus from "http-status";
 import {
   AddOrganizationMemberSchema,
   CreateOrganizationSchema,
+  OrganizationQuerySchema,
   UpdateOrganizationMemberSchema,
   UpdateOrganizationSchema,
   UpdateOrganizationStatusSchema,
 } from "./organization.schema";
-
 import { OrganizationService } from "./organization.service";
-
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 
-const getMyOrganizations = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+// Public
 
-  const result = await OrganizationService.getMyOrganizations(user.id);
+const getOrganizations = catchAsync(async (req: Request, res: Response) => {
+  const query = OrganizationQuerySchema.parse(req.query);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Organizations retrieved successfully",
-    data: result,
-  });
-});
-
-const getOrganizations = catchAsync(async (_req: Request, res: Response) => {
-  const result = await OrganizationService.getOrganizations();
+  const result = await OrganizationService.getOrganizations(query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Organizations retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -53,9 +44,25 @@ const getOrganization = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const createOrganization = catchAsync(async (req: Request, res: Response) => {
+// My Organizations
+
+const getMyOrganizations = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
+  const result = await OrganizationService.getMyOrganizations(user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organizations retrieved successfully",
+    data: result,
+  });
+});
+
+// Organization
+
+const createOrganization = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
   const data = CreateOrganizationSchema.parse(req.body);
 
   const result = await OrganizationService.createOrganization(user.id, data);
@@ -70,7 +77,6 @@ const createOrganization = catchAsync(async (req: Request, res: Response) => {
 
 const updateOrganization = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const data = UpdateOrganizationSchema.parse(req.body);
 
   const result = await OrganizationService.updateOrganization(
@@ -87,10 +93,27 @@ const updateOrganization = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deleteOrganization = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+
+  await OrganizationService.deleteOrganization(
+    req.params.organizationId as string,
+    user.id,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Organization deleted successfully",
+    data: null,
+  });
+});
+
+// Organization Status
+
 const updateOrganizationStatus = catchAsync(
   async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateOrganizationStatusSchema.parse(req.body);
 
     const result = await OrganizationService.updateOrganizationStatus(
@@ -108,39 +131,7 @@ const updateOrganizationStatus = catchAsync(
   },
 );
 
-const deleteOrganization = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-
-  await OrganizationService.deleteOrganization(
-    req.params.organizationId as string,
-    user.id,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Organization deleted successfully",
-  });
-});
-
-const addMember = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-
-  const data = AddOrganizationMemberSchema.parse(req.body);
-
-  const result = await OrganizationService.addMember(
-    req.params.organizationId as string,
-    user.id,
-    data,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    success: true,
-    message: "Organization member added successfully",
-    data: result,
-  });
-});
+// Members
 
 const getMembers = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
@@ -158,9 +149,26 @@ const getMembers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const addMember = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+  const data = AddOrganizationMemberSchema.parse(req.body);
+
+  const result = await OrganizationService.addMember(
+    req.params.organizationId as string,
+    user.id,
+    data,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Organization member added successfully",
+    data: result,
+  });
+});
+
 const updateMember = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const data = UpdateOrganizationMemberSchema.parse(req.body);
 
   const result = await OrganizationService.updateMember(
@@ -191,19 +199,20 @@ const removeMember = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Organization member removed successfully",
+    data: null,
   });
 });
 
 export const OrganizationController = {
-  getMyOrganizations,
   getOrganizations,
   getOrganization,
+  getMyOrganizations,
   createOrganization,
   updateOrganization,
-  updateOrganizationStatus,
   deleteOrganization,
-  addMember,
+  updateOrganizationStatus,
   getMembers,
+  addMember,
   updateMember,
   removeMember,
 };

@@ -1,13 +1,15 @@
 import httpStatus from "http-status";
 
-import { db } from "../../lib/db";
-import { AppError } from "../../utils/appError";
-
 import type {
   CreateReviewInput,
+  ReviewQueryInput,
   UpdateReviewInput,
   UpdateReviewStatusInput,
 } from "./review.schema";
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
+
+// Helpers
 
 const getReviewById = async (reviewId: string) => {
   const review = await db.orm.public.Review.where({
@@ -19,6 +21,19 @@ const getReviewById = async (reviewId: string) => {
   }
 
   return review;
+};
+
+const getPaginationMeta = (page: number, limit: number, total: number) => {
+  const totalPage = Math.ceil(total / limit);
+
+  return {
+    page,
+    limit,
+    total,
+    totalPage,
+    hasNextPage: page < totalPage,
+    hasPreviousPage: page > 1,
+  };
 };
 
 const validateReviewTarget = async (
@@ -72,6 +87,8 @@ const validateReviewTarget = async (
   throw new AppError("A review target is required", httpStatus.BAD_REQUEST);
 };
 
+// Create
+
 const createReview = async (reviewerId: string, data: CreateReviewInput) => {
   const target = await validateReviewTarget(reviewerId, data);
 
@@ -94,30 +111,68 @@ const createReview = async (reviewerId: string, data: CreateReviewInput) => {
 
   return db.orm.public.Review.create({
     reviewerId,
-
     ...(target.revieweeId !== undefined && {
       revieweeId: target.revieweeId,
     }),
-
     ...(target.organizationId !== undefined && {
       organizationId: target.organizationId,
     }),
-
     rating: data.rating,
-
     comment: data.comment,
-
     status: "pending",
   });
 };
 
-const getMyReviews = async (reviewerId: string) => {
-  return db.orm.public.Review.where({
+// Current User
+
+const getMyReviews = async (reviewerId: string, query: ReviewQueryInput) => {
+  const { page, limit, status, rating, sortBy, sortOrder } = query;
+
+  const where = {
     reviewerId,
-  }).all();
+    ...(status !== undefined && { status }),
+    ...(rating !== undefined && { rating }),
+  };
+
+  const offset = (page - 1) * limit;
+
+  const [totalResult, reviews] = await Promise.all([
+    db.orm.public.Review.where(where).aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+
+    db.orm.public.Review.where(where)
+      .orderBy((fields) => {
+        if (sortBy === "updatedAt") {
+          return sortOrder === "asc"
+            ? fields.updatedAt.asc()
+            : fields.updatedAt.desc();
+        }
+
+        if (sortBy === "rating") {
+          return sortOrder === "asc"
+            ? fields.rating.asc()
+            : fields.rating.desc();
+        }
+
+        return sortOrder === "asc"
+          ? fields.createdAt.asc()
+          : fields.createdAt.desc();
+      })
+      .offset(offset)
+      .limit(limit)
+      .all(),
+  ]);
+
+  return {
+    data: reviews,
+    meta: getPaginationMeta(page, limit, totalResult.total),
+  };
 };
 
-const getReviewsForUser = async (userId: string) => {
+// Public
+
+const getReviewsForUser = async (userId: string, query: ReviewQueryInput) => {
   const user = await db.orm.public.User.where({
     id: userId,
   }).first();
@@ -126,13 +181,54 @@ const getReviewsForUser = async (userId: string) => {
     throw new AppError("User not found", httpStatus.NOT_FOUND);
   }
 
-  return db.orm.public.Review.where({
+  const { page, limit, rating, sortBy, sortOrder } = query;
+
+  const where = {
     revieweeId: userId,
-    status: "published",
-  }).all();
+    status: "published" as const,
+    ...(rating !== undefined && { rating }),
+  };
+
+  const offset = (page - 1) * limit;
+
+  const [totalResult, reviews] = await Promise.all([
+    db.orm.public.Review.where(where).aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+
+    db.orm.public.Review.where(where)
+      .orderBy((fields) => {
+        if (sortBy === "updatedAt") {
+          return sortOrder === "asc"
+            ? fields.updatedAt.asc()
+            : fields.updatedAt.desc();
+        }
+
+        if (sortBy === "rating") {
+          return sortOrder === "asc"
+            ? fields.rating.asc()
+            : fields.rating.desc();
+        }
+
+        return sortOrder === "asc"
+          ? fields.createdAt.asc()
+          : fields.createdAt.desc();
+      })
+      .offset(offset)
+      .limit(limit)
+      .all(),
+  ]);
+
+  return {
+    data: reviews,
+    meta: getPaginationMeta(page, limit, totalResult.total),
+  };
 };
 
-const getReviewsForOrganization = async (organizationId: string) => {
+const getReviewsForOrganization = async (
+  organizationId: string,
+  query: ReviewQueryInput,
+) => {
   const organization = await db.orm.public.Organization.where({
     id: organizationId,
   }).first();
@@ -141,11 +237,51 @@ const getReviewsForOrganization = async (organizationId: string) => {
     throw new AppError("Organization not found", httpStatus.NOT_FOUND);
   }
 
-  return db.orm.public.Review.where({
+  const { page, limit, rating, sortBy, sortOrder } = query;
+
+  const where = {
     organizationId,
-    status: "published",
-  }).all();
+    status: "published" as const,
+    ...(rating !== undefined && { rating }),
+  };
+
+  const offset = (page - 1) * limit;
+
+  const [totalResult, reviews] = await Promise.all([
+    db.orm.public.Review.where(where).aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+
+    db.orm.public.Review.where(where)
+      .orderBy((fields) => {
+        if (sortBy === "updatedAt") {
+          return sortOrder === "asc"
+            ? fields.updatedAt.asc()
+            : fields.updatedAt.desc();
+        }
+
+        if (sortBy === "rating") {
+          return sortOrder === "asc"
+            ? fields.rating.asc()
+            : fields.rating.desc();
+        }
+
+        return sortOrder === "asc"
+          ? fields.createdAt.asc()
+          : fields.createdAt.desc();
+      })
+      .offset(offset)
+      .limit(limit)
+      .all(),
+  ]);
+
+  return {
+    data: reviews,
+    meta: getPaginationMeta(page, limit, totalResult.total),
+  };
 };
+
+// Current User
 
 const getReviewByIdForUser = async (reviewId: string, userId: string) => {
   const review = await getReviewById(reviewId);
@@ -185,13 +321,9 @@ const updateReview = async (
     ...(data.rating !== undefined && {
       rating: data.rating,
     }),
-
     ...(data.comment !== undefined && {
       comment: data.comment,
     }),
-
-    // Editing a published review sends it
-    // through moderation again.
     ...(review.status === "published" && {
       status: "pending" as const,
     }),
@@ -216,6 +348,8 @@ const deleteReview = async (reviewId: string, reviewerId: string) => {
     id: reviewId,
   }).delete();
 };
+
+// Moderator / Admin
 
 const updateReviewStatus = async (
   reviewId: string,

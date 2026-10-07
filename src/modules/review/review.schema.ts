@@ -1,11 +1,15 @@
 import * as z from "zod";
 
+// Status
+
 export const ReviewStatusSchema = z.enum([
   "pending",
   "published",
   "hidden",
   "rejected",
 ]);
+
+// Create Review
 
 export const CreateReviewSchema = z
   .object({
@@ -36,6 +40,8 @@ export const CreateReviewSchema = z
     }
   });
 
+// Update Review
+
 export const UpdateReviewSchema = z
   .object({
     rating: z.number().int().min(1).max(5).optional(),
@@ -43,11 +49,28 @@ export const UpdateReviewSchema = z
   })
   .strict();
 
+// Update Review Status
+
 export const UpdateReviewStatusSchema = z
   .object({
     status: ReviewStatusSchema,
   })
   .strict();
+
+// Review Query
+
+export const ReviewQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    status: ReviewStatusSchema.optional(),
+    rating: z.coerce.number().int().min(1).max(5).optional(),
+    sortBy: z.enum(["createdAt", "updatedAt", "rating"]).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict();
+
+// Review Response
 
 export const ReviewSchema = z.object({
   id: z.uuid(),
@@ -61,7 +84,10 @@ export const ReviewSchema = z.object({
   updatedAt: z.string(),
 });
 
+// Types
+
 export type CreateReviewInput = z.infer<typeof CreateReviewSchema>;
 export type UpdateReviewInput = z.infer<typeof UpdateReviewSchema>;
 export type UpdateReviewStatusInput = z.infer<typeof UpdateReviewStatusSchema>;
+export type ReviewQueryInput = z.infer<typeof ReviewQuerySchema>;
 export type ReviewResponse = z.infer<typeof ReviewSchema>;

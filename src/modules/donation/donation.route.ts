@@ -5,42 +5,66 @@ import {
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
-
 import { DonationController } from "./donation.controller";
 
 const router: ExpressRouter = Router();
 
-// Authentication
+// Public Donor Profile
 
-router.use(protect, requireActiveUser);
+router.get("/donor/:donorId", DonationController.getDonorDonations);
 
 // My Donations
 
-router.get("/me", requireVerifiedEmail, DonationController.getMyDonations);
+// IMPORTANT: /me must come before /:donationId
 
-router.post("/", requireVerifiedEmail, DonationController.createDonation);
+router.get(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  DonationController.getMyDonations,
+);
+
+router.post(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  DonationController.createDonation,
+);
 
 router.post(
   "/:donationId/cancel",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   DonationController.cancelMyDonation,
 );
 
-// Donation Management
+// Donation Detail
 
-// Hospital / Blood Bank / Moderator / Admin
-router.get("/", requireVerifiedEmail, DonationController.getDonations);
-
-// Donor can only access their own donation
 router.get(
   "/:donationId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   DonationController.getDonationById,
 );
 
-// Hospital / Blood Bank / Moderator / Admin
+// Moderator / Admin
+
+router.get(
+  "/",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  DonationController.getDonations,
+);
+
 router.patch(
   "/:donationId/verify",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   DonationController.verifyDonation,
 );

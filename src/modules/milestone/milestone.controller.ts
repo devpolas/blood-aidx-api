@@ -3,27 +3,29 @@ import httpStatus from "http-status";
 import type { Request, Response } from "express";
 
 import { requireAuth } from "../../middleware/auth.middleware";
-
 import {
   CreateMilestoneSchema,
+  MilestoneQuerySchema,
   UpdateMilestoneSchema,
+  UserMilestoneQuerySchema,
 } from "./milestone.schema";
-
 import { MilestoneService } from "./milestone.service";
-
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 
 // Public
 
-const getMilestones = catchAsync(async (_req: Request, res: Response) => {
-  const milestones = await MilestoneService.getMilestones();
+const getMilestones = catchAsync(async (req: Request, res: Response) => {
+  const query = MilestoneQuerySchema.parse(req.query);
+
+  const result = await MilestoneService.getMilestones(query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Milestones retrieved successfully",
-    data: milestones,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -44,14 +46,16 @@ const getMilestoneById = catchAsync(async (req: Request, res: Response) => {
 
 const getMyMilestones = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
+  const query = UserMilestoneQuerySchema.parse(req.query);
 
-  const milestones = await MilestoneService.getMyMilestones(user.id);
+  const result = await MilestoneService.getMyMilestones(user.id, query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Your milestones retrieved successfully",
-    data: milestones,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -59,17 +63,20 @@ const getMyMilestones = catchAsync(async (req: Request, res: Response) => {
 
 const getUserMilestones = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
+  const query = UserMilestoneQuerySchema.parse(req.query);
 
-  const milestones = await MilestoneService.getUserMilestones(
+  const result = await MilestoneService.getUserMilestones(
     user.id,
     req.params.userId as string,
+    query,
   );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "User milestones retrieved successfully",
-    data: milestones,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -77,7 +84,6 @@ const getUserMilestones = catchAsync(async (req: Request, res: Response) => {
 
 const createMilestone = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const input = CreateMilestoneSchema.parse(req.body);
 
   const milestone = await MilestoneService.createMilestone(user.id, input);
@@ -92,7 +98,6 @@ const createMilestone = catchAsync(async (req: Request, res: Response) => {
 
 const updateMilestone = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const input = UpdateMilestoneSchema.parse(req.body);
 
   const milestone = await MilestoneService.updateMilestone(
@@ -121,10 +126,9 @@ const deleteMilestone = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Milestone deleted successfully",
+    data: null,
   });
 });
-
-// Export
 
 export const MilestoneController = {
   getMilestones,

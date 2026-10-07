@@ -64,3 +64,58 @@ export type UpdateDonationStatusInput = z.infer<
 >;
 
 export type DonationResponse = z.infer<typeof DonationSchema>;
+
+export const DonationSortBySchema = z.enum([
+  "createdAt",
+  "updatedAt",
+  "donatedAt",
+  "verifiedAt",
+  "units",
+  "status",
+]);
+
+export const DonationQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    search: z.string().trim().min(1).max(100).optional(),
+    status: DonationStatusSchema.optional(),
+    donorId: z.uuid().optional(),
+    requestId: z.uuid().optional(),
+    organizationId: z.uuid().optional(),
+    locationId: z.uuid().optional(),
+    verifiedById: z.uuid().optional(),
+    donatedAtFrom: z.iso.datetime().optional(),
+    donatedAtTo: z.iso.datetime().optional(),
+    verifiedAtFrom: z.iso.datetime().optional(),
+    verifiedAtTo: z.iso.datetime().optional(),
+    createdAtFrom: z.iso.datetime().optional(),
+    createdAtTo: z.iso.datetime().optional(),
+    sortBy: DonationSortBySchema.default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const ranges = [
+      ["donatedAtFrom", "donatedAtTo", data.donatedAtFrom, data.donatedAtTo],
+      [
+        "verifiedAtFrom",
+        "verifiedAtTo",
+        data.verifiedAtFrom,
+        data.verifiedAtTo,
+      ],
+      ["createdAtFrom", "createdAtTo", data.createdAtFrom, data.createdAtTo],
+    ] as const;
+
+    for (const [fromKey, toKey, from, to] of ranges) {
+      if (from && to && new Date(to) < new Date(from)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [toKey],
+          message: `${toKey} must be greater than or equal to ${fromKey}`,
+        });
+      }
+    }
+  });
+
+export type DonationQueryInput = z.infer<typeof DonationQuerySchema>;

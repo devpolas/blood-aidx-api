@@ -22,6 +22,34 @@ export const UpdateMilestoneSchema = z
   })
   .strict();
 
+// Milestone Query
+
+export const MilestoneSortBySchema = z.enum([
+  "createdAt",
+  "updatedAt",
+  "donationCount",
+  "name",
+]);
+
+export const MilestoneQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    sortBy: MilestoneSortBySchema.default("donationCount"),
+    sortOrder: z.enum(["asc", "desc"]).default("asc"),
+  })
+  .strict();
+
+// User Milestone Query
+
+export const UserMilestoneQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict();
+
 // Response
 
 export const MilestoneSchema = z.object({
@@ -38,4 +66,6 @@ export const MilestoneSchema = z.object({
 
 export type CreateMilestoneInput = z.infer<typeof CreateMilestoneSchema>;
 export type UpdateMilestoneInput = z.infer<typeof UpdateMilestoneSchema>;
+export type MilestoneQueryInput = z.infer<typeof MilestoneQuerySchema>;
+export type UserMilestoneQueryInput = z.infer<typeof UserMilestoneQuerySchema>;
 export type MilestoneResponse = z.infer<typeof MilestoneSchema>;

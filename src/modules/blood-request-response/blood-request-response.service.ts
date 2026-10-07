@@ -1,6 +1,7 @@
 import httpStatus from "http-status";
 
 import type {
+  BloodRequestResponseQueryInput,
   CreateBloodRequestResponseInput,
   UpdateBloodRequestResponseStatusInput,
 } from "./blood-request-response.schema";
@@ -301,6 +302,156 @@ const validateCanBeDeclined = (status: ResponseStatus) => {
   }
 };
 
+// Query Features
+
+const applyResponseFilters = (
+  query: BloodRequestResponseQueryInput,
+  filters: {
+    donorId?: string;
+    requestId?: string;
+  },
+) => {
+  let responseQuery = db.orm.public.BloodRequestResponse;
+
+  if (filters.donorId) {
+    responseQuery = responseQuery.where({
+      donorId: filters.donorId,
+    });
+  }
+
+  if (filters.requestId) {
+    responseQuery = responseQuery.where({
+      requestId: filters.requestId,
+    });
+  }
+
+  if (query.status) {
+    responseQuery = responseQuery.where({
+      status: query.status,
+    });
+  }
+
+  if (query.requestId) {
+    responseQuery = responseQuery.where({
+      requestId: query.requestId,
+    });
+  }
+
+  if (query.search) {
+    const search = `%${query.search}%`;
+
+    responseQuery = responseQuery.where((response) =>
+      response.message.ilike(search),
+    );
+  }
+
+  if (query.respondedAtFrom) {
+    responseQuery = responseQuery.where((response) =>
+      response.respondedAt.gte(query.respondedAtFrom!),
+    );
+  }
+
+  if (query.respondedAtTo) {
+    responseQuery = responseQuery.where((response) =>
+      response.respondedAt.lte(query.respondedAtTo!),
+    );
+  }
+
+  if (query.createdAtFrom) {
+    responseQuery = responseQuery.where((response) =>
+      response.createdAt.gte(query.createdAtFrom!),
+    );
+  }
+
+  if (query.createdAtTo) {
+    responseQuery = responseQuery.where((response) =>
+      response.createdAt.lte(query.createdAtTo!),
+    );
+  }
+
+  return responseQuery;
+};
+
+const applyResponseSorting = (
+  responseQuery: ReturnType<typeof db.orm.public.BloodRequestResponse.where>,
+  query: BloodRequestResponseQueryInput,
+) => {
+  const ascending = query.sortOrder === "asc";
+
+  switch (query.sortBy) {
+    case "updatedAt":
+      return responseQuery.orderBy((response) =>
+        ascending ? response.updatedAt.asc() : response.updatedAt.desc(),
+      );
+
+    case "respondedAt":
+      return responseQuery.orderBy((response) =>
+        ascending ? response.respondedAt.asc() : response.respondedAt.desc(),
+      );
+
+    case "acceptedAt":
+      return responseQuery.orderBy((response) =>
+        ascending ? response.acceptedAt.asc() : response.acceptedAt.desc(),
+      );
+
+    case "completedAt":
+      return responseQuery.orderBy((response) =>
+        ascending ? response.completedAt.asc() : response.completedAt.desc(),
+      );
+
+    case "status":
+      return responseQuery.orderBy((response) =>
+        ascending ? response.status.asc() : response.status.desc(),
+      );
+
+    case "createdAt":
+    default:
+      return responseQuery.orderBy((response) =>
+        ascending ? response.createdAt.asc() : response.createdAt.desc(),
+      );
+  }
+};
+
+const getResponseList = async (
+  query: BloodRequestResponseQueryInput,
+  filters: {
+    donorId?: string;
+    requestId?: string;
+  },
+) => {
+  const page = query.page;
+  const limit = query.limit;
+  const offset = (page - 1) * limit;
+
+  const filteredQuery = applyResponseFilters(query, filters);
+
+  const [requests, countResult] = await Promise.all([
+    applyResponseSorting(filteredQuery, query)
+      .offset(offset)
+      .limit(limit)
+      .all(),
+
+    applyResponseFilters(query, filters).aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+  ]);
+
+  const total = countResult.total;
+  const totalPage = Math.ceil(total / query.limit);
+
+  return {
+    data: requests,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPage,
+      hasNextPage: query.page < totalPage,
+      hasPreviousPage: query.page > 1,
+    },
+  };
+};
+
 // Create Response
 
 const createResponse = async (
@@ -313,7 +464,6 @@ const createResponse = async (
   const request = await getBloodRequest(requestId);
 
   validateRequestCanReceiveResponse(request, userId);
-
   validateDonorEligibility(donor, request);
 
   const existingResponse = await db.orm.public.BloodRequestResponse.where({
@@ -340,22 +490,28 @@ const createResponse = async (
 
 // Get My Responses
 
-const getMyResponses = async (userId: string) => {
+const getMyResponses = async (
+  userId: string,
+  query: BloodRequestResponseQueryInput,
+) => {
   const { donor } = await requireDonor(userId);
 
-  return db.orm.public.BloodRequestResponse.where({
+  return getResponseList(query, {
     donorId: donor.id,
-  }).all();
+  });
 };
 
 // Get Responses For Request
 
-const getResponsesForRequest = async (userId: string, requestId: string) => {
+const getResponsesForRequest = async (
+  userId: string,
+  requestId: string,
+  query: BloodRequestResponseQueryInput,
+) => {
   const request = await getBloodRequest(requestId);
-
   const actor = await getActor(userId);
-  const role = actor.role as ActorRole;
 
+  const role = actor.role as ActorRole;
   const isRequester = request.requesterId === userId;
   const canModerate = isModeratorRole(role);
 
@@ -366,9 +522,9 @@ const getResponsesForRequest = async (userId: string, requestId: string) => {
     );
   }
 
-  return db.orm.public.BloodRequestResponse.where({
+  return getResponseList(query, {
     requestId,
-  }).all();
+  });
 };
 
 // Get Response By ID

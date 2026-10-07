@@ -5,10 +5,13 @@ import { AppError } from "../../utils/appError";
 
 import type {
   CreateReportInput,
+  ReportQueryInput,
   UpdateReportStatusInput,
 } from "./report.schema";
 
-// Get report
+type ReportType = CreateReportInput["type"];
+
+// Helpers
 
 const getReportById = async (reportId: string) => {
   const report = await db.orm.public.Report.where({
@@ -22,15 +25,12 @@ const getReportById = async (reportId: string) => {
   return report;
 };
 
-// Validate target
-
 const validateReportTarget = async (
   reporterId: string,
-  type: CreateReportInput["type"],
+  type: ReportType,
   targetId: string,
 ) => {
   switch (type) {
-    // User
     case "user": {
       if (reporterId === targetId) {
         throw new AppError(
@@ -50,7 +50,6 @@ const validateReportTarget = async (
       return;
     }
 
-    // Blood request
     case "blood_request": {
       const request = await db.orm.public.BloodRequest.where({
         id: targetId,
@@ -66,7 +65,6 @@ const validateReportTarget = async (
       return;
     }
 
-    // Donation
     case "donation": {
       const donation = await db.orm.public.BloodDonation.where({
         id: targetId,
@@ -76,10 +74,28 @@ const validateReportTarget = async (
         throw new AppError("Reported donation not found", httpStatus.NOT_FOUND);
       }
 
-      return;
+      // Donor can report their own donation.
+      if (donation.donorId === reporterId) {
+        return;
+      }
+
+      // Blood request owner can report a related donation.
+      if (donation.requestId) {
+        const request = await db.orm.public.BloodRequest.where({
+          id: donation.requestId,
+        }).first();
+
+        if (request?.requesterId === reporterId) {
+          return;
+        }
+      }
+
+      throw new AppError(
+        "You are not authorized to report this donation",
+        httpStatus.FORBIDDEN,
+      );
     }
 
-    // Organization
     case "organization": {
       const organization = await db.orm.public.Organization.where({
         id: targetId,
@@ -95,7 +111,6 @@ const validateReportTarget = async (
       return;
     }
 
-    // Message
     case "message": {
       const message = await db.orm.public.Message.where({
         id: targetId,
@@ -105,7 +120,6 @@ const validateReportTarget = async (
         throw new AppError("Reported message not found", httpStatus.NOT_FOUND);
       }
 
-      // Reporter must belong to the conversation.
       const participant = await db.orm.public.ConversationParticipant.where({
         conversationId: message.conversationId,
         userId: reporterId,
@@ -121,7 +135,6 @@ const validateReportTarget = async (
       return;
     }
 
-    // Review
     case "review": {
       const review = await db.orm.public.Review.where({
         id: targetId,
@@ -136,13 +149,120 @@ const validateReportTarget = async (
   }
 };
 
-// Create report
+// List
+
+const getReportList = async (
+  query: ReportQueryInput,
+  filters: {
+    reporterId?: string;
+  } = {},
+) => {
+  let reportQuery = db.orm.public.Report;
+
+  if (filters.reporterId) {
+    reportQuery = reportQuery.where({
+      reporterId: filters.reporterId,
+    });
+  }
+
+  if (query.type) {
+    reportQuery = reportQuery.where({
+      type: query.type,
+    });
+  }
+
+  if (query.status) {
+    reportQuery = reportQuery.where({
+      status: query.status,
+    });
+  }
+
+  if (query.reporterId) {
+    reportQuery = reportQuery.where({
+      reporterId: query.reporterId,
+    });
+  }
+
+  if (query.targetId) {
+    reportQuery = reportQuery.where({
+      targetId: query.targetId,
+    });
+  }
+
+  if (query.createdAtFrom) {
+    reportQuery = reportQuery.where((report) =>
+      report.createdAt.gte(query.createdAtFrom!),
+    );
+  }
+
+  if (query.createdAtTo) {
+    reportQuery = reportQuery.where((report) =>
+      report.createdAt.lte(query.createdAtTo!),
+    );
+  }
+
+  const totalResult = await reportQuery.aggregate((report) => ({
+    total: report.count(),
+  }));
+
+  const total = totalResult.total;
+
+  const ascending = query.sortOrder === "asc";
+
+  let sortedQuery = reportQuery;
+
+  switch (query.sortBy) {
+    case "updatedAt":
+      sortedQuery = reportQuery.orderBy((report) =>
+        ascending ? report.updatedAt.asc() : report.updatedAt.desc(),
+      );
+      break;
+
+    case "status":
+      sortedQuery = reportQuery.orderBy((report) =>
+        ascending ? report.status.asc() : report.status.desc(),
+      );
+      break;
+
+    case "type":
+      sortedQuery = reportQuery.orderBy((report) =>
+        ascending ? report.type.asc() : report.type.desc(),
+      );
+      break;
+
+    case "createdAt":
+    default:
+      sortedQuery = reportQuery.orderBy((report) =>
+        ascending ? report.createdAt.asc() : report.createdAt.desc(),
+      );
+      break;
+  }
+
+  const data = await sortedQuery
+    .offset((query.page - 1) * query.limit)
+    .limit(query.limit)
+    .all();
+
+  const totalPage = Math.ceil(total / query.limit);
+
+  return {
+    data,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPage,
+      hasNextPage: query.page < totalPage,
+      hasPreviousPage: query.page > 1,
+    },
+  };
+};
+
+// Create
 
 const createReport = async (reporterId: string, data: CreateReportInput) => {
   await validateReportTarget(reporterId, data.type, data.targetId);
 
-  // Prevent duplicate active reports for
-  // the same target by the same reporter.
   const existingReports = await db.orm.public.Report.where({
     reporterId,
     type: data.type,
@@ -168,18 +288,17 @@ const createReport = async (reporterId: string, data: CreateReportInput) => {
     description: data.description ?? null,
     status: "pending",
     resolvedById: null,
+    resolvedAt: null,
   });
 };
 
-// My reports
+// User
 
-const getMyReports = async (reporterId: string) => {
-  return db.orm.public.Report.where({
+const getMyReports = async (reporterId: string, query: ReportQueryInput) => {
+  return getReportList(query, {
     reporterId,
-  }).all();
+  });
 };
-
-// Get report for reporter
 
 const getReportForUser = async (reportId: string, userId: string) => {
   const report = await getReportById(reportId);
@@ -194,7 +313,11 @@ const getReportForUser = async (reportId: string, userId: string) => {
   return report;
 };
 
-// Update report status
+// Moderation
+
+const getReports = async (query: ReportQueryInput) => {
+  return getReportList(query);
+};
 
 const updateReportStatus = async (
   reportId: string,
@@ -203,68 +326,56 @@ const updateReportStatus = async (
 ) => {
   const report = await getReportById(reportId);
 
-  // Status transition validation
-
   if (report.status === "resolved" || report.status === "rejected") {
-    if (data.status === "pending") {
-      throw new AppError(
-        "A resolved or rejected report cannot be moved back to pending",
-        httpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
-  if (report.status === "pending" && data.status === "resolved") {
     throw new AppError(
-      "Report must be reviewed before resolving",
+      "This report has already been finalized",
       httpStatus.BAD_REQUEST,
     );
   }
 
-  // Reviewing
+  // pending → reviewing
 
-  if (data.status === "reviewing") {
+  if (report.status === "pending" && data.status === "reviewing") {
     return db.orm.public.Report.where({
       id: reportId,
     }).update({
       status: "reviewing",
-      resolvedById: moderatorId,
+      resolvedById: null,
+      resolvedAt: null,
     });
   }
 
-  // Resolved
+  // reviewing → resolved
 
-  if (data.status === "resolved") {
+  if (report.status === "reviewing" && data.status === "resolved") {
     return db.orm.public.Report.where({
       id: reportId,
     }).update({
       status: "resolved",
       resolvedById: moderatorId,
+      resolvedAt: new Date().toDateString(),
     });
   }
 
-  // Rejected
+  // reviewing → rejected
 
-  if (data.status === "rejected") {
+  if (report.status === "reviewing" && data.status === "rejected") {
     return db.orm.public.Report.where({
       id: reportId,
     }).update({
       status: "rejected",
       resolvedById: moderatorId,
+      resolvedAt: new Date().toDateString(),
     });
   }
 
-  // Pending
-
-  return db.orm.public.Report.where({
-    id: reportId,
-  }).update({
-    status: "pending",
-    resolvedById: null,
-  });
+  throw new AppError(
+    `Invalid report status transition: ${report.status} → ${data.status}`,
+    httpStatus.BAD_REQUEST,
+  );
 };
 
-// Delete own report
+// Delete
 
 const deleteReport = async (reportId: string, reporterId: string) => {
   const report = await getReportById(reportId);
@@ -276,9 +387,9 @@ const deleteReport = async (reportId: string, reporterId: string) => {
     );
   }
 
-  if (report.status === "resolved" || report.status === "rejected") {
+  if (report.status !== "pending") {
     throw new AppError(
-      "Resolved or rejected reports cannot be deleted",
+      "Only pending reports can be deleted",
       httpStatus.BAD_REQUEST,
     );
   }
@@ -288,12 +399,11 @@ const deleteReport = async (reportId: string, reporterId: string) => {
   }).delete();
 };
 
-// Export
-
 export const ReportService = {
   createReport,
   getMyReports,
   getReportForUser,
+  getReports,
   updateReportStatus,
   deleteReport,
 };

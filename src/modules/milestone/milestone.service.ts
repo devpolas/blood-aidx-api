@@ -1,13 +1,15 @@
 import crypto from "node:crypto";
-import httpStatus from "http-status";
 
-import { db } from "../../lib/db";
-import { AppError } from "../../utils/appError";
+import httpStatus from "http-status";
 
 import type {
   CreateMilestoneInput,
+  MilestoneQueryInput,
   UpdateMilestoneInput,
+  UserMilestoneQueryInput,
 } from "./milestone.schema";
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
 
 // Types
 
@@ -41,7 +43,6 @@ const requireDonor = async (userId: string) => {
 
 const requireModerator = async (userId: string) => {
   const user = await getUserById(userId);
-
   const role = user.role as GlobalRole;
 
   if (role !== "moderator" && role !== "admin") {
@@ -88,6 +89,67 @@ const generateVerificationCode = (): string => {
   return crypto.randomUUID().replace(/-/g, "").toUpperCase();
 };
 
+// Milestone List
+
+const getMilestoneList = async (query: MilestoneQueryInput) => {
+  const milestoneQuery = db.orm.public.DonationMilestone;
+
+  const totalResult = await milestoneQuery.aggregate((aggregate) => ({
+    total: aggregate.count(),
+  }));
+
+  const total = Number(totalResult.total ?? 0);
+  const offset = (query.page - 1) * query.limit;
+  const ascending = query.sortOrder === "asc";
+
+  let sortedQuery;
+
+  switch (query.sortBy) {
+    case "createdAt":
+      sortedQuery = milestoneQuery.orderBy((milestone) =>
+        ascending ? milestone.createdAt.asc() : milestone.createdAt.desc(),
+      );
+      break;
+
+    case "updatedAt":
+      sortedQuery = milestoneQuery.orderBy((milestone) =>
+        ascending ? milestone.updatedAt.asc() : milestone.updatedAt.desc(),
+      );
+      break;
+
+    case "name":
+      sortedQuery = milestoneQuery.orderBy((milestone) =>
+        ascending ? milestone.name.asc() : milestone.name.desc(),
+      );
+      break;
+
+    case "donationCount":
+    default:
+      sortedQuery = milestoneQuery.orderBy((milestone) =>
+        ascending
+          ? milestone.donationCount.asc()
+          : milestone.donationCount.desc(),
+      );
+      break;
+  }
+
+  const data = await sortedQuery.offset(offset).limit(query.limit).all();
+
+  const totalPage = Math.ceil(total / query.limit);
+
+  return {
+    data,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPage,
+      hasNextPage: query.page < totalPage,
+      hasPreviousPage: query.page > 1,
+    },
+  };
+};
+
 // Milestone CRUD
 
 const createMilestone = async (userId: string, input: CreateMilestoneInput) => {
@@ -104,27 +166,22 @@ const createMilestone = async (userId: string, input: CreateMilestoneInput) => {
     );
   }
 
+  const now = new Date().toISOString();
+
   return db.orm.public.DonationMilestone.create({
     name: input.name,
-
     description: input.description,
-
     donationCount: input.donationCount,
-
     ...(input.badgeUrl !== undefined && {
       badgeUrl: input.badgeUrl,
     }),
-
-    createdAt: new Date().toISOString(),
-
+    createdAt: now,
     updatedAt: Temporal.Now.instant(),
   });
 };
 
-const getMilestones = async () => {
-  const milestones = await db.orm.public.DonationMilestone.all();
-
-  return milestones.toSorted((a, b) => a.donationCount - b.donationCount);
+const getMilestones = async (query: MilestoneQueryInput) => {
+  return getMilestoneList(query);
 };
 
 const getMilestone = async (milestoneId: string) => {
@@ -216,33 +273,64 @@ const deleteMilestone = async (userId: string, milestoneId: string) => {
 
 // User Milestones
 
-const getMyMilestones = async (userId: string) => {
-  await requireDonor(userId);
-
-  return db.orm.public.UserMilestone.where({
+const getUserMilestoneList = async (
+  userId: string,
+  query: UserMilestoneQueryInput,
+) => {
+  const milestoneQuery = db.orm.public.UserMilestone.where({
     userId,
-  }).all();
+  });
+
+  const totalResult = await milestoneQuery.aggregate((aggregate) => ({
+    total: aggregate.count(),
+  }));
+
+  const total = Number(totalResult.total ?? 0);
+  const offset = (query.page - 1) * query.limit;
+
+  const sortedQuery = milestoneQuery.orderBy((milestone) =>
+    query.sortOrder === "asc"
+      ? milestone.achievedAt.asc()
+      : milestone.achievedAt.desc(),
+  );
+
+  const data = await sortedQuery.offset(offset).limit(query.limit).all();
+
+  const totalPage = Math.ceil(total / query.limit);
+
+  return {
+    data,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPage,
+      hasNextPage: query.page < totalPage,
+      hasPreviousPage: query.page > 1,
+    },
+  };
 };
 
-const getUserMilestones = async (actorUserId: string, targetUserId: string) => {
-  const actor = await requireModerator(actorUserId);
+const getMyMilestones = async (
+  userId: string,
+  query: UserMilestoneQueryInput,
+) => {
+  await requireDonor(userId);
 
-  const isOwner = actor.id === targetUserId;
+  return getUserMilestoneList(userId, query);
+};
 
-  const isModerator = actor.role === "moderator" || actor.role === "admin";
+// Moderator / Admin
 
-  if (!isOwner && !isModerator) {
-    throw new AppError(
-      "You do not have permission to view these milestones",
-      httpStatus.FORBIDDEN,
-    );
-  }
-
+const getUserMilestones = async (
+  actorUserId: string,
+  targetUserId: string,
+  query: UserMilestoneQueryInput,
+) => {
+  await requireModerator(actorUserId);
   await getUserById(targetUserId);
 
-  return db.orm.public.UserMilestone.where({
-    userId: targetUserId,
-  }).all();
+  return getUserMilestoneList(targetUserId, query);
 };
 
 // Automatic Milestone Processing
@@ -283,14 +371,16 @@ const processDonationMilestones = async (
     eligibleMilestones.map(async (milestone) => {
       const now = new Date().toISOString();
 
-      // 1. Award milestone
+      // Award milestone
+
       const userMilestone = await tx.orm.public.UserMilestone.create({
         userId,
         milestoneId: milestone.id,
         achievedAt: now,
       });
 
-      // 2. Create certificate
+      // Create certificate
+
       const certificate = await tx.orm.public.MilestoneCertificate.create({
         userMilestoneId: userMilestone.id,
         certificateNo: generateCertificateNo(),
@@ -300,7 +390,8 @@ const processDonationMilestones = async (
         achievedAt: now,
       });
 
-      // 3. Create notification
+      // Create notification
+
       const notification = await tx.orm.public.Notification.create({
         userId,
         type: "milestone",

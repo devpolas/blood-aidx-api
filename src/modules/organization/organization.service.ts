@@ -1,19 +1,23 @@
 import httpStatus from "http-status";
 
-import { db } from "../../lib/db";
-import { AppError } from "../../utils/appError";
-
 import type {
   AddOrganizationMemberInput,
   CreateOrganizationInput,
+  OrganizationQueryInput,
   UpdateOrganizationInput,
   UpdateOrganizationMemberInput,
   UpdateOrganizationStatusInput,
 } from "./organization.schema";
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
+
+// Types
 
 type GlobalRole = "user" | "moderator" | "admin";
 
 type OrganizationMemberRole = "admin" | "staff" | "verifier";
+
+// User
 
 const getUserById = async (userId: string) => {
   const user = await db.orm.public.User.where({
@@ -27,6 +31,8 @@ const getUserById = async (userId: string) => {
   return user;
 };
 
+// Organization
+
 const getOrganizationById = async (organizationId: string) => {
   const organization = await db.orm.public.Organization.where({
     id: organizationId,
@@ -39,12 +45,16 @@ const getOrganizationById = async (organizationId: string) => {
   return organization;
 };
 
+// Membership
+
 const getMembership = async (organizationId: string, userId: string) => {
   return db.orm.public.OrganizationMember.where({
     organizationId,
     userId,
   }).first();
 };
+
+// Global Authorization
 
 const isGlobalModerator = (role: GlobalRole) =>
   role === "moderator" || role === "admin";
@@ -62,14 +72,20 @@ const requireGlobalModerator = async (userId: string) => {
   return user;
 };
 
+// Organization Access
+
 const getOrganizationAccess = async (
   organizationId: string,
   userId: string,
 ) => {
   const organization = await getOrganizationById(organizationId);
+
   const user = await getUserById(userId);
-  const isOwner = organization.ownerId === userId;
+
   const membership = await getMembership(organizationId, userId);
+
+  const isOwner = organization.ownerId === userId;
+
   const isModerator = isGlobalModerator(user.role as GlobalRole);
 
   return {
@@ -116,20 +132,113 @@ const requireOrganizationManager = async (
   return access;
 };
 
-// Organization
+// Organization List
 
-const getMyOrganizations = async (userId: string) => {
-  await getUserById(userId);
+const applyOrganizationFilters = (query: OrganizationQueryInput) => {
+  let organizationQuery = db.orm.public.Organization.where({
+    status: "verified",
+  });
 
-  return db.orm.public.Organization.where({
-    ownerId: userId,
-  }).all();
+  if (query.type) {
+    organizationQuery = organizationQuery.where({
+      type: query.type,
+    });
+  }
+
+  if (query.locationId) {
+    organizationQuery = organizationQuery.where({
+      locationId: query.locationId,
+    });
+  }
+
+  if (query.search) {
+    organizationQuery = organizationQuery.where((organization) =>
+      organization.name.ilike(`%${query.search}%`),
+    );
+  }
+
+  if (query.createdAtFrom) {
+    organizationQuery = organizationQuery.where((organization) =>
+      organization.createdAt.gte(query.createdAtFrom!),
+    );
+  }
+
+  if (query.createdAtTo) {
+    organizationQuery = organizationQuery.where((organization) =>
+      organization.createdAt.lte(query.createdAtTo!),
+    );
+  }
+
+  return organizationQuery;
 };
 
-const getOrganizations = async () => {
-  return db.orm.public.Organization.where({
-    status: "verified",
-  }).all();
+const getOrganizationList = async (query: OrganizationQueryInput) => {
+  const filteredQuery = applyOrganizationFilters(query);
+
+  const totalResult = await filteredQuery.aggregate((aggregate) => ({
+    total: aggregate.count(),
+  }));
+
+  const total = Number(totalResult.total ?? 0);
+
+  const offset = (query.page - 1) * query.limit;
+
+  const ascending = query.sortOrder === "asc";
+
+  let sortedQuery;
+
+  switch (query.sortBy) {
+    case "updatedAt":
+      sortedQuery = filteredQuery.orderBy((organization) =>
+        ascending
+          ? organization.updatedAt.asc()
+          : organization.updatedAt.desc(),
+      );
+      break;
+
+    case "name":
+      sortedQuery = filteredQuery.orderBy((organization) =>
+        ascending ? organization.name.asc() : organization.name.desc(),
+      );
+      break;
+
+    case "type":
+      sortedQuery = filteredQuery.orderBy((organization) =>
+        ascending ? organization.type.asc() : organization.type.desc(),
+      );
+      break;
+
+    case "createdAt":
+    default:
+      sortedQuery = filteredQuery.orderBy((organization) =>
+        ascending
+          ? organization.createdAt.asc()
+          : organization.createdAt.desc(),
+      );
+      break;
+  }
+
+  const data = await sortedQuery.offset(offset).limit(query.limit).all();
+
+  const totalPage = Math.ceil(total / query.limit);
+
+  return {
+    data,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPage,
+      hasNextPage: query.page < totalPage,
+      hasPreviousPage: query.page > 1,
+    },
+  };
+};
+
+// Public Organization
+
+const getOrganizations = async (query: OrganizationQueryInput) => {
+  return getOrganizationList(query);
 };
 
 const getOrganization = async (organizationId: string) => {
@@ -142,6 +251,18 @@ const getOrganization = async (organizationId: string) => {
   return organization;
 };
 
+// My Organizations
+
+const getMyOrganizations = async (userId: string) => {
+  await getUserById(userId);
+
+  return db.orm.public.Organization.where({
+    ownerId: userId,
+  }).all();
+};
+
+// Organization By User Access
+
 const getOrganizationByIdForUser = async (
   organizationId: string,
   userId: string,
@@ -153,6 +274,8 @@ const getOrganizationByIdForUser = async (
 
   return organization;
 };
+
+// Create Organization
 
 const createOrganization = async (
   userId: string,
@@ -170,15 +293,14 @@ const createOrganization = async (
 
   return db.orm.public.Organization.create({
     ownerId: userId,
-
-    ...(data.locationId !== undefined && {
-      locationId: data.locationId,
-    }),
-
     name: data.name,
     slug: data.slug,
     type: data.type,
     status: "pending",
+
+    ...(data.locationId !== undefined && {
+      locationId: data.locationId,
+    }),
 
     ...(data.description !== undefined && {
       description: data.description,
@@ -197,6 +319,8 @@ const createOrganization = async (
     }),
   });
 };
+
+// Update Organization
 
 const updateOrganization = async (
   organizationId: string,
@@ -258,6 +382,8 @@ const updateOrganization = async (
   });
 };
 
+// Update Organization Status
+
 const updateOrganizationStatus = async (
   organizationId: string,
   userId: string,
@@ -304,10 +430,12 @@ const updateOrganizationStatus = async (
   });
 };
 
+// Delete Organization
+
 const deleteOrganization = async (organizationId: string, userId: string) => {
   const { organization } = await getOrganizationAccess(organizationId, userId);
 
-  if (!accessIsOwner(organization.ownerId, userId)) {
+  if (organization.ownerId !== userId) {
     throw new AppError(
       "Only the organization owner can delete this organization",
       httpStatus.FORBIDDEN,
@@ -321,12 +449,12 @@ const deleteOrganization = async (organizationId: string, userId: string) => {
     );
   }
 
-  return db.orm.public.Organization.where({
+  await db.orm.public.Organization.where({
     id: organizationId,
   }).delete();
-};
 
-const accessIsOwner = (ownerId: string, userId: string) => ownerId === userId;
+  return null;
+};
 
 // Members
 
@@ -346,9 +474,9 @@ const addMember = async (
     );
   }
 
-  const memberUser = await getUserById(data.userId);
+  await getUserById(data.userId);
 
-  const existingMember = await getMembership(organizationId, memberUser.id);
+  const existingMember = await getMembership(organizationId, data.userId);
 
   if (existingMember) {
     throw new AppError(
@@ -359,7 +487,7 @@ const addMember = async (
 
   return db.orm.public.OrganizationMember.create({
     organizationId,
-    userId: memberUser.id,
+    userId: data.userId,
     role: data.role,
   });
 };
@@ -427,17 +555,19 @@ const removeMember = async (
     throw new AppError("Organization member not found", httpStatus.NOT_FOUND);
   }
 
-  return db.orm.public.OrganizationMember.where({
+  await db.orm.public.OrganizationMember.where({
     organizationId,
     userId: memberUserId,
   }).delete();
+
+  return null;
 };
 
 export const OrganizationService = {
-  getMyOrganizations,
-  getOrganization,
-  getOrganizationByIdForUser,
   getOrganizations,
+  getOrganization,
+  getMyOrganizations,
+  getOrganizationByIdForUser,
   createOrganization,
   updateOrganization,
   updateOrganizationStatus,

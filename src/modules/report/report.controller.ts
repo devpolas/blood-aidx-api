@@ -1,74 +1,105 @@
 import type { Request, Response } from "express";
-
 import httpStatus from "http-status";
 
-import { CreateReportSchema, UpdateReportStatusSchema } from "./report.schema";
-
+import {
+  CreateReportSchema,
+  ReportQuerySchema,
+  UpdateReportStatusSchema,
+} from "./report.schema";
 import { ReportService } from "./report.service";
 
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 
-// Create
+// User
 
 const createReport = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
   const data = CreateReportSchema.parse(req.body);
 
-  const result = await ReportService.createReport(user.id, data);
+  const report = await ReportService.createReport(user.id, data);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
     message: "Report submitted successfully",
-    data: result,
+    data: report,
   });
 });
-
-// My reports
 
 const getMyReports = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
-  const result = await ReportService.getMyReports(user.id);
+  const query = ReportQuerySchema.parse(req.query);
+
+  const reports = await ReportService.getMyReports(user.id, query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Reports retrieved successfully",
-    data: result,
+    message: "Your reports retrieved successfully",
+    data: reports.data,
+    meta: reports.meta,
   });
 });
-
-// Get report
 
 const getReport = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
-  const result = await ReportService.getReportForUser(
-    req.params.reportId as string,
-    user.id,
-  );
+  const reportId = req.params.reportId as string;
+
+  const report = await ReportService.getReportForUser(reportId, user.id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Report retrieved successfully",
-    data: result,
+    data: report,
   });
 });
 
-// Update status
+const deleteReport = catchAsync(async (req: Request, res: Response) => {
+  const { user } = requireAuth(req);
+
+  const reportId = req.params.reportId as string;
+
+  await ReportService.deleteReport(reportId, user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Report deleted successfully",
+    data: null,
+  });
+});
+
+// Moderation
+
+const getReports = catchAsync(async (req: Request, res: Response) => {
+  const query = ReportQuerySchema.parse(req.query);
+
+  const reports = await ReportService.getReports(query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Reports retrieved successfully",
+    data: reports.data,
+    meta: reports.meta,
+  });
+});
 
 const updateReportStatus = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
+  const reportId = req.params.reportId as string;
+
   const data = UpdateReportStatusSchema.parse(req.body);
 
-  const result = await ReportService.updateReportStatus(
-    req.params.reportId as string,
+  const report = await ReportService.updateReportStatus(
+    reportId,
     user.id,
     data,
   );
@@ -77,30 +108,15 @@ const updateReportStatus = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Report status updated successfully",
-    data: result,
+    data: report,
   });
 });
-
-// Delete
-
-const deleteReport = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-
-  await ReportService.deleteReport(req.params.reportId as string, user.id);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Report deleted successfully",
-  });
-});
-
-// Export
 
 export const ReportController = {
   createReport,
   getMyReports,
   getReport,
-  updateReportStatus,
   deleteReport,
+  getReports,
+  updateReportStatus,
 };

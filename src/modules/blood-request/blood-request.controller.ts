@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import httpStatus from "http-status";
 
 import {
+  BloodRequestQuerySchema,
   CreateBloodRequestSchema,
   UpdateBloodRequestSchema,
   UpdateBloodRequestStatusSchema,
@@ -19,26 +20,32 @@ import { sendResponse } from "../../utils/sendResponse";
 const getMyBloodRequests = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
 
-  const requests = await BloodRequestService.getMyBloodRequests(user.id);
+  const query = BloodRequestQuerySchema.parse(req.query);
+
+  const result = await BloodRequestService.getMyBloodRequests(user.id, query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Blood requests retrieved successfully",
-    data: requests,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
 // Get All Blood Requests
 
-const getBloodRequests = catchAsync(async (_req: Request, res: Response) => {
-  const requests = await BloodRequestService.getBloodRequests();
+const getBloodRequests = catchAsync(async (req: Request, res: Response) => {
+  const query = BloodRequestQuerySchema.parse(req.query);
+
+  const result = await BloodRequestService.getBloodRequests(query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Blood requests retrieved successfully",
-    data: requests,
+    data: result.data,
+    meta: result.meta,
   });
 });
 

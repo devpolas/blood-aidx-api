@@ -52,17 +52,12 @@ const deleteMyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Moderator / Admin
+// Public
 
 const getProfileByUserId = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-
   const userId = req.params.userId as string;
 
-  const profile = await ProfileService.getProfileByUserIdForModerator(
-    user.id,
-    userId,
-  );
+  const profile = await ProfileService.getUserProfileByUserId(userId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -113,13 +108,15 @@ const deleteProfileByUserId = catchAsync(
 );
 
 export const ProfileController = {
+  // Public
+  getProfileByUserId,
+
   // My profile
   getMyProfile,
   upsertMyProfile,
   deleteMyProfile,
 
   // Moderator / Admin
-  getProfileByUserId,
   updateProfileByUserId,
   deleteProfileByUserId,
 };

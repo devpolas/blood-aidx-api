@@ -1,46 +1,59 @@
 import { Router, type Router as ExpressRouter } from "express";
 
-import { DonorController } from "./donor.controller";
-
 import {
   protect,
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
+import { DonorController } from "./donor.controller";
 
 const router: ExpressRouter = Router();
 
+// Public Donor Discovery
+
+router.get("/", DonorController.getDonors);
+
+router.get("/:donorId", DonorController.getDonorById);
+
 // Authenticated Donor Routes
 
-router.use(protect, requireActiveUser);
+router.get(
+  "/me",
+  protect,
+  requireActiveUser,
+  DonorController.getMyDonorProfile,
+);
 
-// My Donor Profile
-// IMPORTANT: /me must come before /:donorId
-
-router.get("/me", DonorController.getMyDonorProfile);
-router.put("/me", requireVerifiedEmail, DonorController.upsertMyDonorProfile);
+router.put(
+  "/me",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  DonorController.upsertMyDonorProfile,
+);
 
 router.delete(
   "/me",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   DonorController.deleteMyDonorProfile,
 );
-
-// Donor Discovery
-
-router.get("/", DonorController.getDonors);
-router.get("/:donorId", DonorController.getDonorById);
 
 // Moderator / Admin
 
 router.patch(
   "/:donorId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   DonorController.updateDonorProfileById,
 );
 
 router.delete(
   "/:donorId",
+  protect,
+  requireActiveUser,
   requireVerifiedEmail,
   DonorController.deleteDonorProfileById,
 );

@@ -10,6 +10,10 @@ import {
 
 const router: ExpressRouter = Router();
 
+// Public
+
+router.get("/:userId", ProfileController.getProfileByUserId);
+
 // Authentication
 
 router.use(protect, requireActiveUser);
@@ -23,12 +27,6 @@ router.put("/me", requireVerifiedEmail, ProfileController.upsertMyProfile);
 router.delete("/me", requireVerifiedEmail, ProfileController.deleteMyProfile);
 
 // Moderator / Admin
-
-// Get another user's profile
-// Authorization is handled inside the service:
-// Moderator + Admin
-
-router.get("/:userId", ProfileController.getProfileByUserId);
 
 // Update another user's profile
 // Authorization is handled inside the service:

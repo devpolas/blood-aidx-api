@@ -4,6 +4,22 @@ import { AppError } from "../../utils/appError";
 
 import type { UpdateUserInput } from "./user.schema";
 
+const getUserById = async (userId: string) => {
+  const user = await db.orm.public.User.where({
+    id: userId,
+  }).first();
+
+  if (!user) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+
+  return user;
+};
+
+export const getUser = async (userId: string) => {
+  return getUserById(userId);
+};
+
 //get me
 
 export const getMe = async (userId: string) => {

@@ -1,5 +1,7 @@
 import { Router, type Router as ExpressRouter } from "express";
+
 import { ReportController } from "./report.controller";
+
 import {
   protect,
   requireActiveUser,
@@ -9,49 +11,41 @@ import {
 
 const router: ExpressRouter = Router();
 
-// User
+// Authentication
 
-router.post(
-  "/",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  ReportController.createReport,
-);
-
-router.get(
-  "/me",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  ReportController.getMyReports,
-);
-
-router.get(
-  "/:reportId",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  ReportController.getReport,
-);
-
-router.delete(
-  "/:reportId",
-  protect,
-  requireActiveUser,
-  requireVerifiedEmail,
-  ReportController.deleteReport,
-);
+router.use(protect, requireActiveUser);
 
 // Moderation
 
+router.get(
+  "/",
+  requireVerifiedEmail,
+  requireRole("moderator", "admin"),
+  ReportController.getReports,
+);
+
 router.patch(
   "/:reportId/status",
-  protect,
-  requireActiveUser,
   requireVerifiedEmail,
   requireRole("moderator", "admin"),
   ReportController.updateReportStatus,
+);
+
+// User
+
+router.post("/", requireVerifiedEmail, ReportController.createReport);
+
+// IMPORTANT:
+// /me must be declared before /:reportId.
+
+router.get("/me", requireVerifiedEmail, ReportController.getMyReports);
+
+router.get("/:reportId", requireVerifiedEmail, ReportController.getReport);
+
+router.delete(
+  "/:reportId",
+  requireVerifiedEmail,
+  ReportController.deleteReport,
 );
 
 export default router;

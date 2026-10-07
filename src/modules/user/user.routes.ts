@@ -3,6 +3,8 @@ import { protect, requireActiveUser } from "../../middleware/auth.middleware";
 import { UserController } from "./user.controller";
 const router: ExpressRouter = Router();
 
+router.get("/:userId", UserController.getUser);
+
 // Current User
 
 router.get("/", protect, requireActiveUser, UserController.getMe);

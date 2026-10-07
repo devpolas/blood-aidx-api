@@ -1,12 +1,11 @@
 import httpStatus from "http-status";
 
-import { db } from "../../lib/db";
-import { AppError } from "../../utils/appError";
-
 import type {
   AddParticipantInput,
   CreateConversationInput,
 } from "./conversation.schema";
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
 
 // User
 
@@ -71,9 +70,7 @@ const validateUsers = async (userIds: string[]) => {
     ),
   );
 
-  const hasMissingUser = users.some((user) => user === undefined);
-
-  if (hasMissingUser) {
+  if (users.some((user) => !user)) {
     throw new AppError(
       "One or more users were not found",
       httpStatus.NOT_FOUND,
@@ -91,12 +88,9 @@ const createConversation = async (
 
   const uniqueParticipantIds = [...new Set(participantIds)];
 
-  // Validate all users in parallel.
   await validateUsers(uniqueParticipantIds);
 
-  // ==========================================================
-  // Direct Conversation
-  // ==========================================================
+  // Direct conversation
 
   if (data.type === "direct") {
     if (uniqueParticipantIds.length !== 2) {
@@ -120,7 +114,6 @@ const createConversation = async (
         userId: creatorId,
       }).all();
 
-    // Check possible direct conversations in parallel.
     const existingConversations = await Promise.all(
       existingParticipants.map(async (participant) => {
         const conversation = await db.orm.public.Conversation.where({
@@ -150,17 +143,11 @@ const createConversation = async (
     }
   }
 
-  // ==========================================================
-  // Create Conversation
-  // ==========================================================
+  // Create conversation
 
   const conversation = await db.orm.public.Conversation.create({
     type: data.type,
   });
-
-  // ==========================================================
-  // Create Participants
-  // ==========================================================
 
   const joinedAt = new Date().toISOString();
 
@@ -207,12 +194,10 @@ const getConversationForUser = async (
   conversationId: string,
   userId: string,
 ) => {
-  const [conversation] = await Promise.all([
-    getConversation(conversationId),
-    requireParticipant(conversationId, userId),
-  ]);
+  await getConversation(conversationId);
+  await requireParticipant(conversationId, userId);
 
-  return conversation;
+  return getConversation(conversationId);
 };
 
 // Add Participant
@@ -226,16 +211,12 @@ const addParticipant = async (
 
   await requireParticipant(conversationId, requesterId);
 
-  // Direct conversations cannot have more participants.
-
   if (conversation.type === "direct") {
     throw new AppError(
       "Participants cannot be added to a direct conversation",
       httpStatus.BAD_REQUEST,
     );
   }
-
-  // Cannot add yourself.
 
   if (data.userId === requesterId) {
     throw new AppError(
@@ -244,19 +225,13 @@ const addParticipant = async (
     );
   }
 
-  // Validate target user.
-
   await getUserById(data.userId);
-
-  // Prevent duplicate participant.
 
   const existingParticipant = await getParticipant(conversationId, data.userId);
 
   if (existingParticipant) {
     throw new AppError("User is already a participant", httpStatus.CONFLICT);
   }
-
-  // Add participant.
 
   return db.orm.public.ConversationParticipant.create({
     conversationId,
@@ -276,16 +251,12 @@ const removeParticipant = async (
 
   await requireParticipant(conversationId, requesterId);
 
-  // Cannot remove yourself.
-
   if (userId === requesterId) {
     throw new AppError(
       "Use the leave endpoint to leave the conversation",
       httpStatus.BAD_REQUEST,
     );
   }
-
-  // Direct conversations cannot remove participants.
 
   if (conversation.type === "direct") {
     throw new AppError(
@@ -294,15 +265,11 @@ const removeParticipant = async (
     );
   }
 
-  // Find participant.
-
   const participant = await getParticipant(conversationId, userId);
 
   if (!participant) {
     throw new AppError("Participant not found", httpStatus.NOT_FOUND);
   }
-
-  // Remove participant.
 
   await db.orm.public.ConversationParticipant.where({
     id: participant.id,
@@ -326,8 +293,6 @@ const isParticipant = async (conversationId: string, userId: string) => {
 
   return participant !== undefined;
 };
-
-// Export
 
 export const ConversationService = {
   createConversation,

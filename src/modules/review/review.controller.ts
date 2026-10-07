@@ -4,19 +4,19 @@ import httpStatus from "http-status";
 
 import {
   CreateReviewSchema,
+  ReviewQuerySchema,
   UpdateReviewSchema,
   UpdateReviewStatusSchema,
 } from "./review.schema";
-
 import { ReviewService } from "./review.service";
-
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 
+// Create
+
 const createReview = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const data = CreateReviewSchema.parse(req.body);
 
   const result = await ReviewService.createReview(user.id, data);
@@ -29,46 +29,62 @@ const createReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Current User
+
 const getMyReviews = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
+  const query = ReviewQuerySchema.parse(req.query);
 
-  const result = await ReviewService.getMyReviews(user.id);
+  const result = await ReviewService.getMyReviews(user.id, query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Reviews retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
+// Public
+
 const getReviewsForUser = catchAsync(async (req: Request, res: Response) => {
+  const query = ReviewQuerySchema.parse(req.query);
+
   const result = await ReviewService.getReviewsForUser(
     req.params.userId as string,
+    query,
   );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "User reviews retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
 const getReviewsForOrganization = catchAsync(
   async (req: Request, res: Response) => {
+    const query = ReviewQuerySchema.parse(req.query);
+
     const result = await ReviewService.getReviewsForOrganization(
       req.params.organizationId as string,
+      query,
     );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "Organization reviews retrieved successfully",
-      data: result,
+      data: result.data,
+      meta: result.meta,
     });
   },
 );
+
+// Current User
 
 const getReviewById = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
@@ -88,7 +104,6 @@ const getReviewById = catchAsync(async (req: Request, res: Response) => {
 
 const updateReview = catchAsync(async (req: Request, res: Response) => {
   const { user } = requireAuth(req);
-
   const data = UpdateReviewSchema.parse(req.body);
 
   const result = await ReviewService.updateReview(
@@ -114,8 +129,11 @@ const deleteReview = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Review deleted successfully",
+    data: null,
   });
 });
+
+// Moderator / Admin
 
 const updateReviewStatus = catchAsync(async (req: Request, res: Response) => {
   const data = UpdateReviewStatusSchema.parse(req.body);

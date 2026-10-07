@@ -32,3 +32,41 @@ export type AdminUpdateUserRoleInput = z.infer<
 >;
 
 export type BanUserInput = z.infer<typeof BanUserSchema>;
+
+export const AdminUserSortBySchema = z.enum([
+  "createdAt",
+  "updatedAt",
+  "name",
+  "email",
+  "role",
+]);
+
+export const AdminUserQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    search: z.string().trim().min(1).max(100).optional(),
+    role: z.enum(["user", "moderator", "admin"]).optional(),
+    banned: z.coerce.boolean().optional(),
+    emailVerified: z.coerce.boolean().optional(),
+    createdAtFrom: z.iso.datetime().optional(),
+    createdAtTo: z.iso.datetime().optional(),
+    sortBy: AdminUserSortBySchema.default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (
+      data.createdAtFrom &&
+      data.createdAtTo &&
+      new Date(data.createdAtTo) < new Date(data.createdAtFrom)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["createdAtTo"],
+        message: "createdAtTo must be greater than or equal to createdAtFrom",
+      });
+    }
+  });
+
+export type AdminUserQueryInput = z.infer<typeof AdminUserQuerySchema>;

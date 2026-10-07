@@ -1,22 +1,26 @@
 import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 
 import config from "../../config";
 import { stripe } from "../../config/stripe";
 import { requireAuth } from "../../middleware/auth.middleware";
-import { PaymentService } from "./payment.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import { createCoffeePaymentSchema } from "./payment.schema";
+import {
+  CreateCoffeePaymentSchema,
+  PaymentQuerySchema,
+  RefundPaymentSchema,
+} from "./payment.schema";
+import { PaymentService } from "./payment.service";
 
 // Create Coffee Payment
 
 const createCoffeePayment = catchAsync(async (req: Request, res: Response) => {
   const auth = requireAuth(req);
 
-  const data = createCoffeePaymentSchema.parse(req.body);
+  const data = CreateCoffeePaymentSchema.parse(req.body);
 
   const result = await PaymentService.createCoffeePayment({
     payerId: auth.user.id,
@@ -35,6 +39,7 @@ const createCoffeePayment = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
 // Get Payment
 
 const getPayment = catchAsync(async (req: Request, res: Response) => {
@@ -47,11 +52,8 @@ const getPayment = catchAsync(async (req: Request, res: Response) => {
 
   return sendResponse(res, {
     success: true,
-
     message: "Payment retrieved successfully",
-
     statusCode: httpStatus.OK,
-
     data: result,
   });
 });
@@ -61,28 +63,35 @@ const getPayment = catchAsync(async (req: Request, res: Response) => {
 const getMyPayments = catchAsync(async (req: Request, res: Response) => {
   const auth = requireAuth(req);
 
-  const result = await PaymentService.getMyPayments(auth.user.id);
+  const query = PaymentQuerySchema.parse(req.query);
+
+  const result = await PaymentService.getMyPayments(auth.user.id, query);
 
   return sendResponse(res, {
     success: true,
     message: "Payments retrieved successfully",
     statusCode: httpStatus.OK,
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
 // Get Donor Payments
 
 const getDonorPayments = catchAsync(async (req: Request, res: Response) => {
+  const query = PaymentQuerySchema.parse(req.query);
+
   const result = await PaymentService.getDonorPayments(
     req.params.donorId as string,
+    query,
   );
 
   return sendResponse(res, {
     success: true,
     message: "Donor payments retrieved successfully",
     statusCode: httpStatus.OK,
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -95,11 +104,8 @@ const getPaymentForAdmin = catchAsync(async (req: Request, res: Response) => {
 
   return sendResponse(res, {
     success: true,
-
     message: "Payment retrieved successfully",
-
     statusCode: httpStatus.OK,
-
     data: result,
   });
 });
@@ -107,19 +113,17 @@ const getPaymentForAdmin = catchAsync(async (req: Request, res: Response) => {
 // Admin: Refund Payment
 
 const refundPayment = catchAsync(async (req: Request, res: Response) => {
+  const data = RefundPaymentSchema.parse(req.body);
+
   const result = await PaymentService.refundPayment({
     paymentId: req.params.paymentId as string,
-
-    amount: req.body.amount,
+    ...data,
   });
 
   return sendResponse(res, {
     success: true,
-
     message: "Payment refund initiated successfully",
-
     statusCode: httpStatus.OK,
-
     data: result,
   });
 });
@@ -129,10 +133,9 @@ const refundPayment = catchAsync(async (req: Request, res: Response) => {
 const stripeWebhook = async (req: Request, res: Response) => {
   const signature = req.headers["stripe-signature"];
 
-  if (!signature) {
+  if (!signature || Array.isArray(signature)) {
     return res.status(httpStatus.BAD_REQUEST).json({
       success: false,
-
       message: "Missing Stripe signature",
     });
   }
@@ -150,7 +153,6 @@ const stripeWebhook = async (req: Request, res: Response) => {
 
     return res.status(httpStatus.BAD_REQUEST).json({
       success: false,
-
       message: "Invalid Stripe webhook signature",
     });
   }
@@ -166,7 +168,6 @@ const stripeWebhook = async (req: Request, res: Response) => {
 
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
-
       message: "Webhook processing failed",
     });
   }

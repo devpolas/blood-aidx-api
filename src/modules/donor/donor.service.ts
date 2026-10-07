@@ -1,7 +1,6 @@
 import httpStatus from "http-status";
 
-import type { UpdateDonorProfileInput } from "./donor.schema";
-
+import type { DonorQueryInput, UpdateDonorProfileInput } from "./donor.schema";
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
 
@@ -25,17 +24,12 @@ const getActor = async (userId: string) => {
 
 // Role Helpers
 
-const isDonorRole = (role: ActorRole) => {
-  return role === "user";
-};
+const isDonorRole = (role: ActorRole) => role === "user";
 
-const isModeratorRole = (role: ActorRole) => {
-  return role === "moderator" || role === "admin";
-};
+const isModeratorRole = (role: ActorRole) =>
+  role === "moderator" || role === "admin";
 
-const isAdminRole = (role: ActorRole) => {
-  return role === "admin";
-};
+const isAdminRole = (role: ActorRole) => role === "admin";
 
 // Require Donor
 
@@ -66,10 +60,7 @@ const requireModerator = async (userId: string) => {
     );
   }
 
-  return {
-    actor,
-    role,
-  };
+  return actor;
 };
 
 // Require Admin
@@ -122,15 +113,140 @@ const buildDonorUpdateData = (data: UpdateDonorProfileInput) => ({
   ...(data.bloodGroup !== undefined && {
     bloodGroup: data.bloodGroup,
   }),
-
   ...(data.availability !== undefined && {
     availability: data.availability,
   }),
-
   ...(data.lastDonationAt !== undefined && {
     lastDonationAt: data.lastDonationAt,
   }),
 });
+
+// Apply Donor Filters
+
+const applyDonorFilters = (query: DonorQueryInput) => {
+  let donorQuery = db.orm.public.DonorProfile;
+
+  if (query.bloodGroup) {
+    donorQuery = donorQuery.where({
+      bloodGroup: query.bloodGroup,
+    });
+  }
+
+  if (query.availability) {
+    donorQuery = donorQuery.where({
+      availability: query.availability,
+    });
+  }
+
+  if (query.isEligible !== undefined) {
+    donorQuery = donorQuery.where({
+      isEligible: query.isEligible,
+    });
+  }
+
+  if (query.userId) {
+    donorQuery = donorQuery.where({
+      userId: query.userId,
+    });
+  }
+
+  if (query.createdAtFrom) {
+    donorQuery = donorQuery.where((donor) =>
+      donor.createdAt.gte(query.createdAtFrom!),
+    );
+  }
+
+  if (query.createdAtTo) {
+    donorQuery = donorQuery.where((donor) =>
+      donor.createdAt.lte(query.createdAtTo!),
+    );
+  }
+
+  if (query.lastDonationAtFrom) {
+    donorQuery = donorQuery.where((donor) =>
+      donor.lastDonationAt.gte(query.lastDonationAtFrom!),
+    );
+  }
+
+  if (query.lastDonationAtTo) {
+    donorQuery = donorQuery.where((donor) =>
+      donor.lastDonationAt.lte(query.lastDonationAtTo!),
+    );
+  }
+
+  return donorQuery;
+};
+
+// Get Donor List
+
+const getDonorList = async (query: DonorQueryInput) => {
+  const filteredQuery = applyDonorFilters(query);
+
+  const totalResult = await filteredQuery.aggregate((aggregate) => ({
+    total: aggregate.count(),
+  }));
+
+  const total = Number(totalResult.total ?? 0);
+  const offset = (query.page - 1) * query.limit;
+  const ascending = query.sortOrder === "asc";
+
+  let sortedQuery;
+
+  switch (query.sortBy) {
+    case "updatedAt":
+      sortedQuery = filteredQuery.orderBy((donor) =>
+        ascending ? donor.updatedAt.asc() : donor.updatedAt.desc(),
+      );
+      break;
+
+    case "lastDonationAt":
+      sortedQuery = filteredQuery.orderBy((donor) =>
+        ascending ? donor.lastDonationAt.asc() : donor.lastDonationAt.desc(),
+      );
+      break;
+
+    case "totalDonations":
+      sortedQuery = filteredQuery.orderBy((donor) =>
+        ascending ? donor.totalDonations.asc() : donor.totalDonations.desc(),
+      );
+      break;
+
+    case "bloodGroup":
+      sortedQuery = filteredQuery.orderBy((donor) =>
+        ascending ? donor.bloodGroup.asc() : donor.bloodGroup.desc(),
+      );
+      break;
+
+    case "availability":
+      sortedQuery = filteredQuery.orderBy((donor) =>
+        ascending ? donor.availability.asc() : donor.availability.desc(),
+      );
+      break;
+
+    case "createdAt":
+    default:
+      sortedQuery = filteredQuery.orderBy((donor) =>
+        ascending ? donor.createdAt.asc() : donor.createdAt.desc(),
+      );
+      break;
+  }
+
+  const data = await sortedQuery.offset(offset).limit(query.limit).all();
+
+  const totalPage = Math.ceil(total / query.limit);
+
+  return {
+    data,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPage,
+      hasNextPage: query.page < totalPage,
+      hasPreviousPage: query.page > 1,
+    },
+  };
+};
 
 // Get My Donor Profile
 
@@ -152,8 +268,6 @@ const upsertMyDonorProfile = async (
     userId,
   }).first();
 
-  // Update
-
   if (existingDonor) {
     const updateData = buildDonorUpdateData(data);
 
@@ -161,8 +275,6 @@ const upsertMyDonorProfile = async (
       userId,
     }).update(updateData);
   }
-
-  // Create
 
   if (data.bloodGroup === undefined) {
     throw new AppError(
@@ -174,11 +286,9 @@ const upsertMyDonorProfile = async (
   return db.orm.public.DonorProfile.create({
     userId,
     bloodGroup: data.bloodGroup,
-
     ...(data.availability !== undefined && {
       availability: data.availability,
     }),
-
     ...(data.lastDonationAt !== undefined && {
       lastDonationAt: data.lastDonationAt,
     }),
@@ -189,7 +299,6 @@ const upsertMyDonorProfile = async (
 
 const deleteMyDonorProfile = async (userId: string) => {
   await requireDonor(userId);
-
   await getDonorByUserId(userId);
 
   await db.orm.public.DonorProfile.where({
@@ -207,7 +316,6 @@ const updateDonorProfileById = async (
   data: UpdateDonorProfileInput,
 ) => {
   await requireModerator(userId);
-
   await getDonorById(donorId);
 
   const updateData = buildDonorUpdateData(data);
@@ -221,7 +329,6 @@ const updateDonorProfileById = async (
 
 const deleteDonorProfileById = async (userId: string, donorId: string) => {
   await requireAdmin(userId);
-
   await getDonorById(donorId);
 
   await db.orm.public.DonorProfile.where({
@@ -231,15 +338,11 @@ const deleteDonorProfileById = async (userId: string, donorId: string) => {
   return null;
 };
 
-// Get All Donors
+// Get Donors
 
-const getDonors = async (userId: string) => {
-  await requireModerator(userId);
-
-  return db.orm.public.DonorProfile.all();
+const getDonors = async (query: DonorQueryInput) => {
+  return getDonorList(query);
 };
-
-// Export
 
 export const DonorService = {
   getMyDonorProfile,

@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import { deleteMe, getMe, updateMe } from "./user.service";
+import { deleteMe, getMe, getUser, updateMe } from "./user.service";
 import { UpdateUserSchema } from "./user.schema";
+import httpStatus from "http-status";
 
 const requireUserId = (req: Request): string => {
   if (!req.auth?.user) {
@@ -13,6 +14,16 @@ const requireUserId = (req: Request): string => {
 };
 
 export const UserController = {
+  getUser: catchAsync(async (req: Request, res: Response) => {
+    const result = await getUser(req.params.userId as string);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User retrieved successfully",
+      data: result,
+    });
+  }),
   // Current User
 
   getMe: catchAsync(async (req: Request, res: Response) => {
@@ -23,7 +34,7 @@ export const UserController = {
     sendResponse(res, {
       success: true,
       message: "User retrieved successfully",
-      statusCode: 200,
+      statusCode: httpStatus.OK,
       data: {
         user,
       },
@@ -42,7 +53,7 @@ export const UserController = {
     sendResponse(res, {
       success: true,
       message: "User updated successfully",
-      statusCode: 200,
+      statusCode: httpStatus.OK,
       data: {
         user,
       },
@@ -59,7 +70,7 @@ export const UserController = {
     sendResponse(res, {
       success: true,
       message: result.message,
-      statusCode: 200,
+      statusCode: httpStatus.OK,
     });
   }),
 };
