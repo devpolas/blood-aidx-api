@@ -1,9 +1,6 @@
 import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
-import { requireAuth } from "../../middleware/auth.middleware";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
 
 import {
   BloodRequestQuerySchema,
@@ -11,8 +8,11 @@ import {
   UpdateBloodRequestSchema,
   UpdateBloodRequestStatusSchema,
 } from "./blood-request.schema";
-
 import { BloodRequestService } from "./blood-request.service";
+
+import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
 
 export const BloodRequestController = {
   // Public
@@ -52,7 +52,6 @@ export const BloodRequestController = {
 
   getMyBloodRequests: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const query = BloodRequestQuerySchema.parse(req.query);
 
     const result = await BloodRequestService.getMyBloodRequests(user.id, query);
@@ -72,7 +71,6 @@ export const BloodRequestController = {
 
   createBloodRequest: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = CreateBloodRequestSchema.parse(req.body);
 
     const request = await BloodRequestService.createBloodRequest(user.id, data);
@@ -91,7 +89,6 @@ export const BloodRequestController = {
 
   updateBloodRequest: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateBloodRequestSchema.parse(req.body);
 
     const request = await BloodRequestService.updateBloodRequest(
@@ -114,7 +111,6 @@ export const BloodRequestController = {
 
   updateBloodRequestStatus: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateBloodRequestStatusSchema.parse(req.body);
 
     const request = await BloodRequestService.updateBloodRequestStatus(

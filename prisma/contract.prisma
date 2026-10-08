@@ -315,7 +315,6 @@ model Location {
 
   users         User[]
   organizations Organization[]
-  bloodRequests BloodRequest[]
   donations     BloodDonation[]
 
   @@index([country])
@@ -354,30 +353,32 @@ model DonorProfile {
 
 // BLOOD REQUEST
 model BloodRequest {
-  id             String                 @id @default(uuid())
+  id             String             @id @default(uuid())
   requesterId    String
-  locationId     String?
+  organizationId String
+
   bloodGroup     BloodGroup
   unitsRequired  Int
-  unitsFulfilled Int                    @default(0)
-  priority       Priority               @default(LOW)
-  status         BloodRequestStatus     @default(OPEN)
+  unitsFulfilled Int                @default(0)
+  priority       Priority           @default(LOW)
+  status         BloodRequestStatus @default(OPEN)
+
   patientName    String?
   patientAge     Int?
-  hospitalName   String?
   requiredAt     TimestamptzString?
   expiresAt      TimestamptzString?
   description    String?
-  createdAt      TimestamptzString      @default(now())
+
+  createdAt      TimestamptzString   @default(now())
   updatedAt      temporal.updatedAt()
 
-  requester      User                   @relation("RequestRequester", fields:[requesterId], references:[id], onDelete: Cascade)
-  location       Location?              @relation(fields:[locationId], references:[id], onDelete: SetNull)
+  requester      User                 @relation("RequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   responses      BloodRequestResponse[]
   donations      BloodDonation[]
 
   @@index([requesterId])
-  @@index([locationId])
+  @@index([organizationId])
   @@index([bloodGroup])
   @@index([status])
   @@index([priority])
@@ -472,6 +473,7 @@ model Organization {
   ownerId        String
   locationId     String?
   verifiedById   String?
+
   name           String
   slug           String               @unique
   type           OrganizationType
@@ -487,13 +489,14 @@ model Organization {
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
-  owner          User                 @relation("OrganizationOwner", fields:[ownerId], references:[id], onDelete: Restrict)
-  location       Location?            @relation(fields:[locationId], references:[id], onDelete: SetNull)
-  verifiedBy     User?                @relation("OrganizationVerifier", fields:[verifiedById], references:[id], onDelete: SetNull)
+  owner          User                 @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  location       Location?            @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  verifiedBy     User?                @relation("OrganizationVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
   members        OrganizationMember[]
   donations      BloodDonation[]
   reviews        Review[]
+  bloodRequests  BloodRequest[]
 
   @@index([ownerId])
   @@index([locationId])

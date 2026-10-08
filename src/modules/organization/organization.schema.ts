@@ -108,12 +108,19 @@ export const OrganizationSortBySchema = z.enum([
   "status",
 ]);
 
+const OrganizationTypesQuerySchema = z
+  .string()
+  .trim()
+  .transform((value) => value.split(",").map((type) => type.trim()))
+  .pipe(z.array(OrganizationTypeSchema).min(1))
+  .optional();
+
 export const OrganizationQuerySchema = z
   .object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
     search: z.string().trim().min(1).max(100).optional(),
-    type: OrganizationTypeSchema.optional(),
+    types: OrganizationTypesQuerySchema,
     status: OrganizationStatusSchema.optional(),
     locationId: z.uuid().optional(),
     country: z.string().trim().min(1).max(100).optional(),
@@ -127,11 +134,12 @@ export const OrganizationQuerySchema = z
   })
   .strict()
   .superRefine((data, ctx) => {
-    if (
-      data.createdAtFrom &&
-      data.createdAtTo &&
-      new Date(data.createdAtTo) < new Date(data.createdAtFrom)
-    ) {
+    if (!data.createdAtFrom || !data.createdAtTo) return;
+
+    const createdAtFrom = new Date(data.createdAtFrom);
+    const createdAtTo = new Date(data.createdAtTo);
+
+    if (createdAtTo < createdAtFrom) {
       ctx.addIssue({
         code: "custom",
         path: ["createdAtTo"],
@@ -146,16 +154,21 @@ export const OrganizationSchema = z.object({
   id: z.uuid(),
   ownerId: z.uuid(),
   locationId: z.uuid().nullable(),
+
   name: z.string(),
   slug: z.string(),
+
   type: OrganizationTypeSchema,
   status: OrganizationStatusSchema,
+
   description: z.string().nullable(),
   phone: z.string().nullable(),
   email: z.string().nullable(),
   website: z.string().nullable(),
+
   verifiedById: z.uuid().nullable(),
   verifiedAt: z.string().nullable(),
+
   createdAt: z.string(),
   updatedAt: z.string(),
 });

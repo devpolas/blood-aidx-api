@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
+
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
@@ -13,7 +14,6 @@ import {
   UpdateOrganizationSchema,
   UpdateOrganizationStatusSchema,
 } from "./organization.schema";
-
 import { OrganizationService } from "./organization.service";
 
 export const OrganizationController = {
@@ -21,7 +21,6 @@ export const OrganizationController = {
 
   getOrganizations: catchAsync(async (req: Request, res: Response) => {
     const query = OrganizationQuerySchema.parse(req.query);
-
     const result = await OrganizationService.getOrganizations(query);
 
     sendResponse(res, {
@@ -48,7 +47,7 @@ export const OrganizationController = {
     });
   }),
 
-  // My Organizations
+  // Current User
 
   getMyOrganizations: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
@@ -67,7 +66,6 @@ export const OrganizationController = {
 
   createOrganization: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = CreateOrganizationSchema.parse(req.body);
 
     const organization = await OrganizationService.createOrganization(
@@ -85,7 +83,6 @@ export const OrganizationController = {
 
   updateOrganization: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateOrganizationSchema.parse(req.body);
 
     const organization = await OrganizationService.updateOrganization(
@@ -122,7 +119,6 @@ export const OrganizationController = {
 
   updateOrganizationStatus: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateOrganizationStatusSchema.parse(req.body);
 
     const organization = await OrganizationService.updateOrganizationStatus(
@@ -159,7 +155,6 @@ export const OrganizationController = {
 
   addMember: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = AddOrganizationMemberSchema.parse(req.body);
 
     const organizationMember = await OrganizationService.addMember(
@@ -178,7 +173,6 @@ export const OrganizationController = {
 
   updateMember: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateOrganizationMemberSchema.parse(req.body);
 
     const organizationMember = await OrganizationService.updateMember(

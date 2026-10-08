@@ -14,6 +14,10 @@ type BloodRequestActorRole = "user" | "moderator" | "admin";
 
 const TERMINAL_STATUSES = ["fulfilled", "cancelled", "expired"] as const;
 
+const ORGANIZATION_TYPES = ["hospital", "blood_bank"] as const;
+
+const ACTIVE_ORGANIZATION_STATUSES = ["active", "verified"] as const;
+
 const getActor = async (userId: string) => {
   const user = await db.orm.public.User.where({
     id: userId,
@@ -38,6 +42,40 @@ const getBloodRequestById = async (requestId: string) => {
   return request;
 };
 
+const getOrganizationForBloodRequest = async (organizationId: string) => {
+  const organization = await db.orm.public.Organization.where({
+    id: organizationId,
+  }).first();
+
+  if (!organization) {
+    throw new AppError("Organization not found", httpStatus.NOT_FOUND);
+  }
+
+  if (
+    !ORGANIZATION_TYPES.includes(
+      organization.type as (typeof ORGANIZATION_TYPES)[number],
+    )
+  ) {
+    throw new AppError(
+      "Blood requests can only be associated with a hospital or blood bank",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  if (
+    !ACTIVE_ORGANIZATION_STATUSES.includes(
+      organization.status as (typeof ACTIVE_ORGANIZATION_STATUSES)[number],
+    )
+  ) {
+    throw new AppError(
+      "This organization is not available for blood requests",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  return organization;
+};
+
 const isModerator = (role: BloodRequestActorRole) => {
   return role === "moderator" || role === "admin";
 };
@@ -51,7 +89,6 @@ const requireOwnerOrModerator = async (
   const actor = await getActor(userId);
 
   const isOwner = request.requesterId === userId;
-
   const canModerate = isModerator(actor.role as BloodRequestActorRole);
 
   if (!isOwner && !canModerate) {
@@ -111,10 +148,10 @@ const validateOwnerStatusChange = (
 };
 
 const validateRequestDates = (
-  requiredAt: string | null,
-  expiresAt: string | null,
+  requiredAt: string | null | undefined,
+  expiresAt: string | null | undefined,
 ) => {
-  if (requiredAt === null || expiresAt === null) {
+  if (!requiredAt || !expiresAt) {
     return;
   }
 
@@ -128,8 +165,8 @@ const validateRequestDates = (
 
 const buildBloodRequestUpdateData = (data: UpdateBloodRequestInput) => {
   return {
-    ...(data.locationId !== undefined && {
-      locationId: data.locationId,
+    ...(data.organizationId !== undefined && {
+      organizationId: data.organizationId,
     }),
 
     ...(data.bloodGroup !== undefined && {
@@ -148,8 +185,8 @@ const buildBloodRequestUpdateData = (data: UpdateBloodRequestInput) => {
       patientName: data.patientName,
     }),
 
-    ...(data.hospitalName !== undefined && {
-      hospitalName: data.hospitalName,
+    ...(data.patientAge !== undefined && {
+      patientAge: data.patientAge,
     }),
 
     ...(data.requiredAt !== undefined && {
@@ -180,15 +217,17 @@ const buildBloodRequestFilters = (query: BloodRequestQueryInput) => {
         },
       },
       {
-        hospitalName: {
+        description: {
           contains: query.search,
           mode: "insensitive",
         },
       },
       {
-        description: {
-          contains: query.search,
-          mode: "insensitive",
+        organization: {
+          name: {
+            contains: query.search,
+            mode: "insensitive",
+          },
         },
       },
     ];
@@ -206,27 +245,29 @@ const buildBloodRequestFilters = (query: BloodRequestQueryInput) => {
     filters.status = query.status;
   }
 
-  if (query.locationId) {
-    filters.locationId = query.locationId;
+  if (query.organizationId) {
+    filters.organizationId = query.organizationId;
   }
 
   if (query.country || query.division || query.district || query.city) {
-    filters.location = {
-      ...(query.country && {
-        country: query.country,
-      }),
+    filters.organization = {
+      location: {
+        ...(query.country && {
+          country: query.country,
+        }),
 
-      ...(query.division && {
-        division: query.division,
-      }),
+        ...(query.division && {
+          division: query.division,
+        }),
 
-      ...(query.district && {
-        district: query.district,
-      }),
+        ...(query.district && {
+          district: query.district,
+        }),
 
-      ...(query.city && {
-        city: query.city,
-      }),
+        ...(query.city && {
+          city: query.city,
+        }),
+      },
     };
   }
 
@@ -273,10 +314,7 @@ const getBloodRequestList = async (
   query: BloodRequestQueryInput,
   requesterId?: string,
 ) => {
-  const page = query.page;
-  const limit = query.limit;
-  const offset = (page - 1) * limit;
-
+  const offset = (query.page - 1) * query.limit;
   const filters = buildBloodRequestFilters(query);
 
   if (requesterId) {
@@ -330,7 +368,7 @@ const getBloodRequestList = async (
         }
       })
       .offset(offset)
-      .limit(limit)
+      .limit(query.limit)
       .all(),
 
     db.orm.public.BloodRequest.where(filters).aggregate((aggregate) => ({
@@ -339,7 +377,6 @@ const getBloodRequestList = async (
   ]);
 
   const total = countResult.total;
-
   const totalPage = Math.ceil(total / query.limit);
 
   return {
@@ -379,22 +416,28 @@ const createBloodRequest = async (
   data: CreateBloodRequestInput,
 ) => {
   await getActor(userId);
+  await getOrganizationForBloodRequest(data.organizationId);
+  validateRequestDates(data.requiredAt, data.expiresAt);
 
   return db.orm.public.BloodRequest.create({
     requesterId: userId,
-
-    ...(data.locationId !== undefined && {
-      locationId: data.locationId,
-    }),
-
+    organizationId: data.organizationId,
     bloodGroup: data.bloodGroup,
     unitsRequired: data.unitsRequired,
     priority: data.priority,
-    patientName: data.patientName,
-    hospitalName: data.hospitalName,
-    requiredAt: data.requiredAt,
-    expiresAt: data.expiresAt,
 
+    ...(data.patientName !== undefined && {
+      patientName: data.patientName,
+    }),
+    ...(data.patientAge !== undefined && {
+      patientAge: data.patientAge,
+    }),
+    ...(data.requiredAt !== undefined && {
+      requiredAt: data.requiredAt,
+    }),
+    ...(data.expiresAt !== undefined && {
+      expiresAt: data.expiresAt,
+    }),
     ...(data.description !== undefined && {
       description: data.description,
     }),
@@ -416,8 +459,11 @@ const updateBloodRequest = async (
     validateRequestCanBeUpdated(request.status);
   }
 
-  const requiredAt = data.requiredAt ?? request.requiredAt;
+  if (data.organizationId !== undefined) {
+    await getOrganizationForBloodRequest(data.organizationId);
+  }
 
+  const requiredAt = data.requiredAt ?? request.requiredAt;
   const expiresAt = data.expiresAt ?? request.expiresAt;
 
   validateRequestDates(requiredAt, expiresAt);
@@ -466,13 +512,10 @@ const cancelBloodRequest = async (userId: string, requestId: string) => {
 
 const deleteBloodRequest = async (userId: string, requestId: string) => {
   const request = await getBloodRequestById(requestId);
-
   const actor = await getActor(userId);
 
   const actorRole = actor.role as BloodRequestActorRole;
-
   const isOwner = request.requesterId === userId;
-
   const canModerate = isModerator(actorRole);
 
   if (!isOwner && !canModerate) {

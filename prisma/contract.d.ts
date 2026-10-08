@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e'>;
+  StorageHashBase<'7f1a3b163ec7ba92e17abd4c3a419d0b8242e0d82df7f2b1a1e782419437d8db'>;
 export type ExecutionHash =
   ExecutionHashBase<'b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6'>;
 export type ProfileHash =
@@ -306,7 +306,7 @@ export type FieldOutputTypes = {
     readonly BloodRequest: {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly requesterId: CodecTypes['pg/text@1']['output'];
-      readonly locationId: CodecTypes['pg/text@1']['output'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['output'];
       readonly bloodGroup:
         | 'a_positive'
         | 'a_negative'
@@ -322,7 +322,6 @@ export type FieldOutputTypes = {
       readonly status: 'open' | 'partially_fulfilled' | 'fulfilled' | 'cancelled' | 'expired';
       readonly patientName: CodecTypes['pg/text@1']['output'] | null;
       readonly patientAge: CodecTypes['pg/int4@1']['output'] | null;
-      readonly hospitalName: CodecTypes['pg/text@1']['output'] | null;
       readonly requiredAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
@@ -649,7 +648,7 @@ export type FieldInputTypes = {
     readonly BloodRequest: {
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly requesterId: CodecTypes['pg/text@1']['input'];
-      readonly locationId: CodecTypes['pg/text@1']['input'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['input'];
       readonly bloodGroup:
         | 'a_positive'
         | 'a_negative'
@@ -665,7 +664,6 @@ export type FieldInputTypes = {
       readonly status: 'open' | 'partially_fulfilled' | 'fulfilled' | 'cancelled' | 'expired';
       readonly patientName: CodecTypes['pg/text@1']['input'] | null;
       readonly patientAge: CodecTypes['pg/int4@1']['input'] | null;
-      readonly hospitalName: CodecTypes['pg/text@1']['input'] | null;
       readonly requiredAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
@@ -1014,9 +1012,8 @@ export type StorageColumnTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly hospitalName: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/text@1']['output'];
-      readonly locationId: CodecTypes['pg/text@1']['output'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['output'];
       readonly patientAge: CodecTypes['pg/int4@1']['output'] | null;
       readonly patientName: CodecTypes['pg/text@1']['output'] | null;
       readonly priority: 'low' | 'high' | 'urgent';
@@ -1357,9 +1354,8 @@ export type StorageColumnInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly hospitalName: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
-      readonly locationId: CodecTypes['pg/text@1']['input'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['input'];
       readonly patientAge: CodecTypes['pg/int4@1']['input'] | null;
       readonly patientName: CodecTypes['pg/text@1']['input'] | null;
       readonly priority: 'low' | 'high' | 'urgent';
@@ -2162,10 +2158,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
-                readonly locationId: {
+                readonly organizationId: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                 };
                 readonly bloodGroup: {
                   readonly nativeType: 'text';
@@ -2214,11 +2210,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: true;
                 };
-                readonly hospitalName: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                };
                 readonly requiredAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2256,9 +2247,9 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
                 {
-                  readonly name: 'blood_requests_locationId_idx_7aae3038';
-                  readonly prefix: 'blood_requests_locationId_idx';
-                  readonly columns: readonly ['locationId'];
+                  readonly name: 'blood_requests_organizationId_idx_2e17ef41';
+                  readonly prefix: 'blood_requests_organizationId_idx';
+                  readonly columns: readonly ['organizationId'];
                   readonly unique: false;
                 },
                 {
@@ -2309,11 +2300,11 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'blood_requests';
-                    readonly columns: readonly ['locationId'];
+                    readonly columns: readonly ['organizationId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'locations';
+                    readonly tableName: 'organizations';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -4650,8 +4641,8 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly locationId: {
-                readonly nullable: true;
+              readonly organizationId: {
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly bloodGroup: {
@@ -4681,10 +4672,6 @@ type ContractBase = Omit<
               readonly patientAge: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly hospitalName: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly requiredAt: {
                 readonly nullable: true;
@@ -4731,14 +4718,14 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['requestId'];
                 };
               };
-              readonly location: {
+              readonly organization: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Location';
+                  readonly model: 'Organization';
                 };
                 readonly cardinality: 'N:1';
                 readonly on: {
-                  readonly localFields: readonly ['locationId'];
+                  readonly localFields: readonly ['organizationId'];
                   readonly targetFields: readonly ['id'];
                 };
               };
@@ -4768,7 +4755,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly id: { readonly column: 'id' };
                 readonly requesterId: { readonly column: 'requesterId' };
-                readonly locationId: { readonly column: 'locationId' };
+                readonly organizationId: { readonly column: 'organizationId' };
                 readonly bloodGroup: { readonly column: 'bloodGroup' };
                 readonly unitsRequired: { readonly column: 'unitsRequired' };
                 readonly unitsFulfilled: { readonly column: 'unitsFulfilled' };
@@ -4776,7 +4763,6 @@ type ContractBase = Omit<
                 readonly status: { readonly column: 'status' };
                 readonly patientName: { readonly column: 'patientName' };
                 readonly patientAge: { readonly column: 'patientAge' };
-                readonly hospitalName: { readonly column: 'hospitalName' };
                 readonly requiredAt: { readonly column: 'requiredAt' };
                 readonly expiresAt: { readonly column: 'expiresAt' };
                 readonly description: { readonly column: 'description' };
@@ -5330,17 +5316,6 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
-              readonly bloodRequests: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'BloodRequest';
-                };
-                readonly cardinality: '1:N';
-                readonly on: {
-                  readonly localFields: readonly ['id'];
-                  readonly targetFields: readonly ['locationId'];
-                };
-              };
               readonly donations: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -5717,6 +5692,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly bloodRequests: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'BloodRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['organizationId'];
+                };
+              };
               readonly donations: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;

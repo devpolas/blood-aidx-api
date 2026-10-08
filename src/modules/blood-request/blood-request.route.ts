@@ -1,6 +1,7 @@
 import { Router, type Router as ExpressRouter } from "express";
 
 import { BloodRequestController } from "./blood-request.controller";
+
 import {
   protect,
   requireActiveUser,
@@ -10,9 +11,13 @@ import {
 const router: ExpressRouter = Router();
 
 // Public
+
 router.get("/", BloodRequestController.getBloodRequests);
 
-// My Blood Requests
+router.get("/:requestId", BloodRequestController.getBloodRequestById);
+
+// Current User
+
 router.get(
   "/me",
   protect,
@@ -20,7 +25,8 @@ router.get(
   BloodRequestController.getMyBloodRequests,
 );
 
-// Create Blood Request
+// Create
+
 router.post(
   "/",
   protect,
@@ -29,7 +35,8 @@ router.post(
   BloodRequestController.createBloodRequest,
 );
 
-// Update Blood Request Status
+// Actions
+
 router.patch(
   "/:requestId/status",
   protect,
@@ -38,7 +45,6 @@ router.patch(
   BloodRequestController.updateBloodRequestStatus,
 );
 
-// Cancel Blood Request
 router.post(
   "/:requestId/cancel",
   protect,
@@ -47,7 +53,8 @@ router.post(
   BloodRequestController.cancelBloodRequest,
 );
 
-// Update Blood Request
+// Update
+
 router.patch(
   "/:requestId",
   protect,
@@ -56,7 +63,8 @@ router.patch(
   BloodRequestController.updateBloodRequest,
 );
 
-// Delete Blood Request
+// Delete
+
 router.delete(
   "/:requestId",
   protect,
@@ -64,8 +72,5 @@ router.delete(
   requireVerifiedEmail,
   BloodRequestController.deleteBloodRequest,
 );
-
-// Get Blood Request by ID
-router.get("/:requestId", BloodRequestController.getBloodRequestById);
 
 export default router;
