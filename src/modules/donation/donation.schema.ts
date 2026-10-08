@@ -18,6 +18,8 @@ export const DonationStatusSchema = z.enum([
   "cancelled",
 ]);
 
+// Create
+
 export const CreateDonationSchema = z
   .object({
     requestId: z.uuid().optional(),
@@ -29,9 +31,11 @@ export const CreateDonationSchema = z
   })
   .strict();
 
+// Verify / Reject
+
 export const UpdateDonationStatusSchema = z
   .object({
-    status: z.enum(["verified", "rejected", "cancelled"]),
+    status: z.enum(["verified", "rejected"]),
     rejectionReason: z.string().trim().max(1000).optional(),
   })
   .strict()
@@ -44,7 +48,7 @@ export const UpdateDonationStatusSchema = z
       });
     }
 
-    if (data.status !== "rejected" && data.rejectionReason) {
+    if (data.status === "verified" && data.rejectionReason) {
       ctx.addIssue({
         code: "custom",
         path: ["rejectionReason"],
@@ -53,6 +57,8 @@ export const UpdateDonationStatusSchema = z
       });
     }
   });
+
+// Response
 
 export const DonationSchema = z.object({
   id: z.uuid(),
@@ -73,13 +79,15 @@ export const DonationSchema = z.object({
   updatedAt: z.string(),
 });
 
-export type CreateDonationInput = z.infer<typeof CreateDonationSchema>;
+// Types
 
+export type CreateDonationInput = z.infer<typeof CreateDonationSchema>;
 export type UpdateDonationStatusInput = z.infer<
   typeof UpdateDonationStatusSchema
 >;
-
 export type DonationResponse = z.infer<typeof DonationSchema>;
+
+// Donation Query
 
 export const DonationSortBySchema = z.enum([
   "createdAt",
@@ -94,26 +102,19 @@ export const DonationQuerySchema = z
   .object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
-
     search: z.string().trim().min(1).max(100).optional(),
-
     status: DonationStatusSchema.optional(),
-
     donorId: z.uuid().optional(),
     requestId: z.uuid().optional(),
     organizationId: z.uuid().optional(),
     locationId: z.uuid().optional(),
     verifiedById: z.uuid().optional(),
-
     donatedAtFrom: z.iso.datetime().optional(),
     donatedAtTo: z.iso.datetime().optional(),
-
     verifiedAtFrom: z.iso.datetime().optional(),
     verifiedAtTo: z.iso.datetime().optional(),
-
     createdAtFrom: z.iso.datetime().optional(),
     createdAtTo: z.iso.datetime().optional(),
-
     sortBy: DonationSortBySchema.default("createdAt"),
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })

@@ -12,9 +12,11 @@ import { MilestoneController } from "./milestone.controller";
 const router: ExpressRouter = Router();
 
 // Public
+
 router.get("/", MilestoneController.getMilestones);
 
 // Current User
+
 router.get(
   "/my",
   protect,
@@ -24,6 +26,7 @@ router.get(
 );
 
 // Moderator / Admin
+
 router.get(
   "/user/:userId",
   protect,
@@ -34,6 +37,7 @@ router.get(
 );
 
 // Admin
+
 router.post(
   "/",
   protect,
@@ -61,7 +65,8 @@ router.delete(
   MilestoneController.deleteMilestone,
 );
 
-// Public Milestone
+// Public Milestone Detail
+
 router.get("/:milestoneId", MilestoneController.getMilestoneById);
 
 export default router;

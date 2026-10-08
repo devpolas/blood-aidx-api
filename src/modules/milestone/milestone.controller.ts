@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
+
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
@@ -11,7 +12,6 @@ import {
   UpdateMilestoneSchema,
   UserMilestoneQuerySchema,
 } from "./milestone.schema";
-
 import { MilestoneService } from "./milestone.service";
 
 export const MilestoneController = {
@@ -19,7 +19,6 @@ export const MilestoneController = {
 
   getMilestones: catchAsync(async (req: Request, res: Response) => {
     const query = MilestoneQuerySchema.parse(req.query);
-
     const result = await MilestoneService.getMilestones(query);
 
     sendResponse(res, {
@@ -52,7 +51,6 @@ export const MilestoneController = {
 
   getMyMilestones: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const query = UserMilestoneQuerySchema.parse(req.query);
 
     const result = await MilestoneService.getMyMilestones(user.id, query);
@@ -72,7 +70,6 @@ export const MilestoneController = {
 
   getUserMilestones: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const query = UserMilestoneQuerySchema.parse(req.query);
 
     const result = await MilestoneService.getUserMilestones(
@@ -96,7 +93,6 @@ export const MilestoneController = {
 
   createMilestone: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = CreateMilestoneSchema.parse(req.body);
 
     const milestone = await MilestoneService.createMilestone(user.id, data);
@@ -113,7 +109,6 @@ export const MilestoneController = {
 
   updateMilestone: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
-
     const data = UpdateMilestoneSchema.parse(req.body);
 
     const milestone = await MilestoneService.updateMilestone(

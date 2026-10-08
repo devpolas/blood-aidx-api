@@ -8,10 +8,9 @@ import type {
   UpdateMilestoneInput,
   UserMilestoneQueryInput,
 } from "./milestone.schema";
+
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
-
-// Types
 
 type GlobalRole = "user" | "moderator" | "admin";
 
@@ -77,17 +76,15 @@ const getMilestoneById = async (milestoneId: string) => {
   return milestone;
 };
 
-const generateCertificateNo = (): string => {
-  return `MILESTONE-${new Date().getFullYear()}-${crypto
+const generateCertificateNo = () =>
+  `MILESTONE-${new Date().getFullYear()}-${crypto
     .randomUUID()
     .replace(/-/g, "")
     .slice(0, 12)
     .toUpperCase()}`;
-};
 
-const generateVerificationCode = (): string => {
-  return crypto.randomUUID().replace(/-/g, "").toUpperCase();
-};
+const generateVerificationCode = () =>
+  crypto.randomUUID().replace(/-/g, "").toUpperCase();
 
 // Milestone List
 
@@ -166,8 +163,6 @@ const createMilestone = async (userId: string, input: CreateMilestoneInput) => {
     );
   }
 
-  const now = new Date().toISOString();
-
   return db.orm.public.DonationMilestone.create({
     name: input.name,
     description: input.description,
@@ -175,7 +170,7 @@ const createMilestone = async (userId: string, input: CreateMilestoneInput) => {
     ...(input.badgeUrl !== undefined && {
       badgeUrl: input.badgeUrl,
     }),
-    createdAt: now,
+    createdAt: new Date().toISOString(),
     updatedAt: Temporal.Now.instant(),
   });
 };
@@ -196,9 +191,6 @@ const updateMilestone = async (
   await requireAdmin(userId);
 
   const milestone = await getMilestoneById(milestoneId);
-
-  // Prevent changing the threshold after the milestone
-  // has already been awarded.
 
   if (
     input.donationCount !== undefined &&
@@ -233,26 +225,21 @@ const updateMilestone = async (
     ...(input.name !== undefined && {
       name: input.name,
     }),
-
     ...(input.description !== undefined && {
       description: input.description,
     }),
-
     ...(input.donationCount !== undefined && {
       donationCount: input.donationCount,
     }),
-
     ...(input.badgeUrl !== undefined && {
       badgeUrl: input.badgeUrl,
     }),
-
     updatedAt: Temporal.Now.instant(),
   });
 };
 
 const deleteMilestone = async (userId: string, milestoneId: string) => {
   await requireAdmin(userId);
-
   await getMilestoneById(milestoneId);
 
   const awarded = await db.orm.public.UserMilestone.where({
@@ -367,19 +354,15 @@ const processDonationMilestones = async (
     return [];
   }
 
-  const newlyAwarded = await Promise.all(
+  return Promise.all(
     eligibleMilestones.map(async (milestone) => {
       const now = new Date().toISOString();
-
-      // Award milestone
 
       const userMilestone = await tx.orm.public.UserMilestone.create({
         userId,
         milestoneId: milestone.id,
         achievedAt: now,
       });
-
-      // Create certificate
 
       const certificate = await tx.orm.public.MilestoneCertificate.create({
         userMilestoneId: userMilestone.id,
@@ -389,8 +372,6 @@ const processDonationMilestones = async (
         donationCount,
         achievedAt: now,
       });
-
-      // Create notification
 
       const notification = await tx.orm.public.Notification.create({
         userId,
@@ -413,11 +394,7 @@ const processDonationMilestones = async (
       };
     }),
   );
-
-  return newlyAwarded;
 };
-
-// Export
 
 export const MilestoneService = {
   createMilestone,

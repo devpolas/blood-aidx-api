@@ -2,16 +2,16 @@ import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
 
-import { requireAuth } from "../../middleware/auth.middleware";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-
 import {
   CreateDonationSchema,
   DonationQuerySchema,
   UpdateDonationStatusSchema,
 } from "./donation.schema";
 import { DonationService } from "./donation.service";
+
+import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
 
 export const DonationController = {
   // Donor
@@ -51,10 +51,11 @@ export const DonationController = {
 
   cancelMyDonation: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
+    const { donationId } = req.params;
 
     const donation = await DonationService.cancelMyDonation(
       user.id,
-      req.params.donationId as string,
+      donationId as string,
     );
 
     sendResponse(res, {
@@ -70,10 +71,11 @@ export const DonationController = {
   // Public Donor Profile
 
   getDonorDonations: catchAsync(async (req: Request, res: Response) => {
+    const { donorId } = req.params;
     const query = DonationQuerySchema.parse(req.query);
 
     const result = await DonationService.getDonorDonations(
-      req.params.donorId as string,
+      donorId as string,
       query,
     );
 
@@ -92,11 +94,12 @@ export const DonationController = {
 
   getOrganizationDonations: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
+    const { organizationId } = req.params;
     const query = DonationQuerySchema.parse(req.query);
 
     const result = await DonationService.getOrganizationDonations(
       user.id,
-      req.params.organizationId as string,
+      organizationId as string,
       query,
     );
 
@@ -132,11 +135,12 @@ export const DonationController = {
 
   verifyDonation: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
+    const { donationId } = req.params;
     const data = UpdateDonationStatusSchema.parse(req.body);
 
-    const donation = await DonationService.verifyDonation(
+    const result = await DonationService.verifyDonation(
       user.id,
-      req.params.donationId as string,
+      donationId as string,
       data,
     );
 
@@ -144,9 +148,7 @@ export const DonationController = {
       success: true,
       message: "Donation status updated successfully",
       statusCode: httpStatus.OK,
-      data: {
-        donation,
-      },
+      data: result,
     });
   }),
 
@@ -154,10 +156,11 @@ export const DonationController = {
 
   getDonationById: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
+    const { donationId } = req.params;
 
     const donation = await DonationService.getDonationByIdForUser(
       user.id,
-      req.params.donationId as string,
+      donationId as string,
     );
 
     sendResponse(res, {

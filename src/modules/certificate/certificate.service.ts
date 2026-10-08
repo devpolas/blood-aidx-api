@@ -1,6 +1,33 @@
+import httpStatus from "http-status";
+
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
-import httpStatus from "http-status";
+
+type GlobalRole = "user" | "moderator" | "admin";
+
+// Helpers
+
+const getUserById = async (userId: string) => {
+  const user = await db.orm.public.User.where({
+    id: userId,
+  }).first();
+
+  if (!user) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+
+  return user;
+};
+
+const requireDonor = async (userId: string) => {
+  const user = await getUserById(userId);
+
+  if ((user.role as GlobalRole) !== "user") {
+    throw new AppError("Donor access required", httpStatus.FORBIDDEN);
+  }
+
+  return user;
+};
 
 const getCertificateById = async (certificateId: string) => {
   const certificate = await db.orm.public.MilestoneCertificate.where({
@@ -38,7 +65,11 @@ const getUserMilestone = async (userMilestoneId: string) => {
   return userMilestone;
 };
 
+// Current User
+
 const getMyCertificates = async (userId: string) => {
+  await requireDonor(userId);
+
   const userMilestones = await db.orm.public.UserMilestone.where({
     userId,
   }).all();
@@ -62,8 +93,9 @@ const getMyCertificates = async (userId: string) => {
 };
 
 const getMyCertificateById = async (userId: string, certificateId: string) => {
-  const certificate = await getCertificateById(certificateId);
+  await requireDonor(userId);
 
+  const certificate = await getCertificateById(certificateId);
   const userMilestone = await getUserMilestone(certificate.userMilestoneId);
 
   if (userMilestone.userId !== userId) {
@@ -75,6 +107,8 @@ const getMyCertificateById = async (userId: string, certificateId: string) => {
 
   return certificate;
 };
+
+// Public Verification
 
 const verifyCertificate = async (certificateNumber: string) => {
   const certificate = await getCertificateByNumber(certificateNumber);
@@ -103,14 +137,12 @@ const verifyCertificate = async (certificateNumber: string) => {
     valid: true,
     certificateNumber: certificate.certificateNo,
     issuedAt: certificate.issuedAt,
-
     milestone: {
       id: milestone.id,
       name: milestone.name,
       description: milestone.description,
       donationCount: milestone.donationCount,
     },
-
     recipient: {
       id: user.id,
       name: user.name,

@@ -1,22 +1,24 @@
 import { Router, type Router as ExpressRouter } from "express";
 
-import { CertificateController } from "./certificate.controller";
-
 import {
   protect,
   requireActiveUser,
   requireVerifiedEmail,
 } from "../../middleware/auth.middleware";
 
+import { CertificateController } from "./certificate.controller";
+
 const router: ExpressRouter = Router();
 
 // Public
+
 router.get(
   "/verify/:certificateNumber",
   CertificateController.verifyCertificate,
 );
 
 // Current User
+
 router.get(
   "/me",
   protect,

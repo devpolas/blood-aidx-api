@@ -10,6 +10,7 @@ import type {
 
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
+import { MilestoneService } from "../milestone/milestone.service";
 
 // Authorization
 
@@ -144,6 +145,18 @@ const getDonationById = async (donationId: string) => {
   return donation;
 };
 
+const generateDonationCertificateNo = () => {
+  const year = new Date().getFullYear();
+
+  return `DON-CERT-${year}-${randomUUID()
+    .replace(/-/g, "")
+    .slice(0, 12)
+    .toUpperCase()}`;
+};
+
+const generateVerificationCode = () =>
+  randomUUID().replace(/-/g, "").toUpperCase();
+
 // Donation List
 
 const applyDonationFilters = (
@@ -169,6 +182,7 @@ const applyDonationFilters = (
   }
 
   // Base status takes priority over the query status.
+
   if (filters.status) {
     donationQuery = donationQuery.where({
       status: filters.status,
@@ -362,6 +376,7 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
   }
 
   // Optional blood request
+
   if (data.requestId) {
     const request = await db.orm.public.BloodRequest.where({
       id: data.requestId,
@@ -461,21 +476,17 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
   return db.orm.public.BloodDonation.create({
     donorId: donor.id,
     organizationId: data.organizationId,
-
     ...(data.requestId !== undefined && {
       requestId: data.requestId,
     }),
-
     ...(data.locationId !== undefined && {
       locationId: data.locationId,
     }),
-
     donationNumber,
     bloodGroup: donor.bloodGroup,
     units: data.units,
     donatedAt: data.donatedAt,
     status: "pending",
-
     ...(data.notes !== undefined && {
       notes: data.notes,
     }),
@@ -501,6 +512,7 @@ const getDonationByIdForUser = async (userId: string, donationId: string) => {
   const donation = await getDonationById(donationId);
 
   // Donor can view their own donation.
+
   if (actor.role === "user") {
     const donor = await getDonorProfile(userId);
 
@@ -511,26 +523,24 @@ const getDonationByIdForUser = async (userId: string, donationId: string) => {
 
   // Organization members can view donations belonging
   // to their organization.
-  if (donation.organizationId) {
-    const organization = await db.orm.public.Organization.where({
-      id: donation.organizationId,
-    }).first();
 
-    if (organization?.ownerId === userId) {
-      return donation;
-    }
+  const organization = await getOrganization(donation.organizationId);
 
-    const membership = await db.orm.public.OrganizationMember.where({
-      organizationId: donation.organizationId,
-      userId,
-    }).first();
+  if (organization.ownerId === userId) {
+    return donation;
+  }
 
-    if (membership) {
-      return donation;
-    }
+  const membership = await db.orm.public.OrganizationMember.where({
+    organizationId: donation.organizationId,
+    userId,
+  }).first();
+
+  if (membership) {
+    return donation;
   }
 
   // Moderator / Admin can view any donation.
+
   if (actor.role === "moderator" || actor.role === "admin") {
     return donation;
   }
@@ -563,7 +573,6 @@ const getOrganizationDonations = async (
   query: DonationQueryInput,
 ) => {
   await requireOrganizationMember(userId, organizationId);
-
   await getOrganization(organizationId);
 
   return getDonationList(query, {
@@ -581,6 +590,8 @@ const getDonations = async (userId: string, query: DonationQueryInput) => {
 
 // Verify / Reject Donation
 
+// Verify / Reject Donation
+
 const verifyDonation = async (
   verifierId: string,
   donationId: string,
@@ -588,20 +599,9 @@ const verifyDonation = async (
 ) => {
   const donation = await getDonationById(donationId);
 
-  if (
-    donation.status === "verified" ||
-    donation.status === "rejected" ||
-    donation.status === "cancelled"
-  ) {
+  if (donation.status !== "pending") {
     throw new AppError(
-      "This donation has already been finalized",
-      httpStatus.BAD_REQUEST,
-    );
-  }
-
-  if (!donation.organizationId) {
-    throw new AppError(
-      "This donation is not associated with an organization",
+      "Only pending donations can be verified or rejected",
       httpStatus.BAD_REQUEST,
     );
   }
@@ -613,27 +613,65 @@ const verifyDonation = async (
   );
 
   return db.transaction(async (tx) => {
+    const now = new Date().toISOString();
+
+    const updateData =
+      data.status === "verified"
+        ? {
+            status: "verified" as const,
+            verifiedById: verifier.id,
+            verifiedAt: now,
+            rejectionReason: null,
+          }
+        : {
+            status: "rejected" as const,
+            verifiedById: null,
+            verifiedAt: null,
+            rejectionReason: data.rejectionReason!,
+          };
+
     const updatedDonation = await tx.orm.public.BloodDonation.where({
       id: donationId,
+    }).update(updateData);
+
+    if (!updatedDonation) {
+      throw new AppError("Donation not found", httpStatus.NOT_FOUND);
+    }
+
+    if (data.status === "rejected") {
+      return updatedDonation;
+    }
+
+    // Donor
+
+    const donor = await tx.orm.public.DonorProfile.where({
+      id: donation.donorId,
+    }).first();
+
+    if (!donor) {
+      throw new AppError("Donor profile not found", httpStatus.NOT_FOUND);
+    }
+
+    const donorUser = await tx.orm.public.User.where({
+      id: donor.userId,
+    }).first();
+
+    if (!donorUser) {
+      throw new AppError("Donor user not found", httpStatus.NOT_FOUND);
+    }
+
+    const newDonationCount = donor.totalDonations + 1;
+
+    await tx.orm.public.DonorProfile.where({
+      id: donor.id,
     }).update({
-      status: data.status,
-
-      ...(data.status === "verified" && {
-        verifiedById: verifier.id,
-        verifiedAt: new Date().toISOString(),
-        rejectionReason: null,
-      }),
-
-      ...(data.status === "rejected" && {
-        verifiedById: null,
-        verifiedAt: null,
-        ...(data.rejectionReason !== undefined && {
-          rejectionReason: data.rejectionReason,
-        }),
-      }),
+      totalDonations: newDonationCount,
+      lastDonationAt: now,
     });
 
-    if (data.status === "verified" && donation.requestId) {
+    // Blood Request
+
+    if (donation.requestId) {
       const request = await tx.orm.public.BloodRequest.where({
         id: donation.requestId,
       }).first();
@@ -654,6 +692,13 @@ const verifyDonation = async (
 
       const newFulfilledUnits = request.unitsFulfilled + donation.units;
 
+      if (newFulfilledUnits > request.unitsRequired) {
+        throw new AppError(
+          "Donation units exceed the remaining blood request units",
+          httpStatus.BAD_REQUEST,
+        );
+      }
+
       const newStatus =
         newFulfilledUnits >= request.unitsRequired
           ? "fulfilled"
@@ -671,17 +716,42 @@ const verifyDonation = async (
         donorId: donation.donorId,
       }).first();
 
-      if (response && response.status === "accepted") {
+      if (response?.status === "accepted") {
         await tx.orm.public.BloodRequestResponse.where({
           id: response.id,
         }).update({
           status: "completed",
-          completedAt: new Date().toISOString(),
+          completedAt: now,
         });
       }
     }
 
-    return updatedDonation;
+    // Donation Certificate
+
+    const certificate = await tx.orm.public.DonationCertificate.create({
+      donationId: updatedDonation.id,
+      certificateNo: generateDonationCertificateNo(),
+      verificationCode: generateVerificationCode(),
+      donorName: donorUser.name,
+      bloodGroup: updatedDonation.bloodGroup,
+      donationNumber: updatedDonation.donationNumber,
+      donatedAt: updatedDonation.donatedAt,
+    });
+
+    // Donation Milestones
+
+    const milestones = await MilestoneService.processDonationMilestones(
+      tx,
+      donor.userId,
+      newDonationCount,
+      donorUser.name,
+    );
+
+    return {
+      donation: updatedDonation,
+      certificate,
+      milestones,
+    };
   });
 };
 
