@@ -1,74 +1,74 @@
 import type { Request, Response } from "express";
 
 import httpStatus from "http-status";
-
-import { ProfileService } from "./profile.service";
-import { UpdateProfileSchema } from "./profile.schema";
-
+import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import { requireAuth } from "../../middleware/auth.middleware";
+import { UpdateProfileSchema } from "./profile.schema";
+import { ProfileService } from "./profile.service";
 
-// My Profile
+export const ProfileController = {
+  // Public
 
-const getMyProfile = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+  getProfileByUserId: catchAsync(async (req: Request, res: Response) => {
+    const userId = req.params.userId as string;
 
-  const profile = await ProfileService.getMyProfile(user.id);
+    const profile = await ProfileService.getUserProfileByUserId(userId);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Profile retrieved successfully",
-    data: profile,
-  });
-});
+    sendResponse(res, {
+      success: true,
+      message: "Profile retrieved successfully",
+      statusCode: httpStatus.OK,
+      data: { profile },
+    });
+  }),
 
-const upsertMyProfile = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+  // My Profile
 
-  const data = UpdateProfileSchema.parse(req.body);
+  getMyProfile: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
 
-  const profile = await ProfileService.upsertMyProfile(user.id, data);
+    const profile = await ProfileService.getMyProfile(user.id);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Profile saved successfully",
-    data: profile,
-  });
-});
+    sendResponse(res, {
+      success: true,
+      message: "Profile retrieved successfully",
+      statusCode: httpStatus.OK,
+      data: { profile },
+    });
+  }),
 
-const deleteMyProfile = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+  upsertMyProfile: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
 
-  await ProfileService.deleteMyProfile(user.id);
+    const data = UpdateProfileSchema.parse(req.body);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Profile deleted successfully",
-    data: null,
-  });
-});
+    const profile = await ProfileService.upsertMyProfile(user.id, data);
 
-// Public
+    sendResponse(res, {
+      success: true,
+      message: "Profile saved successfully",
+      statusCode: httpStatus.OK,
+      data: { profile },
+    });
+  }),
 
-const getProfileByUserId = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.params.userId as string;
+  deleteMyProfile: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
 
-  const profile = await ProfileService.getUserProfileByUserId(userId);
+    await ProfileService.deleteMyProfile(user.id);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Profile retrieved successfully",
-    data: profile,
-  });
-});
+    sendResponse(res, {
+      success: true,
+      message: "Profile deleted successfully",
+      statusCode: httpStatus.OK,
+      data: null,
+    });
+  }),
 
-const updateProfileByUserId = catchAsync(
-  async (req: Request, res: Response) => {
+  // Moderator / Admin
+
+  updateProfileByUserId: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
     const userId = req.params.userId as string;
@@ -82,16 +82,14 @@ const updateProfileByUserId = catchAsync(
     );
 
     sendResponse(res, {
-      statusCode: httpStatus.OK,
       success: true,
       message: "Profile updated successfully",
-      data: profile,
+      statusCode: httpStatus.OK,
+      data: { profile },
     });
-  },
-);
+  }),
 
-const deleteProfileByUserId = catchAsync(
-  async (req: Request, res: Response) => {
+  deleteProfileByUserId: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
     const userId = req.params.userId as string;
@@ -99,24 +97,10 @@ const deleteProfileByUserId = catchAsync(
     await ProfileService.deleteProfileByUserId(user.id, userId);
 
     sendResponse(res, {
-      statusCode: httpStatus.OK,
       success: true,
       message: "Profile deleted successfully",
+      statusCode: httpStatus.OK,
       data: null,
     });
-  },
-);
-
-export const ProfileController = {
-  // Public
-  getProfileByUserId,
-
-  // My profile
-  getMyProfile,
-  upsertMyProfile,
-  deleteMyProfile,
-
-  // Moderator / Admin
-  updateProfileByUserId,
-  deleteProfileByUserId,
+  }),
 };

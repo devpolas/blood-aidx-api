@@ -1,102 +1,169 @@
 import type { Request, Response } from "express";
+
 import httpStatus from "http-status";
-
-import { CreateMessageSchema, UpdateMessageSchema } from "./message.schema";
-import { MessageService } from "./message.service";
-
 import { requireAuth } from "../../middleware/auth.middleware";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
+import { CreateMessageSchema, UpdateMessageSchema } from "./message.schema";
+import { MessageService } from "./message.service";
 
-// Send Message
-const sendMessage = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-  const data = CreateMessageSchema.parse(req.body);
+export const MessageController = {
+  // Create
 
-  const result = await MessageService.sendMessage(user.id, data);
-
-  sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    success: true,
-    message: "Message sent successfully",
-    data: result,
-  });
-});
-
-// Get Conversation Messages
-const getConversationMessages = catchAsync(
-  async (req: Request, res: Response) => {
+  sendMessage: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
-    const result = await MessageService.getConversationMessages(
+    const data = CreateMessageSchema.parse(req.body);
+
+    const message = await MessageService.sendMessage(user.id, data);
+
+    sendResponse(res, {
+      success: true,
+      message: "Message sent successfully",
+      statusCode: httpStatus.CREATED,
+      data: {
+        message,
+      },
+    });
+  }),
+
+  // Current User
+
+  getConversationMessages: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
+
+    const messages = await MessageService.getConversationMessages(
       req.params.conversationId as string,
       user.id,
     );
 
     sendResponse(res, {
-      statusCode: httpStatus.OK,
       success: true,
       message: "Conversation messages retrieved successfully",
-      data: result,
+      statusCode: httpStatus.OK,
+      data: {
+        messages,
+      },
     });
-  },
-);
+  }),
 
-// Get Message By ID
-const getMessageById = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+  getMessageById: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
 
-  const result = await MessageService.getMessageByIdForUser(
-    req.params.messageId as string,
-    user.id,
-  );
+    const message = await MessageService.getMessageByIdForUser(
+      req.params.messageId as string,
+      user.id,
+    );
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Message retrieved successfully",
-    data: result,
-  });
-});
+    sendResponse(res, {
+      success: true,
+      message: "Message retrieved successfully",
+      statusCode: httpStatus.OK,
+      data: {
+        message,
+      },
+    });
+  }),
 
-// Update Message
-// Sender only
-const updateMessage = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-  const data = UpdateMessageSchema.parse(req.body);
+  getUnreadCount: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
 
-  const result = await MessageService.updateMessage(
-    req.params.messageId as string,
-    user.id,
-    data,
-  );
+    const count = await MessageService.getUnreadCount(
+      req.params.conversationId as string,
+      user.id,
+    );
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Message updated successfully",
-    data: result,
-  });
-});
+    sendResponse(res, {
+      success: true,
+      message: "Unread message count retrieved successfully",
+      statusCode: httpStatus.OK,
+      data: {
+        count,
+      },
+    });
+  }),
 
-// Delete Message
-// Sender only
-const deleteMessage = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
+  // Read
 
-  await MessageService.deleteMessage(req.params.messageId as string, user.id);
+  markMessageAsRead: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Message deleted successfully",
-  });
-});
+    const message = await MessageService.markMessageAsRead(
+      req.params.messageId as string,
+      user.id,
+    );
 
-// Moderate Delete Message
-// Moderator / Admin
-const moderateDeleteMessage = catchAsync(
-  async (req: Request, res: Response) => {
+    sendResponse(res, {
+      success: true,
+      message: "Message marked as read",
+      statusCode: httpStatus.OK,
+      data: {
+        message,
+      },
+    });
+  }),
+
+  markConversationMessagesAsRead: catchAsync(
+    async (req: Request, res: Response) => {
+      const { user } = requireAuth(req);
+
+      const messages = await MessageService.markConversationMessagesAsRead(
+        req.params.conversationId as string,
+        user.id,
+      );
+
+      sendResponse(res, {
+        success: true,
+        message: "Conversation messages marked as read",
+        statusCode: httpStatus.OK,
+        data: {
+          messages,
+        },
+      });
+    },
+  ),
+
+  // Update
+
+  updateMessage: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
+
+    const data = UpdateMessageSchema.parse(req.body);
+
+    const message = await MessageService.updateMessage(
+      req.params.messageId as string,
+      user.id,
+      data,
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Message updated successfully",
+      statusCode: httpStatus.OK,
+      data: {
+        message,
+      },
+    });
+  }),
+
+  // Delete
+
+  deleteMessage: catchAsync(async (req: Request, res: Response) => {
+    const { user } = requireAuth(req);
+
+    await MessageService.deleteMessage(req.params.messageId as string, user.id);
+
+    sendResponse(res, {
+      success: true,
+      message: "Message deleted successfully",
+      statusCode: httpStatus.OK,
+      data: null,
+    });
+  }),
+
+  // Moderator / Admin
+
+  moderateDeleteMessage: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
     await MessageService.moderateDeleteMessage(
@@ -105,74 +172,10 @@ const moderateDeleteMessage = catchAsync(
     );
 
     sendResponse(res, {
-      statusCode: httpStatus.OK,
       success: true,
       message: "Message removed by moderation",
-    });
-  },
-);
-
-// Mark Message As Read
-const markMessageAsRead = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-
-  const result = await MessageService.markMessageAsRead(
-    req.params.messageId as string,
-    user.id,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Message marked as read",
-    data: result,
-  });
-});
-
-// Mark Conversation As Read
-const markConversationMessagesAsRead = catchAsync(
-  async (req: Request, res: Response) => {
-    const { user } = requireAuth(req);
-
-    const result = await MessageService.markConversationMessagesAsRead(
-      req.params.conversationId as string,
-      user.id,
-    );
-
-    sendResponse(res, {
       statusCode: httpStatus.OK,
-      success: true,
-      message: "Conversation messages marked as read",
-      data: result,
+      data: null,
     });
-  },
-);
-
-// Get Unread Count
-const getUnreadCount = catchAsync(async (req: Request, res: Response) => {
-  const { user } = requireAuth(req);
-
-  const result = await MessageService.getUnreadCount(
-    req.params.conversationId as string,
-    user.id,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Unread message count retrieved successfully",
-    data: result,
-  });
-});
-
-export const MessageController = {
-  sendMessage,
-  getConversationMessages,
-  getMessageById,
-  updateMessage,
-  deleteMessage,
-  moderateDeleteMessage,
-  markMessageAsRead,
-  markConversationMessagesAsRead,
-  getUnreadCount,
+  }),
 };

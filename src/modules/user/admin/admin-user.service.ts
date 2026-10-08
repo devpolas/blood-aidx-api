@@ -130,12 +130,12 @@ const getUserList = async (query: AdminUserQueryInput) => {
       break;
   }
 
-  const data = await sortedQuery.offset(offset).limit(query.limit).all();
+  const users = await sortedQuery.offset(offset).limit(query.limit).all();
 
   const totalPage = Math.ceil(total / query.limit);
 
   return {
-    data,
+    users,
     meta: {
       page: query.page,
       limit: query.limit,

@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
+
 import httpStatus from "http-status";
+import { requireAuth } from "../../middleware/auth.middleware";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
 import { LocationCreateSchema, LocationUpdateSchema } from "./location.schema";
 import { LocationService } from "./location.service";
-import { catchAsync } from "../../utils/catchAsync";
-import { AppError } from "../../utils/appError";
-import { sendResponse } from "../../utils/sendResponse";
-import { requireAuth } from "../../middleware/auth.middleware";
 
 export const LocationController = {
   // My Location
@@ -85,14 +85,8 @@ export const LocationController = {
   // Location Discovery
 
   getLocationById: catchAsync(async (req: Request, res: Response) => {
-    const locationId = req.params.locationId as string;
-
-    if (!locationId) {
-      throw new AppError("Location ID is required", httpStatus.BAD_REQUEST);
-    }
-
     const location = await LocationService.getLocationFromDBById({
-      locationId,
+      locationId: req.params.locationId as string,
     });
 
     sendResponse(res, {
@@ -110,15 +104,9 @@ export const LocationController = {
   deleteLocationById: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
-    const locationId = req.params.locationId as string;
-
-    if (!locationId) {
-      throw new AppError("Location ID is required", httpStatus.BAD_REQUEST);
-    }
-
     await LocationService.deleteLocationById({
       userId: user.id,
-      locationId,
+      locationId: req.params.locationId as string,
     });
 
     sendResponse(res, {
