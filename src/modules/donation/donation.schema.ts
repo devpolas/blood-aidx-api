@@ -21,7 +21,7 @@ export const DonationStatusSchema = z.enum([
 export const CreateDonationSchema = z
   .object({
     requestId: z.uuid().optional(),
-    organizationId: z.uuid().optional(),
+    organizationId: z.uuid(),
     locationId: z.uuid().optional(),
     units: z.number().int().positive().max(10),
     donatedAt: z.iso.datetime(),
@@ -32,27 +32,43 @@ export const CreateDonationSchema = z
 export const UpdateDonationStatusSchema = z
   .object({
     status: z.enum(["verified", "rejected", "cancelled"]),
-
-    verificationNotes: z.string().trim().max(1000).optional(),
+    rejectionReason: z.string().trim().max(1000).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.status === "rejected" && !data.rejectionReason) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["rejectionReason"],
+        message: "Rejection reason is required when rejecting a donation",
+      });
+    }
+
+    if (data.status !== "rejected" && data.rejectionReason) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["rejectionReason"],
+        message:
+          "Rejection reason can only be provided when rejecting a donation",
+      });
+    }
+  });
 
 export const DonationSchema = z.object({
   id: z.uuid(),
   donorId: z.uuid(),
   requestId: z.uuid().nullable(),
-  organizationId: z.uuid().nullable(),
+  organizationId: z.uuid(),
   locationId: z.uuid().nullable(),
   donationNumber: z.string(),
   bloodGroup: BloodGroupSchema,
   units: z.number().int(),
   donatedAt: z.string(),
   status: DonationStatusSchema,
-  verifiedById: z.uuid().nullable(),
   verifiedAt: z.string().nullable(),
-  verificationNotes: z.string().nullable(),
+  verifiedById: z.uuid().nullable(),
+  rejectionReason: z.string().nullable(),
   notes: z.string().nullable(),
-
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -78,19 +94,26 @@ export const DonationQuerySchema = z
   .object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
+
     search: z.string().trim().min(1).max(100).optional(),
+
     status: DonationStatusSchema.optional(),
+
     donorId: z.uuid().optional(),
     requestId: z.uuid().optional(),
     organizationId: z.uuid().optional(),
     locationId: z.uuid().optional(),
     verifiedById: z.uuid().optional(),
+
     donatedAtFrom: z.iso.datetime().optional(),
     donatedAtTo: z.iso.datetime().optional(),
+
     verifiedAtFrom: z.iso.datetime().optional(),
     verifiedAtTo: z.iso.datetime().optional(),
+
     createdAtFrom: z.iso.datetime().optional(),
     createdAtTo: z.iso.datetime().optional(),
+
     sortBy: DonationSortBySchema.default("createdAt"),
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })
@@ -108,7 +131,9 @@ export const DonationQuerySchema = z
     ] as const;
 
     for (const [fromKey, toKey, from, to] of ranges) {
-      if (from && to && new Date(to) < new Date(from)) {
+      if (!from || !to) continue;
+
+      if (new Date(to) < new Date(from)) {
         ctx.addIssue({
           code: "custom",
           path: [toKey],

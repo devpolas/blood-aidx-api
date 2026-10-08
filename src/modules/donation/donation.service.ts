@@ -1,7 +1,6 @@
-import httpStatus from "http-status";
+import { randomUUID } from "node:crypto";
 
-import { db } from "../../lib/db";
-import { AppError } from "../../utils/appError";
+import httpStatus from "http-status";
 
 import type {
   CreateDonationInput,
@@ -9,9 +8,10 @@ import type {
   UpdateDonationStatusInput,
 } from "./donation.schema";
 
-// Authorization
+import { db } from "../../lib/db";
+import { AppError } from "../../utils/appError";
 
-type ActorRole = "user" | "moderator" | "admin";
+// Authorization
 
 const getActor = async (userId: string) => {
   const actor = await db.orm.public.User.where({
@@ -28,20 +28,67 @@ const getActor = async (userId: string) => {
 const requireDonor = async (userId: string) => {
   const actor = await getActor(userId);
 
-  if ((actor.role as ActorRole) !== "user") {
+  if (actor.role !== "user") {
     throw new AppError("Donor access required", httpStatus.FORBIDDEN);
   }
 
   return actor;
 };
 
-const requireVerifier = async (userId: string) => {
+const requireGlobalVerifier = async (userId: string) => {
   const actor = await getActor(userId);
 
-  const verifierRoles: ActorRole[] = ["moderator", "admin"];
-
-  if (!verifierRoles.includes(actor.role as ActorRole)) {
+  if (actor.role !== "moderator" && actor.role !== "admin") {
     throw new AppError("Verifier access required", httpStatus.FORBIDDEN);
+  }
+
+  return actor;
+};
+
+const requireOrganizationMember = async (
+  userId: string,
+  organizationId: string,
+  canVerify = false,
+) => {
+  const actor = await getActor(userId);
+
+  if (actor.role === "moderator" || actor.role === "admin") {
+    return actor;
+  }
+
+  const organization = await db.orm.public.Organization.where({
+    id: organizationId,
+  }).first();
+
+  if (!organization) {
+    throw new AppError("Organization not found", httpStatus.NOT_FOUND);
+  }
+
+  if (organization.ownerId === userId) {
+    return actor;
+  }
+
+  const membership = await db.orm.public.OrganizationMember.where({
+    organizationId,
+    userId,
+  }).first();
+
+  if (!membership) {
+    throw new AppError(
+      "You are not a member of this organization",
+      httpStatus.FORBIDDEN,
+    );
+  }
+
+  if (
+    canVerify &&
+    membership.role !== "admin" &&
+    membership.role !== "verifier"
+  ) {
+    throw new AppError(
+      "You are not authorized to verify donations for this organization",
+      httpStatus.FORBIDDEN,
+    );
   }
 
   return actor;
@@ -73,6 +120,18 @@ const getDonorProfileById = async (donorId: string) => {
   return donor;
 };
 
+const getOrganization = async (organizationId: string) => {
+  const organization = await db.orm.public.Organization.where({
+    id: organizationId,
+  }).first();
+
+  if (!organization) {
+    throw new AppError("Organization not found", httpStatus.NOT_FOUND);
+  }
+
+  return organization;
+};
+
 const getDonationById = async (donationId: string) => {
   const donation = await db.orm.public.BloodDonation.where({
     id: donationId,
@@ -91,6 +150,7 @@ const applyDonationFilters = (
   query: DonationQueryInput,
   filters: {
     donorId?: string;
+    organizationId?: string;
     status?: "verified";
   } = {},
 ) => {
@@ -99,6 +159,12 @@ const applyDonationFilters = (
   if (filters.donorId) {
     donationQuery = donationQuery.where({
       donorId: filters.donorId,
+    });
+  }
+
+  if (filters.organizationId) {
+    donationQuery = donationQuery.where({
+      organizationId: filters.organizationId,
     });
   }
 
@@ -194,6 +260,7 @@ const getDonationList = async (
   query: DonationQueryInput,
   filters: {
     donorId?: string;
+    organizationId?: string;
     status?: "verified";
   } = {},
 ) => {
@@ -204,7 +271,6 @@ const getDonationList = async (
   }));
 
   const total = Number(totalResult.total ?? 0);
-
   const offset = (query.page - 1) * query.limit;
   const ascending = query.sortOrder === "asc";
 
@@ -272,6 +338,21 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
   await requireDonor(userId);
 
   const donor = await getDonorProfile(userId);
+  const organization = await getOrganization(data.organizationId);
+
+  if (organization.type !== "hospital" && organization.type !== "blood_bank") {
+    throw new AppError(
+      "Donations can only be made through a hospital or blood bank",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  if (organization.status !== "active" && organization.status !== "verified") {
+    throw new AppError(
+      "This organization is not currently accepting donations",
+      httpStatus.BAD_REQUEST,
+    );
+  }
 
   if (donor.availability !== "available") {
     throw new AppError(
@@ -281,7 +362,6 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
   }
 
   // Optional blood request
-
   if (data.requestId) {
     const request = await db.orm.public.BloodRequest.where({
       id: data.requestId,
@@ -294,6 +374,13 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
     if (request.requesterId === userId) {
       throw new AppError(
         "You cannot donate to your own blood request",
+        httpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (request.organizationId !== data.organizationId) {
+      throw new AppError(
+        "Donation organization must match the blood request organization",
         httpStatus.BAD_REQUEST,
       );
     }
@@ -366,21 +453,17 @@ const createDonation = async (userId: string, data: CreateDonationInput) => {
     }
   }
 
-  const donationNumber = `DON-${crypto
-    .randomUUID()
+  const donationNumber = `DON-${randomUUID()
     .replace(/-/g, "")
     .slice(0, 12)
     .toUpperCase()}`;
 
   return db.orm.public.BloodDonation.create({
     donorId: donor.id,
+    organizationId: data.organizationId,
 
     ...(data.requestId !== undefined && {
       requestId: data.requestId,
-    }),
-
-    ...(data.organizationId !== undefined && {
-      organizationId: data.organizationId,
     }),
 
     ...(data.locationId !== undefined && {
@@ -411,20 +494,51 @@ const getMyDonations = async (userId: string, query: DonationQueryInput) => {
   });
 };
 
+// Donation Detail
+
 const getDonationByIdForUser = async (userId: string, donationId: string) => {
-  await requireDonor(userId);
-
+  const actor = await getActor(userId);
   const donation = await getDonationById(donationId);
-  const donor = await getDonorProfile(userId);
 
-  if (donation.donorId !== donor.id) {
-    throw new AppError(
-      "You are not allowed to view this donation",
-      httpStatus.FORBIDDEN,
-    );
+  // Donor can view their own donation.
+  if (actor.role === "user") {
+    const donor = await getDonorProfile(userId);
+
+    if (donation.donorId === donor.id) {
+      return donation;
+    }
   }
 
-  return donation;
+  // Organization members can view donations belonging
+  // to their organization.
+  if (donation.organizationId) {
+    const organization = await db.orm.public.Organization.where({
+      id: donation.organizationId,
+    }).first();
+
+    if (organization?.ownerId === userId) {
+      return donation;
+    }
+
+    const membership = await db.orm.public.OrganizationMember.where({
+      organizationId: donation.organizationId,
+      userId,
+    }).first();
+
+    if (membership) {
+      return donation;
+    }
+  }
+
+  // Moderator / Admin can view any donation.
+  if (actor.role === "moderator" || actor.role === "admin") {
+    return donation;
+  }
+
+  throw new AppError(
+    "You are not allowed to view this donation",
+    httpStatus.FORBIDDEN,
+  );
 };
 
 // Public Donor Donations
@@ -441,25 +555,37 @@ const getDonorDonations = async (
   });
 };
 
-// Donation Management
+// Organization Donations
+
+const getOrganizationDonations = async (
+  userId: string,
+  organizationId: string,
+  query: DonationQueryInput,
+) => {
+  await requireOrganizationMember(userId, organizationId);
+
+  await getOrganization(organizationId);
+
+  return getDonationList(query, {
+    organizationId,
+  });
+};
 
 // Moderator / Admin
 
 const getDonations = async (userId: string, query: DonationQueryInput) => {
-  await requireVerifier(userId);
+  await requireGlobalVerifier(userId);
 
   return getDonationList(query);
 };
 
-// Verify Donation
+// Verify / Reject Donation
 
 const verifyDonation = async (
   verifierId: string,
   donationId: string,
   data: UpdateDonationStatusInput,
 ) => {
-  await requireVerifier(verifierId);
-
   const donation = await getDonationById(donationId);
 
   if (
@@ -473,6 +599,19 @@ const verifyDonation = async (
     );
   }
 
+  if (!donation.organizationId) {
+    throw new AppError(
+      "This donation is not associated with an organization",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  const verifier = await requireOrganizationMember(
+    verifierId,
+    donation.organizationId,
+    true,
+  );
+
   return db.transaction(async (tx) => {
     const updatedDonation = await tx.orm.public.BloodDonation.where({
       id: donationId,
@@ -480,12 +619,17 @@ const verifyDonation = async (
       status: data.status,
 
       ...(data.status === "verified" && {
-        verifiedById: verifierId,
+        verifiedById: verifier.id,
         verifiedAt: new Date().toISOString(),
+        rejectionReason: null,
       }),
 
-      ...(data.verificationNotes !== undefined && {
-        verificationNotes: data.verificationNotes,
+      ...(data.status === "rejected" && {
+        verifiedById: null,
+        verifiedAt: null,
+        ...(data.rejectionReason !== undefined && {
+          rejectionReason: data.rejectionReason,
+        }),
       }),
     });
 
@@ -498,6 +642,13 @@ const verifyDonation = async (
         throw new AppError(
           "Associated blood request not found",
           httpStatus.NOT_FOUND,
+        );
+      }
+
+      if (request.organizationId !== donation.organizationId) {
+        throw new AppError(
+          "Donation organization does not match the blood request organization",
+          httpStatus.BAD_REQUEST,
         );
       }
 
@@ -568,6 +719,7 @@ export const DonationService = {
   getMyDonations,
   getDonationByIdForUser,
   getDonorDonations,
+  getOrganizationDonations,
   getDonations,
   verifyDonation,
   cancelMyDonation,

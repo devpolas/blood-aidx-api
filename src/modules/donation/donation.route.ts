@@ -11,9 +11,11 @@ import { DonationController } from "./donation.controller";
 const router: ExpressRouter = Router();
 
 // Public Donor Profile
+
 router.get("/donor/:donorId", DonationController.getDonorDonations);
 
 // Current User
+
 router.get(
   "/me",
   protect,
@@ -38,7 +40,18 @@ router.post(
   DonationController.cancelMyDonation,
 );
 
+// Organization
+
+router.get(
+  "/organization/:organizationId",
+  protect,
+  requireActiveUser,
+  requireVerifiedEmail,
+  DonationController.getOrganizationDonations,
+);
+
 // Moderator / Admin
+
 router.get(
   "/",
   protect,
@@ -56,6 +69,7 @@ router.patch(
 );
 
 // Donation Detail
+
 router.get(
   "/:donationId",
   protect,
