@@ -119,7 +119,7 @@
     "execute": [
       {
         "description": "create table \"blood_donations\"",
-        "sql": "CREATE TABLE \"public\".\"blood_donations\" (\n  \"bloodGroup\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"donatedAt\" timestamptz NOT NULL,\n  \"donationNumber\" text NOT NULL,\n  \"donorId\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"locationId\" text,\n  \"notes\" text,\n  \"organizationId\" text,\n  \"rejectionReason\" text,\n  \"requestId\" text,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"units\" int4 DEFAULT 1 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"verifiedAt\" timestamptz,\n  \"verifiedById\" text,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"blood_donations_bloodGroup_check_9316d186\" CHECK (\"bloodGroup\" IN ('a_positive', 'a_negative', 'b_positive', 'b_negative', 'ab_positive', 'ab_negative', 'o_positive', 'o_negative')),\n  CONSTRAINT \"blood_donations_status_check_32e7c165\" CHECK (\"status\" IN ('pending', 'verified', 'rejected', 'cancelled'))\n)",
+        "sql": "CREATE TABLE \"public\".\"blood_donations\" (\n  \"bloodGroup\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"donatedAt\" timestamptz NOT NULL,\n  \"donationNumber\" text NOT NULL,\n  \"donorId\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"locationId\" text,\n  \"notes\" text,\n  \"organizationId\" text NOT NULL,\n  \"rejectionReason\" text,\n  \"requestId\" text,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"units\" int4 DEFAULT 1 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"verifiedAt\" timestamptz,\n  \"verifiedById\" text,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"blood_donations_bloodGroup_check_9316d186\" CHECK (\"bloodGroup\" IN ('a_positive', 'a_negative', 'b_positive', 'b_negative', 'ab_positive', 'ab_negative', 'o_positive', 'o_negative')),\n  CONSTRAINT \"blood_donations_status_check_32e7c165\" CHECK (\"status\" IN ('pending', 'verified', 'rejected', 'cancelled'))\n)",
         "params": []
       }
     ],
@@ -197,7 +197,7 @@
     "execute": [
       {
         "description": "create table \"blood_requests\"",
-        "sql": "CREATE TABLE \"public\".\"blood_requests\" (\n  \"bloodGroup\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"expiresAt\" timestamptz,\n  \"hospitalName\" text,\n  \"id\" text NOT NULL,\n  \"locationId\" text,\n  \"patientAge\" int4,\n  \"patientName\" text,\n  \"priority\" text DEFAULT 'low' NOT NULL,\n  \"requesterId\" text NOT NULL,\n  \"requiredAt\" timestamptz,\n  \"status\" text DEFAULT 'open' NOT NULL,\n  \"unitsFulfilled\" int4 DEFAULT 0 NOT NULL,\n  \"unitsRequired\" int4 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"blood_requests_bloodGroup_check_9316d186\" CHECK (\"bloodGroup\" IN ('a_positive', 'a_negative', 'b_positive', 'b_negative', 'ab_positive', 'ab_negative', 'o_positive', 'o_negative')),\n  CONSTRAINT \"blood_requests_priority_check_09b41aa0\" CHECK (\"priority\" IN ('low', 'high', 'urgent')),\n  CONSTRAINT \"blood_requests_status_check_c1fe26b8\" CHECK (\"status\" IN ('open', 'partially_fulfilled', 'fulfilled', 'cancelled', 'expired'))\n)",
+        "sql": "CREATE TABLE \"public\".\"blood_requests\" (\n  \"bloodGroup\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"expiresAt\" timestamptz,\n  \"id\" text NOT NULL,\n  \"organizationId\" text NOT NULL,\n  \"patientAge\" int4,\n  \"patientName\" text,\n  \"priority\" text DEFAULT 'low' NOT NULL,\n  \"requesterId\" text NOT NULL,\n  \"requiredAt\" timestamptz,\n  \"status\" text DEFAULT 'open' NOT NULL,\n  \"unitsFulfilled\" int4 DEFAULT 0 NOT NULL,\n  \"unitsRequired\" int4 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"blood_requests_bloodGroup_check_9316d186\" CHECK (\"bloodGroup\" IN ('a_positive', 'a_negative', 'b_positive', 'b_negative', 'ab_positive', 'ab_negative', 'o_positive', 'o_negative')),\n  CONSTRAINT \"blood_requests_priority_check_09b41aa0\" CHECK (\"priority\" IN ('low', 'high', 'urgent')),\n  CONSTRAINT \"blood_requests_status_check_c1fe26b8\" CHECK (\"status\" IN ('open', 'partially_fulfilled', 'fulfilled', 'cancelled', 'expired'))\n)",
         "params": []
       }
     ],
@@ -314,7 +314,7 @@
     "execute": [
       {
         "description": "create table \"donation_certificates\"",
-        "sql": "CREATE TABLE \"public\".\"donation_certificates\" (\n  \"bloodGroup\" text NOT NULL,\n  \"certificateNo\" text NOT NULL,\n  \"certificateUrl\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"donatedAt\" timestamptz NOT NULL,\n  \"donationId\" text NOT NULL,\n  \"donationNumber\" int4 NOT NULL,\n  \"donorName\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"issuedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"verificationCode\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"donation_certificates_bloodGroup_check_9316d186\" CHECK (\"bloodGroup\" IN ('a_positive', 'a_negative', 'b_positive', 'b_negative', 'ab_positive', 'ab_negative', 'o_positive', 'o_negative'))\n)",
+        "sql": "CREATE TABLE \"public\".\"donation_certificates\" (\n  \"bloodGroup\" text NOT NULL,\n  \"certificateNo\" text NOT NULL,\n  \"certificateUrl\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"donatedAt\" timestamptz NOT NULL,\n  \"donationId\" text NOT NULL,\n  \"donationNumber\" text NOT NULL,\n  \"donorName\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"issuedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"verificationCode\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"donation_certificates_bloodGroup_check_9316d186\" CHECK (\"bloodGroup\" IN ('a_positive', 'a_negative', 'b_positive', 'b_negative', 'ab_positive', 'ab_negative', 'o_positive', 'o_negative'))\n)",
         "params": []
       }
     ],
@@ -899,7 +899,7 @@
     "execute": [
       {
         "description": "create table \"users\"",
-        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"banExpires\" timestamptz,\n  \"banReason\" text,\n  \"banned\" bool DEFAULT false NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"gender\" text,\n  \"id\" text NOT NULL,\n  \"image\" text,\n  \"locationId\" text,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'user' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"users_gender_check_4048f77b\" CHECK (\"gender\" IN ('male', 'female', 'other', 'prefer_not_to_say')),\n  CONSTRAINT \"users_role_check_ee95c47a\" CHECK (\"role\" IN ('user', 'moderator', 'admin'))\n)",
+        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"banExpires\" timestamptz,\n  \"banReason\" text,\n  \"banned\" bool DEFAULT false NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"gender\" text,\n  \"id\" text NOT NULL,\n  \"image\" text,\n  \"locationId\" text,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'user' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"users_gender_check_f90b1c49\" CHECK (\"gender\" IN ('male', 'female', 'other')),\n  CONSTRAINT \"users_role_check_ee95c47a\" CHECK (\"role\" IN ('user', 'moderator', 'admin'))\n)",
         "params": []
       }
     ],
@@ -991,48 +991,6 @@
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
         "params": [
           "blood_donations_donationNumber_key",
-          "public",
-          "\"public\".\"blood_donations\""
-        ]
-      }
-    ]
-  },
-  {
-    "id": "unique.blood_donations.blood_donations_donorId_donationNumber_key",
-    "label": "Add unique constraint on \"blood_donations\" (donorId, donationNumber)",
-    "operationClass": "additive",
-    "target": {
-      "id": "postgres",
-      "details": {
-        "schema": "public",
-        "objectType": "unique",
-        "name": "blood_donations_donorId_donationNumber_key",
-        "table": "blood_donations"
-      }
-    },
-    "precheck": [
-      {
-        "description": "ensure constraint \"blood_donations_donorId_donationNumber_key\" does not exist",
-        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "blood_donations_donorId_donationNumber_key",
-          "public",
-          "\"public\".\"blood_donations\""
-        ]
-      }
-    ],
-    "execute": [
-      {
-        "description": "add unique constraint \"blood_donations_donorId_donationNumber_key\"",
-        "sql": "ALTER TABLE \"public\".\"blood_donations\" ADD CONSTRAINT \"blood_donations_donorId_donationNumber_key\" UNIQUE (\"donorId\", \"donationNumber\")"
-      }
-    ],
-    "postcheck": [
-      {
-        "description": "verify constraint \"blood_donations_donorId_donationNumber_key\" exists",
-        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "blood_donations_donorId_donationNumber_key",
           "public",
           "\"public\".\"blood_donations\""
         ]
@@ -2615,40 +2573,40 @@
     ]
   },
   {
-    "id": "index.blood_requests.blood_requests_locationId_idx_7aae3038",
-    "label": "Create index \"blood_requests_locationId_idx_7aae3038\" on \"blood_requests\"",
+    "id": "index.blood_requests.blood_requests_organizationId_idx_2e17ef41",
+    "label": "Create index \"blood_requests_organizationId_idx_2e17ef41\" on \"blood_requests\"",
     "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
         "objectType": "index",
-        "name": "blood_requests_locationId_idx_7aae3038",
+        "name": "blood_requests_organizationId_idx_2e17ef41",
         "table": "blood_requests"
       }
     },
     "precheck": [
       {
-        "description": "ensure index \"blood_requests_locationId_idx_7aae3038\" does not exist",
+        "description": "ensure index \"blood_requests_organizationId_idx_2e17ef41\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
         "params": [
-          "\"public\".\"blood_requests_locationId_idx_7aae3038\""
+          "\"public\".\"blood_requests_organizationId_idx_2e17ef41\""
         ]
       }
     ],
     "execute": [
       {
-        "description": "create index \"blood_requests_locationId_idx_7aae3038\"",
-        "sql": "CREATE INDEX \"blood_requests_locationId_idx_7aae3038\" ON \"public\".\"blood_requests\" (\"locationId\")",
+        "description": "create index \"blood_requests_organizationId_idx_2e17ef41\"",
+        "sql": "CREATE INDEX \"blood_requests_organizationId_idx_2e17ef41\" ON \"public\".\"blood_requests\" (\"organizationId\")",
         "params": []
       }
     ],
     "postcheck": [
       {
-        "description": "verify index \"blood_requests_locationId_idx_7aae3038\" exists",
+        "description": "verify index \"blood_requests_organizationId_idx_2e17ef41\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
         "params": [
-          "\"public\".\"blood_requests_locationId_idx_7aae3038\""
+          "\"public\".\"blood_requests_organizationId_idx_2e17ef41\""
         ]
       }
     ]
@@ -5110,7 +5068,7 @@
     "execute": [
       {
         "description": "add FK \"blood_donations_organizationId_fkey\"",
-        "sql": "ALTER TABLE \"public\".\"blood_donations\"\nADD CONSTRAINT \"blood_donations_organizationId_fkey\"\nFOREIGN KEY (\"organizationId\")\nREFERENCES \"public\".\"organizations\" (\"id\")\nON DELETE SET NULL"
+        "sql": "ALTER TABLE \"public\".\"blood_donations\"\nADD CONSTRAINT \"blood_donations_organizationId_fkey\"\nFOREIGN KEY (\"organizationId\")\nREFERENCES \"public\".\"organizations\" (\"id\")\nON DELETE RESTRICT"
       }
     ],
     "postcheck": [
@@ -5336,24 +5294,24 @@
     ]
   },
   {
-    "id": "foreignKey.blood_requests.blood_requests_locationId_fkey",
-    "label": "Add foreign key \"blood_requests_locationId_fkey\" on \"blood_requests\"",
+    "id": "foreignKey.blood_requests.blood_requests_organizationId_fkey",
+    "label": "Add foreign key \"blood_requests_organizationId_fkey\" on \"blood_requests\"",
     "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
         "objectType": "foreignKey",
-        "name": "blood_requests_locationId_fkey",
+        "name": "blood_requests_organizationId_fkey",
         "table": "blood_requests"
       }
     },
     "precheck": [
       {
-        "description": "ensure FK \"blood_requests_locationId_fkey\" does not exist",
+        "description": "ensure FK \"blood_requests_organizationId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
         "params": [
-          "blood_requests_locationId_fkey",
+          "blood_requests_organizationId_fkey",
           "public",
           "\"public\".\"blood_requests\""
         ]
@@ -5361,16 +5319,16 @@
     ],
     "execute": [
       {
-        "description": "add FK \"blood_requests_locationId_fkey\"",
-        "sql": "ALTER TABLE \"public\".\"blood_requests\"\nADD CONSTRAINT \"blood_requests_locationId_fkey\"\nFOREIGN KEY (\"locationId\")\nREFERENCES \"public\".\"locations\" (\"id\")\nON DELETE SET NULL"
+        "description": "add FK \"blood_requests_organizationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"blood_requests\"\nADD CONSTRAINT \"blood_requests_organizationId_fkey\"\nFOREIGN KEY (\"organizationId\")\nREFERENCES \"public\".\"organizations\" (\"id\")\nON DELETE RESTRICT"
       }
     ],
     "postcheck": [
       {
-        "description": "verify FK \"blood_requests_locationId_fkey\" exists",
+        "description": "verify FK \"blood_requests_organizationId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
         "params": [
-          "blood_requests_locationId_fkey",
+          "blood_requests_organizationId_fkey",
           "public",
           "\"public\".\"blood_requests\""
         ]

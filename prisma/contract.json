@@ -273,10 +273,6 @@
               {
                 "name": "OTHER",
                 "value": "other"
-              },
-              {
-                "name": "PREFER_NOT_TO_SAY",
-                "value": "prefer_not_to_say"
               }
             ]
           },
@@ -918,7 +914,7 @@
                 }
               },
               "organizationId": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -1748,7 +1744,7 @@
               "donationNumber": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -4757,7 +4753,7 @@
                 "organizationId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": true
+                  "nullable": false
                 },
                 "rejectionReason": {
                   "codecId": "pg/text@1",
@@ -4845,7 +4841,7 @@
                   }
                 },
                 {
-                  "onDelete": "setNull",
+                  "onDelete": "restrict",
                   "source": {
                     "columns": [
                       "organizationId"
@@ -4972,12 +4968,6 @@
               "uniques": [
                 {
                   "columns": [
-                    "donationNumber"
-                  ]
-                },
-                {
-                  "columns": [
-                    "donorId",
                     "donationNumber"
                   ]
                 }
@@ -5595,8 +5585,8 @@
                   "nullable": false
                 },
                 "donationNumber": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "donorName": {
@@ -7654,8 +7644,8 @@
             "users": {
               "checks": [
                 {
-                  "expression": "\"gender\" IN ('male', 'female', 'other', 'prefer_not_to_say')",
-                  "name": "users_gender_check_4048f77b",
+                  "expression": "\"gender\" IN ('male', 'female', 'other')",
+                  "name": "users_gender_check_f90b1c49",
                   "prefix": "users_gender_check"
                 },
                 {
@@ -7886,8 +7876,7 @@
               "values": [
                 "male",
                 "female",
-                "other",
-                "prefer_not_to_say"
+                "other"
               ]
             },
             "NotificationType": {
@@ -8015,7 +8004,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7f1a3b163ec7ba92e17abd4c3a419d0b8242e0d82df7f2b1a1e782419437d8db"
+    "storageHash": "fcb36834b12017c72952b61d377c1baa4f5b1d5a9ba5b4f2cfadf4555a3629d6"
   },
   "execution": {
     "executionHash": "b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6",

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e/contract';
-import endContract from '../../snapshots/0242866f8cde479cb72b945db21e0f73b130435788cdcd9a2ba1034a87ef1f8e/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/fcb36834b12017c72952b61d377c1baa4f5b1d5a9ba5b4f2cfadf4555a3629d6/contract';
+import endContract from '../../snapshots/fcb36834b12017c72952b61d377c1baa4f5b1d5a9ba5b4f2cfadf4555a3629d6/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -94,7 +94,7 @@ export default class M extends Migration<never, End> {
           col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('locationId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('notes', 'text', { codecRef: { codecId: 'pg/text@1' } }),
-          col('organizationId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('organizationId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('rejectionReason', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('requestId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('status', 'text', {
@@ -176,9 +176,8 @@ export default class M extends Migration<never, End> {
           }),
           col('description', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('expiresAt', 'timestamptz', { codecRef: { codecId: 'pg/timestamptz-string@1' } }),
-          col('hospitalName', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
-          col('locationId', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('organizationId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('patientAge', 'int4', { codecRef: { codecId: 'pg/int4@1' } }),
           col('patientName', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('priority', 'text', {
@@ -277,7 +276,7 @@ export default class M extends Migration<never, End> {
             codecRef: { codecId: 'pg/timestamptz-string@1' },
           }),
           col('donationId', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
-          col('donationNumber', 'int4', { notNull: true, codecRef: { codecId: 'pg/int4@1' } }),
+          col('donationNumber', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('donorName', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('id', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('issuedAt', 'timestamptz', {
@@ -791,8 +790,8 @@ export default class M extends Migration<never, End> {
         constraints: [
           primaryKey(['id']),
           checkExpression(
-            'users_gender_check_4048f77b',
-            "\"gender\" IN ('male', 'female', 'other', 'prefer_not_to_say')",
+            'users_gender_check_f90b1c49',
+            "\"gender\" IN ('male', 'female', 'other')",
           ),
           checkExpression(
             'users_role_check_ee95c47a',
@@ -811,12 +810,6 @@ export default class M extends Migration<never, End> {
         table: 'blood_donations',
         constraint: 'blood_donations_donationNumber_key',
         columns: ['donationNumber'],
-      }),
-      this.addUnique({
-        schema: 'public',
-        table: 'blood_donations',
-        constraint: 'blood_donations_donorId_donationNumber_key',
-        columns: ['donorId', 'donationNumber'],
       }),
       this.addUnique({
         schema: 'public',
@@ -1055,8 +1048,8 @@ export default class M extends Migration<never, End> {
       this.createIndex({
         schema: 'public',
         table: 'blood_requests',
-        index: 'blood_requests_locationId_idx_7aae3038',
-        columns: ['locationId'],
+        index: 'blood_requests_organizationId_idx_2e17ef41',
+        columns: ['organizationId'],
       }),
       this.createIndex({
         schema: 'public',
@@ -1453,7 +1446,7 @@ export default class M extends Migration<never, End> {
           name: 'blood_donations_organizationId_fkey',
           columns: ['organizationId'],
           references: { schema: 'public', table: 'organizations', columns: ['id'] },
-          onDelete: 'setNull',
+          onDelete: 'restrict',
         },
       }),
       this.addForeignKey({
@@ -1510,10 +1503,10 @@ export default class M extends Migration<never, End> {
         schema: 'public',
         table: 'blood_requests',
         foreignKey: {
-          name: 'blood_requests_locationId_fkey',
-          columns: ['locationId'],
-          references: { schema: 'public', table: 'locations', columns: ['id'] },
-          onDelete: 'setNull',
+          name: 'blood_requests_organizationId_fkey',
+          columns: ['organizationId'],
+          references: { schema: 'public', table: 'organizations', columns: ['id'] },
+          onDelete: 'restrict',
         },
       }),
       this.addForeignKey({

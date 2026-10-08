@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'7f1a3b163ec7ba92e17abd4c3a419d0b8242e0d82df7f2b1a1e782419437d8db'>;
+  StorageHashBase<'fcb36834b12017c72952b61d377c1baa4f5b1d5a9ba5b4f2cfadf4555a3629d6'>;
 export type ExecutionHash =
   ExecutionHashBase<'b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6'>;
 export type ProfileHash =
@@ -281,7 +281,7 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly donorId: CodecTypes['pg/text@1']['output'];
       readonly requestId: CodecTypes['pg/text@1']['output'] | null;
-      readonly organizationId: CodecTypes['pg/text@1']['output'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['output'];
       readonly locationId: CodecTypes['pg/text@1']['output'] | null;
       readonly donationNumber: CodecTypes['pg/text@1']['output'];
       readonly bloodGroup:
@@ -368,7 +368,7 @@ export type FieldOutputTypes = {
         | 'ab_negative'
         | 'o_positive'
         | 'o_negative';
-      readonly donationNumber: CodecTypes['pg/int4@1']['output'];
+      readonly donationNumber: CodecTypes['pg/text@1']['output'];
       readonly donatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly certificateUrl: CodecTypes['pg/text@1']['output'] | null;
@@ -556,7 +556,7 @@ export type FieldOutputTypes = {
       readonly emailVerified: CodecTypes['pg/bool@1']['output'];
       readonly image: CodecTypes['pg/text@1']['output'] | null;
       readonly role: 'user' | 'moderator' | 'admin';
-      readonly gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
+      readonly gender: 'male' | 'female' | 'other' | null;
       readonly banned: CodecTypes['pg/bool@1']['output'];
       readonly banReason: CodecTypes['pg/text@1']['output'] | null;
       readonly banExpires: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -623,7 +623,7 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly donorId: CodecTypes['pg/text@1']['input'];
       readonly requestId: CodecTypes['pg/text@1']['input'] | null;
-      readonly organizationId: CodecTypes['pg/text@1']['input'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['input'];
       readonly locationId: CodecTypes['pg/text@1']['input'] | null;
       readonly donationNumber: CodecTypes['pg/text@1']['input'];
       readonly bloodGroup:
@@ -710,7 +710,7 @@ export type FieldInputTypes = {
         | 'ab_negative'
         | 'o_positive'
         | 'o_negative';
-      readonly donationNumber: CodecTypes['pg/int4@1']['input'];
+      readonly donationNumber: CodecTypes['pg/text@1']['input'];
       readonly donatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly certificateUrl: CodecTypes['pg/text@1']['input'] | null;
@@ -898,7 +898,7 @@ export type FieldInputTypes = {
       readonly emailVerified: CodecTypes['pg/bool@1']['input'];
       readonly image: CodecTypes['pg/text@1']['input'] | null;
       readonly role: 'user' | 'moderator' | 'admin';
-      readonly gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
+      readonly gender: 'male' | 'female' | 'other' | null;
       readonly banned: CodecTypes['pg/bool@1']['input'];
       readonly banReason: CodecTypes['pg/text@1']['input'] | null;
       readonly banExpires: CodecTypes['pg/timestamptz-string@1']['input'] | null;
@@ -978,7 +978,7 @@ export type StorageColumnTypes = {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly locationId: CodecTypes['pg/text@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
-      readonly organizationId: CodecTypes['pg/text@1']['output'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['output'];
       readonly rejectionReason: CodecTypes['pg/text@1']['output'] | null;
       readonly requestId: CodecTypes['pg/text@1']['output'] | null;
       readonly status: 'pending' | 'verified' | 'rejected' | 'cancelled';
@@ -1052,7 +1052,7 @@ export type StorageColumnTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly donatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly donationId: CodecTypes['pg/text@1']['output'];
-      readonly donationNumber: CodecTypes['pg/int4@1']['output'];
+      readonly donationNumber: CodecTypes['pg/text@1']['output'];
       readonly donorName: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -1255,7 +1255,7 @@ export type StorageColumnTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly emailVerified: CodecTypes['pg/bool@1']['output'];
-      readonly gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
+      readonly gender: 'male' | 'female' | 'other' | null;
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly image: CodecTypes['pg/text@1']['output'] | null;
       readonly locationId: CodecTypes['pg/text@1']['output'] | null;
@@ -1320,7 +1320,7 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly locationId: CodecTypes['pg/text@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
-      readonly organizationId: CodecTypes['pg/text@1']['input'] | null;
+      readonly organizationId: CodecTypes['pg/text@1']['input'];
       readonly rejectionReason: CodecTypes['pg/text@1']['input'] | null;
       readonly requestId: CodecTypes['pg/text@1']['input'] | null;
       readonly status: 'pending' | 'verified' | 'rejected' | 'cancelled';
@@ -1394,7 +1394,7 @@ export type StorageColumnInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly donatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly donationId: CodecTypes['pg/text@1']['input'];
-      readonly donationNumber: CodecTypes['pg/int4@1']['input'];
+      readonly donationNumber: CodecTypes['pg/text@1']['input'];
       readonly donorName: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -1597,7 +1597,7 @@ export type StorageColumnInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly emailVerified: CodecTypes['pg/bool@1']['input'];
-      readonly gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
+      readonly gender: 'male' | 'female' | 'other' | null;
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly image: CodecTypes['pg/text@1']['input'] | null;
       readonly locationId: CodecTypes['pg/text@1']['input'] | null;
@@ -1842,7 +1842,7 @@ type ContractBase = Omit<
                 readonly organizationId: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                 };
                 readonly locationId: {
                   readonly nativeType: 'text';
@@ -1915,10 +1915,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [
-                { readonly columns: readonly ['donationNumber'] },
-                { readonly columns: readonly ['donorId', 'donationNumber'] },
-              ];
+              uniques: readonly [{ readonly columns: readonly ['donationNumber'] }];
               indexes: readonly [
                 {
                   readonly name: 'blood_donations_donorId_idx_e0e8e1e7';
@@ -2457,8 +2454,8 @@ type ContractBase = Omit<
                   readonly nullable: false;
                 };
                 readonly donationNumber: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
                 readonly donatedAt: {
@@ -4130,7 +4127,7 @@ type ContractBase = Omit<
             };
             readonly Gender: {
               readonly kind: 'valueSet';
-              readonly values: readonly ['male', 'female', 'other', 'prefer_not_to_say'];
+              readonly values: readonly ['male', 'female', 'other'];
             };
             readonly NotificationType: {
               readonly kind: 'valueSet';
@@ -4479,7 +4476,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly organizationId: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly locationId: {
@@ -5020,7 +5017,7 @@ type ContractBase = Omit<
               };
               readonly donationNumber: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly donatedAt: {
                 readonly nullable: false;
@@ -6701,7 +6698,6 @@ type ContractBase = Omit<
               { readonly name: 'MALE'; readonly value: 'male' },
               { readonly name: 'FEMALE'; readonly value: 'female' },
               { readonly name: 'OTHER'; readonly value: 'other' },
-              { readonly name: 'PREFER_NOT_TO_SAY'; readonly value: 'prefer_not_to_say' },
             ];
           };
           readonly BloodGroup: {

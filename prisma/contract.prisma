@@ -15,7 +15,6 @@ enum Gender {
   MALE = "male"
   FEMALE = "female"
   OTHER = "other"
-  PREFER_NOT_TO_SAY = "prefer_not_to_say"
 }
 
 enum BloodGroup {
@@ -353,15 +352,15 @@ model DonorProfile {
 
 // BLOOD REQUEST
 model BloodRequest {
-  id             String             @id @default(uuid())
+  id             String                 @id @default(uuid())
   requesterId    String
   organizationId String
 
   bloodGroup     BloodGroup
   unitsRequired  Int
-  unitsFulfilled Int                @default(0)
-  priority       Priority           @default(LOW)
-  status         BloodRequestStatus @default(OPEN)
+  unitsFulfilled Int                    @default(0)
+  priority       Priority               @default(LOW)
+  status         BloodRequestStatus     @default(OPEN)
 
   patientName    String?
   patientAge     Int?
@@ -369,11 +368,11 @@ model BloodRequest {
   expiresAt      TimestamptzString?
   description    String?
 
-  createdAt      TimestamptzString   @default(now())
+  createdAt      TimestamptzString      @default(now())
   updatedAt      temporal.updatedAt()
 
-  requester      User                 @relation("RequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  requester      User                   @relation("RequestRequester", fields:[requesterId], references:[id], onDelete: Cascade)
+  organization   Organization           @relation(fields:[organizationId], references:[id], onDelete: Restrict)
   responses      BloodRequestResponse[]
   donations      BloodDonation[]
 
@@ -416,7 +415,7 @@ model BloodDonation {
   id              String               @id @default(uuid())
   donorId         String
   requestId       String?
-  organizationId  String?
+  organizationId  String
   locationId      String?
   donationNumber  String               @unique
   bloodGroup      BloodGroup
@@ -432,12 +431,11 @@ model BloodDonation {
 
   donor           DonorProfile         @relation(fields:[donorId], references:[id], onDelete: Cascade)
   request         BloodRequest?        @relation(fields:[requestId], references:[id], onDelete: SetNull)
-  organization    Organization?        @relation(fields:[organizationId], references:[id], onDelete: SetNull)
+  organization    Organization         @relation(fields:[organizationId], references:[id], onDelete: Restrict)
   location        Location?            @relation(fields:[locationId], references:[id], onDelete: SetNull)
   verifiedBy      User?                @relation("DonationVerifier", fields:[verifiedById], references:[id], onDelete: SetNull)
   certificate     DonationCertificate?
 
-  @@unique([donorId, donationNumber])
   @@index([donorId])
   @@index([requestId])
   @@index([organizationId])
@@ -445,6 +443,7 @@ model BloodDonation {
   @@index([status])
   @@index([donatedAt])
   @@index([donorId, status, donatedAt])
+
   @@map("blood_donations")
 }
 
@@ -456,7 +455,7 @@ model DonationCertificate {
   verificationCode String            @unique
   donorName        String
   bloodGroup       BloodGroup
-  donationNumber   Int
+  donationNumber   String
   donatedAt        TimestamptzString
   issuedAt         TimestamptzString @default(now())
   certificateUrl   String?
@@ -489,9 +488,9 @@ model Organization {
   createdAt      TimestamptzString    @default(now())
   updatedAt      temporal.updatedAt()
 
-  owner          User                 @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  location       Location?            @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  verifiedBy     User?                @relation("OrganizationVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  owner          User                 @relation("OrganizationOwner", fields:[ownerId], references:[id], onDelete: Restrict)
+  location       Location?            @relation(fields:[locationId], references:[id], onDelete: SetNull)
+  verifiedBy     User?                @relation("OrganizationVerifier", fields:[verifiedById], references:[id], onDelete: SetNull)
 
   members        OrganizationMember[]
   donations      BloodDonation[]
