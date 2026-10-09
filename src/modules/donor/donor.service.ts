@@ -1,5 +1,4 @@
 import httpStatus from "http-status";
-
 import type { DonorQueryInput, UpdateDonorProfileInput } from "./donor.schema";
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
@@ -7,6 +6,11 @@ import { AppError } from "../../utils/appError";
 // Types
 
 type ActorRole = "user" | "moderator" | "admin";
+
+type LocationFilters = Pick<
+  DonorQueryInput,
+  "country" | "division" | "city" | "village" | "postalCode"
+>;
 
 // Actor
 
@@ -121,9 +125,77 @@ const buildDonorUpdateData = (data: UpdateDonorProfileInput) => ({
   }),
 });
 
+// Location Filter Helpers
+
+const hasLocationFilters = (query: LocationFilters) =>
+  Boolean(
+    query.country ||
+    query.division ||
+    query.city ||
+    query.village ||
+    query.postalCode,
+  );
+
+const getMatchingUserIds = async (
+  query: LocationFilters,
+): Promise<string[] | undefined> => {
+  if (!hasLocationFilters(query)) {
+    return undefined;
+  }
+
+  let locationQuery = db.orm.public.Location;
+
+  if (query.country) {
+    locationQuery = locationQuery.where({
+      country: query.country,
+    });
+  }
+
+  if (query.division) {
+    locationQuery = locationQuery.where({
+      division: query.division,
+    });
+  }
+
+  if (query.city) {
+    locationQuery = locationQuery.where({
+      city: query.city,
+    });
+  }
+
+  if (query.village) {
+    locationQuery = locationQuery.where({
+      village: query.village,
+    });
+  }
+
+  if (query.postalCode) {
+    locationQuery = locationQuery.where({
+      postalCode: query.postalCode,
+    });
+  }
+
+  const locations = await locationQuery.all();
+
+  if (locations.length === 0) {
+    return [];
+  }
+
+  const locationIds = locations.map((location) => location.id);
+
+  const users = await db.orm.public.User.where((user) =>
+    user.locationId.in(locationIds),
+  ).all();
+
+  return users.map((user) => user.id);
+};
+
 // Apply Donor Filters
 
-const applyDonorFilters = (query: DonorQueryInput) => {
+const applyDonorFilters = (
+  query: DonorQueryInput,
+  matchingUserIds?: string[],
+) => {
   let donorQuery = db.orm.public.DonorProfile;
 
   if (query.bloodGroup) {
@@ -148,6 +220,10 @@ const applyDonorFilters = (query: DonorQueryInput) => {
     donorQuery = donorQuery.where({
       userId: query.userId,
     });
+  }
+
+  if (matchingUserIds !== undefined) {
+    donorQuery = donorQuery.where((donor) => donor.userId.in(matchingUserIds));
   }
 
   if (query.createdAtFrom) {
@@ -177,10 +253,30 @@ const applyDonorFilters = (query: DonorQueryInput) => {
   return donorQuery;
 };
 
+// Empty Donor List
+
+const getEmptyDonorList = (query: DonorQueryInput) => ({
+  data: [],
+  meta: {
+    page: query.page,
+    limit: query.limit,
+    total: 0,
+    totalPage: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  },
+});
+
 // Get Donor List
 
 const getDonorList = async (query: DonorQueryInput) => {
-  const filteredQuery = applyDonorFilters(query);
+  const matchingUserIds = await getMatchingUserIds(query);
+
+  if (matchingUserIds?.length === 0) {
+    return getEmptyDonorList(query);
+  }
+
+  const filteredQuery = applyDonorFilters(query, matchingUserIds);
 
   const totalResult = await filteredQuery.aggregate((aggregate) => ({
     total: aggregate.count(),
@@ -269,11 +365,9 @@ const upsertMyDonorProfile = async (
   }).first();
 
   if (existingDonor) {
-    const updateData = buildDonorUpdateData(data);
-
     return db.orm.public.DonorProfile.where({
       userId,
-    }).update(updateData);
+    }).update(buildDonorUpdateData(data));
   }
 
   if (data.bloodGroup === undefined) {
@@ -318,11 +412,9 @@ const updateDonorProfileById = async (
   await requireModerator(userId);
   await getDonorById(donorId);
 
-  const updateData = buildDonorUpdateData(data);
-
   return db.orm.public.DonorProfile.where({
     id: donorId,
-  }).update(updateData);
+  }).update(buildDonorUpdateData(data));
 };
 
 // Admin: Delete Donor Profile

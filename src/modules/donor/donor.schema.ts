@@ -60,12 +60,22 @@ export const DonorQuerySchema = z
     bloodGroup: BloodGroupSchema.optional(),
     availability: DonorAvailabilitySchema.optional(),
     isEligible: z.coerce.boolean().optional(),
-
     userId: z.uuid().optional(),
+
+    // Location filters
+    country: z.string().trim().min(1).optional(),
+    division: z.string().trim().min(1).optional(),
+    city: z.string().trim().min(1).optional(),
+    village: z.string().trim().min(1).optional(),
+    postalCode: z.string().trim().min(1).optional(),
+
+    // Optional distance search
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
+    radiusKm: z.coerce.number().positive().max(500).optional(),
 
     lastDonationAtFrom: z.iso.datetime().optional(),
     lastDonationAtTo: z.iso.datetime().optional(),
-
     createdAtFrom: z.iso.datetime().optional(),
     createdAtTo: z.iso.datetime().optional(),
 
@@ -92,6 +102,25 @@ export const DonorQuerySchema = z
           message: `${toKey} must be greater than or equal to ${fromKey}`,
         });
       }
+    }
+
+    if ((data.latitude !== undefined) !== (data.longitude !== undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["longitude"],
+        message: "Latitude and longitude must be provided together",
+      });
+    }
+
+    if (
+      data.radiusKm !== undefined &&
+      (data.latitude === undefined || data.longitude === undefined)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["radiusKm"],
+        message: "Latitude and longitude are required for radius search",
+      });
     }
   });
 
