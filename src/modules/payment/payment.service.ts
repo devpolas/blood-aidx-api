@@ -6,6 +6,7 @@ import config from "../../config";
 import { stripe } from "../../config/stripe";
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
+
 import type { PaymentQueryInput, RefundPaymentInput } from "./payment.schema";
 
 interface CreateCoffeePaymentInput {
@@ -68,18 +69,14 @@ const getPaymentFromStripeMetadata = async (
   }).first();
 };
 
-const isRefundedStatus = (status: string) => {
-  return status === "refunded" || status === "partially_refunded";
-};
+const isRefundedStatus = (status: string) =>
+  status === "refunded" || status === "partially_refunded";
 
-const isTerminalPaymentStatus = (status: string) => {
-  return (
-    status === "failed" ||
-    status === "cancelled" ||
-    status === "refunded" ||
-    status === "partially_refunded"
-  );
-};
+const isTerminalPaymentStatus = (status: string) =>
+  status === "failed" ||
+  status === "cancelled" ||
+  status === "refunded" ||
+  status === "partially_refunded";
 
 const amountToStripeUnit = (amount: number) => {
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -89,7 +86,13 @@ const amountToStripeUnit = (amount: number) => {
     );
   }
 
-  return Math.round(amount * 100);
+  const stripeAmount = Math.round(amount * 100);
+
+  if (!Number.isSafeInteger(stripeAmount) || stripeAmount <= 0) {
+    throw new AppError("Invalid payment amount", httpStatus.BAD_REQUEST);
+  }
+
+  return stripeAmount;
 };
 
 const getPaginationMeta = (page: number, limit: number, total: number) => {
@@ -101,17 +104,20 @@ const getPaginationMeta = (page: number, limit: number, total: number) => {
     total,
     totalPage,
     hasNextPage: page < totalPage,
-    hasPreviousPage: page > 1,
+    hasPreviousPage: page > 1 && totalPage > 0,
   };
 };
+
+// Payment Filters
 
 const applyPaymentFilters = (
   query: ReturnType<typeof db.orm.public.Payment.where>,
   filters: PaymentQueryInput,
+  options: { ignoreStatus?: boolean } = {},
 ) => {
   let result = query;
 
-  if (filters.status) {
+  if (!options.ignoreStatus && filters.status) {
     result = result.where({
       status: filters.status,
     });
@@ -135,57 +141,61 @@ const applyPaymentFilters = (
     });
   }
 
-  if (filters.createdAtFrom) {
-    result = result.where((fields) =>
-      fields.createdAt.gte(filters.createdAtFrom!),
-    );
+  const createdAtFrom = filters.createdAtFrom;
+  const createdAtTo = filters.createdAtTo;
+  const paidAtFrom = filters.paidAtFrom;
+  const paidAtTo = filters.paidAtTo;
+
+  if (createdAtFrom) {
+    result = result.where((payment) => payment.createdAt.gte(createdAtFrom));
   }
 
-  if (filters.createdAtTo) {
-    result = result.where((fields) =>
-      fields.createdAt.lte(filters.createdAtTo!),
-    );
+  if (createdAtTo) {
+    result = result.where((payment) => payment.createdAt.lte(createdAtTo));
   }
 
-  if (filters.paidAtFrom) {
-    result = result.where((fields) => fields.paidAt.gte(filters.paidAtFrom!));
+  if (paidAtFrom) {
+    result = result.where((payment) => payment.paidAt.gte(paidAtFrom));
   }
 
-  if (filters.paidAtTo) {
-    result = result.where((fields) => fields.paidAt.lte(filters.paidAtTo!));
+  if (paidAtTo) {
+    result = result.where((payment) => payment.paidAt.lte(paidAtTo));
   }
 
   return result;
 };
 
-const getPaymentOrder = (
+// Payment Sorting
+
+const applyPaymentSorting = (
+  query: ReturnType<typeof db.orm.public.Payment.where>,
   sortBy: PaymentQueryInput["sortBy"],
   sortOrder: PaymentQueryInput["sortOrder"],
 ) => {
-  const direction = sortOrder === "asc" ? "asc" : "desc";
+  const ascending = sortOrder === "asc";
 
-  return (fields: any) => {
-    switch (sortBy) {
-      case "updatedAt":
-        return direction === "asc"
-          ? fields.updatedAt.asc()
-          : fields.updatedAt.desc();
+  switch (sortBy) {
+    case "updatedAt":
+      return query.orderBy((payment) =>
+        ascending ? payment.updatedAt.asc() : payment.updatedAt.desc(),
+      );
 
-      case "amount":
-        return direction === "asc" ? fields.amount.asc() : fields.amount.desc();
+    case "amount":
+      return query.orderBy((payment) =>
+        ascending ? payment.amount.asc() : payment.amount.desc(),
+      );
 
-      case "paidAt":
-        return direction === "asc"
-          ? fields.paidAt.asc({ nulls: "last" })
-          : fields.paidAt.desc({ nulls: "last" });
+    case "paidAt":
+      return query.orderBy((payment) =>
+        ascending ? payment.paidAt.asc() : payment.paidAt.desc(),
+      );
 
-      case "createdAt":
-      default:
-        return direction === "asc"
-          ? fields.createdAt.asc()
-          : fields.createdAt.desc();
-    }
-  };
+    case "createdAt":
+    default:
+      return query.orderBy((payment) =>
+        ascending ? payment.createdAt.asc() : payment.createdAt.desc(),
+      );
+  }
 };
 
 // Create Coffee Payment
@@ -234,11 +244,11 @@ const createCoffeePayment = async ({
     amount,
     refundedAmount: 0,
     currency: normalizedCurrency,
-    ...(message !== undefined && {
-      message,
-    }),
+    ...(message !== undefined && { message }),
     description: `Coffee support for ${donorUser.name}`,
   });
+
+  let session: Stripe.Checkout.Session;
 
   try {
     const metadata = {
@@ -248,7 +258,7 @@ const createCoffeePayment = async ({
       paymentType: "donor_coffee",
     };
 
-    const session = await stripe.checkout.sessions.create({
+    session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [
         {
@@ -267,42 +277,9 @@ const createCoffeePayment = async ({
       payment_intent_data: {
         metadata,
       },
-      success_url:
-        `${config.website_url}` +
-        `/payment/success` +
-        `?payment_id=${payment.id}`,
-      cancel_url:
-        `${config.website_url}` +
-        `/payment/cancelled` +
-        `?payment_id=${payment.id}`,
+      success_url: `${config.website_url}/payment/success?payment_id=${payment.id}`,
+      cancel_url: `${config.website_url}/payment/cancelled?payment_id=${payment.id}`,
     });
-
-    if (!session.id || !session.url) {
-      throw new AppError(
-        "Unable to create Stripe checkout session",
-        httpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    const updatedPayment = await db.orm.public.Payment.where({
-      id: payment.id,
-    }).update({
-      stripeCheckoutSessionId: session.id,
-      status: "processing",
-    });
-
-    if (!updatedPayment) {
-      throw new AppError(
-        "Failed to update payment",
-        httpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return {
-      paymentId: updatedPayment.id,
-      checkoutSessionId: session.id,
-      checkoutUrl: session.url,
-    };
   } catch (error) {
     await db.orm.public.Payment.where({
       id: payment.id,
@@ -312,6 +289,39 @@ const createCoffeePayment = async ({
 
     throw error;
   }
+
+  if (!session.id || !session.url) {
+    await db.orm.public.Payment.where({
+      id: payment.id,
+    }).update({
+      status: "failed",
+    });
+
+    throw new AppError(
+      "Unable to create Stripe checkout session",
+      httpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+
+  const updatedPayment = await db.orm.public.Payment.where({
+    id: payment.id,
+  }).update({
+    stripeCheckoutSessionId: session.id,
+    status: "processing",
+  });
+
+  if (!updatedPayment) {
+    throw new AppError(
+      "Failed to update payment",
+      httpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+
+  return {
+    paymentId: updatedPayment.id,
+    checkoutSessionId: session.id,
+    checkoutUrl: session.url,
+  };
 };
 
 // Get Payment
@@ -331,37 +341,34 @@ const getPaymentById = async (paymentId: string, userId: string) => {
 
 // Admin Payment Lookup
 
-const getPaymentByIdForAdmin = async (paymentId: string) => {
-  return getPaymentByIdInternal(paymentId);
-};
+const getPaymentByIdForAdmin = async (paymentId: string) =>
+  getPaymentByIdInternal(paymentId);
 
 // Get My Payments
 
 const getMyPayments = async (userId: string, query: PaymentQueryInput) => {
   const { page, limit, sortBy, sortOrder } = query;
 
-  const baseQuery = applyPaymentFilters(
+  const filteredQuery = applyPaymentFilters(
     db.orm.public.Payment.where({
       payerId: userId,
     }),
     query,
   );
 
-  const aggregate = await baseQuery.aggregate((fields) => ({
-    total: fields.count(),
-  }));
-
-  const total = Number(aggregate.total ?? 0);
-
-  const payments = await baseQuery
-    .orderBy(getPaymentOrder(sortBy, sortOrder))
-    .offset((page - 1) * limit)
-    .limit(limit)
-    .all();
+  const [data, countResult] = await Promise.all([
+    applyPaymentSorting(filteredQuery, sortBy, sortOrder)
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .all(),
+    filteredQuery.aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+  ]);
 
   return {
-    data: payments,
-    meta: getPaginationMeta(page, limit, total),
+    data,
+    meta: getPaginationMeta(page, limit, countResult.total),
   };
 };
 
@@ -370,39 +377,37 @@ const getMyPayments = async (userId: string, query: PaymentQueryInput) => {
 const getDonorPayments = async (donorId: string, query: PaymentQueryInput) => {
   await getDonorById(donorId);
 
-  const baseQuery = applyPaymentFilters(
+  const filteredQuery = applyPaymentFilters(
     db.orm.public.Payment.where({
       donorId,
       status: "succeeded",
     }),
     query,
+    { ignoreStatus: true },
   );
 
-  const aggregate = await baseQuery.aggregate((fields) => ({
-    total: fields.count(),
-  }));
-
-  const total = Number(aggregate.total ?? 0);
-
-  const payments = await baseQuery
-    .orderBy(getPaymentOrder(query.sortBy, query.sortOrder))
-    .offset((query.page - 1) * query.limit)
-    .limit(query.limit)
-    .all();
+  const [data, countResult] = await Promise.all([
+    applyPaymentSorting(filteredQuery, query.sortBy, query.sortOrder)
+      .offset((query.page - 1) * query.limit)
+      .limit(query.limit)
+      .all(),
+    filteredQuery.aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+  ]);
 
   return {
-    data: payments,
-    meta: getPaginationMeta(query.page, query.limit, total),
+    data,
+    meta: getPaginationMeta(query.page, query.limit, countResult.total),
   };
 };
 
-// Get Payment By Stripe Payment Intent
+// Get Payment by Stripe Payment Intent
 
-const getPaymentByStripePaymentIntent = async (paymentIntentId: string) => {
-  return db.orm.public.Payment.where({
+const getPaymentByStripePaymentIntent = async (paymentIntentId: string) =>
+  db.orm.public.Payment.where({
     stripePaymentIntentId: paymentIntentId,
   }).first();
-};
 
 // Stripe: Checkout Completed
 
@@ -411,11 +416,7 @@ const handleCheckoutCompleted = async (
 ): Promise<void> => {
   const payment = await getPaymentFromStripeMetadata(session.metadata);
 
-  if (!payment) {
-    return;
-  }
-
-  if (payment.status === "succeeded") {
+  if (!payment || payment.status === "succeeded") {
     return;
   }
 
@@ -423,19 +424,13 @@ const handleCheckoutCompleted = async (
     return;
   }
 
-  if (session.status !== "complete") {
+  if (session.status !== "complete" || session.payment_status !== "paid") {
     return;
   }
-
-  if (session.payment_status !== "paid") {
-    return;
-  }
-
-  const stripeAmount = session.amount_total;
 
   if (
-    stripeAmount === null ||
-    stripeAmount !== amountToStripeUnit(Number(payment.amount))
+    session.amount_total === null ||
+    session.amount_total !== amountToStripeUnit(Number(payment.amount))
   ) {
     return;
   }
@@ -447,12 +442,12 @@ const handleCheckoutCompleted = async (
   const paymentIntentId =
     typeof session.payment_intent === "string" ? session.payment_intent : null;
 
-  const customerId =
-    typeof session.customer === "string" ? session.customer : null;
-
   if (!paymentIntentId) {
     return;
   }
+
+  const customerId =
+    typeof session.customer === "string" ? session.customer : null;
 
   await db.orm.public.Payment.where({
     id: payment.id,
@@ -484,11 +479,7 @@ const handleCheckoutAsyncPaymentFailed = async (
     return;
   }
 
-  if (payment.status === "succeeded") {
-    return;
-  }
-
-  if (isRefundedStatus(payment.status)) {
+  if (payment.status === "succeeded" || isRefundedStatus(payment.status)) {
     return;
   }
 
@@ -510,11 +501,7 @@ const handleCheckoutExpired = async (
     return;
   }
 
-  if (payment.status === "succeeded") {
-    return;
-  }
-
-  if (isRefundedStatus(payment.status)) {
+  if (payment.status === "succeeded" || isRefundedStatus(payment.status)) {
     return;
   }
 
@@ -536,11 +523,7 @@ const handlePaymentSucceeded = async (
 ): Promise<void> => {
   const payment = await getPaymentFromStripeMetadata(paymentIntent.metadata);
 
-  if (!payment) {
-    return;
-  }
-
-  if (payment.status === "succeeded") {
+  if (!payment || payment.status === "succeeded") {
     return;
   }
 
@@ -584,11 +567,7 @@ const handlePaymentFailed = async (
     return;
   }
 
-  if (payment.status === "succeeded") {
-    return;
-  }
-
-  if (isRefundedStatus(payment.status)) {
+  if (payment.status === "succeeded" || isRefundedStatus(payment.status)) {
     return;
   }
 
@@ -632,10 +611,9 @@ const refundPayment = async ({
   const paymentAmount = Number(payment.amount);
   const alreadyRefunded = Number(payment.refundedAmount);
   const remainingAmount = paymentAmount - alreadyRefunded;
-
   const refundAmount = amount === undefined ? remainingAmount : amount;
 
-  if (refundAmount <= 0) {
+  if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
     throw new AppError(
       "Refund amount must be greater than zero",
       httpStatus.BAD_REQUEST,
@@ -690,7 +668,6 @@ const handleChargeRefunded = async (charge: Stripe.Charge): Promise<void> => {
   }
 
   const paymentAmount = Number(payment.amount);
-
   const refundedAmount = Math.min(charge.amount_refunded / 100, paymentAmount);
 
   const status =

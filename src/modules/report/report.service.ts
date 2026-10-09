@@ -159,34 +159,23 @@ const getReportList = async (
 ) => {
   let reportQuery = db.orm.public.Report;
 
-  if (filters.reporterId) {
-    reportQuery = reportQuery.where({
-      reporterId: filters.reporterId,
-    });
+  // Filters
+  const reporterId = filters.reporterId ?? query.reporterId;
+
+  if (reporterId) {
+    reportQuery = reportQuery.where({ reporterId });
   }
 
   if (query.type) {
-    reportQuery = reportQuery.where({
-      type: query.type,
-    });
+    reportQuery = reportQuery.where({ type: query.type });
   }
 
   if (query.status) {
-    reportQuery = reportQuery.where({
-      status: query.status,
-    });
-  }
-
-  if (query.reporterId) {
-    reportQuery = reportQuery.where({
-      reporterId: query.reporterId,
-    });
+    reportQuery = reportQuery.where({ status: query.status });
   }
 
   if (query.targetId) {
-    reportQuery = reportQuery.where({
-      targetId: query.targetId,
-    });
+    reportQuery = reportQuery.where({ targetId: query.targetId });
   }
 
   if (query.createdAtFrom) {
@@ -201,12 +190,14 @@ const getReportList = async (
     );
   }
 
+  // Count
   const totalResult = await reportQuery.aggregate((report) => ({
     total: report.count(),
   }));
 
   const total = totalResult.total;
 
+  // Sorting
   const ascending = query.sortOrder === "asc";
 
   let sortedQuery = reportQuery;
@@ -238,6 +229,7 @@ const getReportList = async (
       break;
   }
 
+  // Pagination
   const data = await sortedQuery
     .offset((query.page - 1) * query.limit)
     .limit(query.limit)
@@ -253,7 +245,7 @@ const getReportList = async (
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };

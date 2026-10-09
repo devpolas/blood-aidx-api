@@ -169,6 +169,7 @@ const applyDonationFilters = (
 ) => {
   let donationQuery = db.orm.public.BloodDonation;
 
+  // Base filters
   if (filters.donorId) {
     donationQuery = donationQuery.where({
       donorId: filters.donorId,
@@ -182,17 +183,13 @@ const applyDonationFilters = (
   }
 
   // Base status takes priority over the query status.
+  const status = filters.status ?? query.status;
 
-  if (filters.status) {
-    donationQuery = donationQuery.where({
-      status: filters.status,
-    });
-  } else if (query.status) {
-    donationQuery = donationQuery.where({
-      status: query.status,
-    });
+  if (status) {
+    donationQuery = donationQuery.where({ status });
   }
 
+  // Additional filters
   if (query.donorId) {
     donationQuery = donationQuery.where({
       donorId: query.donorId,
@@ -223,47 +220,55 @@ const applyDonationFilters = (
     });
   }
 
-  if (query.search) {
-    const search = `%${query.search}%`;
+  const search = query.search;
 
+  if (search) {
     donationQuery = donationQuery.where((donation) =>
-      donation.donationNumber.ilike(search),
+      donation.donationNumber.ilike(`%${search}%`),
     );
   }
 
-  if (query.donatedAtFrom) {
+  // Date filters
+  const donatedAtFrom = query.donatedAtFrom;
+  const donatedAtTo = query.donatedAtTo;
+  const verifiedAtFrom = query.verifiedAtFrom;
+  const verifiedAtTo = query.verifiedAtTo;
+  const createdAtFrom = query.createdAtFrom;
+  const createdAtTo = query.createdAtTo;
+
+  if (donatedAtFrom) {
     donationQuery = donationQuery.where((donation) =>
-      donation.donatedAt.gte(query.donatedAtFrom!),
+      donation.donatedAt.gte(donatedAtFrom),
     );
   }
 
-  if (query.donatedAtTo) {
+  if (donatedAtTo) {
     donationQuery = donationQuery.where((donation) =>
-      donation.donatedAt.lte(query.donatedAtTo!),
+      donation.donatedAt.lte(donatedAtTo),
     );
   }
 
-  if (query.verifiedAtFrom) {
+  if (verifiedAtFrom) {
     donationQuery = donationQuery.where((donation) =>
-      donation.verifiedAt.gte(query.verifiedAtFrom!),
+      donation.verifiedAt.gte(verifiedAtFrom),
     );
   }
 
-  if (query.verifiedAtTo) {
+  if (verifiedAtTo) {
     donationQuery = donationQuery.where((donation) =>
-      donation.verifiedAt.lte(query.verifiedAtTo!),
+      donation.verifiedAt.lte(verifiedAtTo),
     );
   }
 
-  if (query.createdAtFrom) {
+  if (createdAtFrom) {
     donationQuery = donationQuery.where((donation) =>
-      donation.createdAt.gte(query.createdAtFrom!),
+      donation.createdAt.gte(createdAtFrom),
     );
   }
 
-  if (query.createdAtTo) {
+  if (createdAtTo) {
     donationQuery = donationQuery.where((donation) =>
-      donation.createdAt.lte(query.createdAtTo!),
+      donation.createdAt.lte(createdAtTo),
     );
   }
 
@@ -280,57 +285,52 @@ const getDonationList = async (
 ) => {
   const filteredQuery = applyDonationFilters(query, filters);
 
-  const totalResult = await filteredQuery.aggregate((aggregate) => ({
-    total: aggregate.count(),
-  }));
-
-  const total = Number(totalResult.total ?? 0);
   const offset = (query.page - 1) * query.limit;
   const ascending = query.sortOrder === "asc";
 
-  let sortedQuery;
+  const getSortedDonations = () => {
+    switch (query.sortBy) {
+      case "updatedAt":
+        return filteredQuery.orderBy((donation) =>
+          ascending ? donation.updatedAt.asc() : donation.updatedAt.desc(),
+        );
 
-  switch (query.sortBy) {
-    case "updatedAt":
-      sortedQuery = filteredQuery.orderBy((donation) =>
-        ascending ? donation.updatedAt.asc() : donation.updatedAt.desc(),
-      );
-      break;
+      case "donatedAt":
+        return filteredQuery.orderBy((donation) =>
+          ascending ? donation.donatedAt.asc() : donation.donatedAt.desc(),
+        );
 
-    case "donatedAt":
-      sortedQuery = filteredQuery.orderBy((donation) =>
-        ascending ? donation.donatedAt.asc() : donation.donatedAt.desc(),
-      );
-      break;
+      case "verifiedAt":
+        return filteredQuery.orderBy((donation) =>
+          ascending ? donation.verifiedAt.asc() : donation.verifiedAt.desc(),
+        );
 
-    case "verifiedAt":
-      sortedQuery = filteredQuery.orderBy((donation) =>
-        ascending ? donation.verifiedAt.asc() : donation.verifiedAt.desc(),
-      );
-      break;
+      case "units":
+        return filteredQuery.orderBy((donation) =>
+          ascending ? donation.units.asc() : donation.units.desc(),
+        );
 
-    case "units":
-      sortedQuery = filteredQuery.orderBy((donation) =>
-        ascending ? donation.units.asc() : donation.units.desc(),
-      );
-      break;
+      case "status":
+        return filteredQuery.orderBy((donation) =>
+          ascending ? donation.status.asc() : donation.status.desc(),
+        );
 
-    case "status":
-      sortedQuery = filteredQuery.orderBy((donation) =>
-        ascending ? donation.status.asc() : donation.status.desc(),
-      );
-      break;
+      case "createdAt":
+      default:
+        return filteredQuery.orderBy((donation) =>
+          ascending ? donation.createdAt.asc() : donation.createdAt.desc(),
+        );
+    }
+  };
 
-    case "createdAt":
-    default:
-      sortedQuery = filteredQuery.orderBy((donation) =>
-        ascending ? donation.createdAt.asc() : donation.createdAt.desc(),
-      );
-      break;
-  }
+  const [data, countResult] = await Promise.all([
+    getSortedDonations().offset(offset).limit(query.limit).all(),
+    filteredQuery.aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+  ]);
 
-  const data = await sortedQuery.offset(offset).limit(query.limit).all();
-
+  const total = countResult.total;
   const totalPage = Math.ceil(total / query.limit);
 
   return {
@@ -341,7 +341,7 @@ const getDonationList = async (
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };

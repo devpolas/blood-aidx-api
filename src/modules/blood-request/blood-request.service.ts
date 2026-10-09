@@ -200,170 +200,236 @@ const buildBloodRequestUpdateData = (data: UpdateBloodRequestInput) => {
 };
 
 // Query Features
+// Blood Request Filters
 
-const buildBloodRequestFilters = (query: BloodRequestQueryInput) => {
-  const filters: Record<string, unknown> = {};
-
-  if (query.search) {
-    filters.OR = [
-      {
-        patientName: {
-          contains: query.search,
-          mode: "insensitive",
-        },
-      },
-      {
-        description: {
-          contains: query.search,
-          mode: "insensitive",
-        },
-      },
-      {
-        organization: {
-          name: {
-            contains: query.search,
-            mode: "insensitive",
-          },
-        },
-      },
-    ];
-  }
+const buildBloodRequestFilters = async (
+  query: BloodRequestQueryInput,
+  requesterId?: string,
+) => {
+  let filteredQuery = db.orm.public.BloodRequest;
 
   if (query.bloodGroup) {
-    filters.bloodGroup = query.bloodGroup;
+    filteredQuery = filteredQuery.where({
+      bloodGroup: query.bloodGroup,
+    });
   }
 
   if (query.priority) {
-    filters.priority = query.priority;
+    filteredQuery = filteredQuery.where({
+      priority: query.priority,
+    });
   }
 
   if (query.status) {
-    filters.status = query.status;
+    filteredQuery = filteredQuery.where({
+      status: query.status,
+    });
   }
 
   if (query.organizationId) {
-    filters.organizationId = query.organizationId;
+    filteredQuery = filteredQuery.where({
+      organizationId: query.organizationId,
+    });
   }
 
-  if (query.country || query.division || query.city) {
-    filters.organization = {
-      location: {
-        ...(query.country && {
-          country: query.country,
-        }),
-
-        ...(query.division && {
-          division: query.division,
-        }),
-
-        ...(query.city && {
-          city: query.city,
-        }),
-      },
-    };
+  if (requesterId) {
+    filteredQuery = filteredQuery.where({
+      requesterId,
+    });
   }
 
-  if (query.requiredAtFrom || query.requiredAtTo) {
-    filters.requiredAt = {
-      ...(query.requiredAtFrom && {
-        gte: query.requiredAtFrom,
-      }),
+  const country = query.country;
+  const division = query.division;
+  const city = query.city;
 
-      ...(query.requiredAtTo && {
-        lte: query.requiredAtTo,
-      }),
-    };
+  if (country || division || city) {
+    const locations = await db.orm.public.Location.where({
+      ...(country && { country }),
+      ...(division && { division }),
+      ...(city && { city }),
+    })
+      .select("id")
+      .all();
+
+    if (locations.length === 0) {
+      return null;
+    }
+
+    const locationIds = locations.map((location) => location.id);
+
+    const organizations = await db.orm.public.Organization.where(
+      (organization) => organization.locationId.in(locationIds),
+    )
+      .select("id")
+      .all();
+
+    const organizationIds = organizations.map(
+      (organization) => organization.id,
+    );
+
+    if (organizationIds.length === 0) {
+      return null;
+    }
+
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.organizationId.in(organizationIds),
+    );
   }
 
-  if (query.expiresAtFrom || query.expiresAtTo) {
-    filters.expiresAt = {
-      ...(query.expiresAtFrom && {
-        gte: query.expiresAtFrom,
-      }),
+  const search = query.search;
 
-      ...(query.expiresAtTo && {
-        lte: query.expiresAtTo,
-      }),
-    };
+  if (search) {
+    const matchingOrganizations = await db.orm.public.Organization.where(
+      (organization) => organization.name.ilike(`%${search}%`),
+    )
+      .select("id")
+      .all();
+
+    const organizationIds = matchingOrganizations.map(
+      (organization) => organization.id,
+    );
+
+    filteredQuery = filteredQuery.where(
+      (bloodRequest) =>
+        bloodRequest.patientName.ilike(`%${search}%`) ||
+        bloodRequest.description.ilike(`%${search}%`) ||
+        bloodRequest.organizationId.in(organizationIds),
+    );
   }
 
-  if (query.createdAtFrom || query.createdAtTo) {
-    filters.createdAt = {
-      ...(query.createdAtFrom && {
-        gte: query.createdAtFrom,
-      }),
+  const requiredAtFrom = query.requiredAtFrom;
+  const requiredAtTo = query.requiredAtTo;
+  const expiresAtFrom = query.expiresAtFrom;
+  const expiresAtTo = query.expiresAtTo;
+  const createdAtFrom = query.createdAtFrom;
+  const createdAtTo = query.createdAtTo;
 
-      ...(query.createdAtTo && {
-        lte: query.createdAtTo,
-      }),
-    };
+  if (requiredAtFrom) {
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.requiredAt.gte(requiredAtFrom),
+    );
   }
 
-  return filters;
+  if (requiredAtTo) {
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.requiredAt.lte(requiredAtTo),
+    );
+  }
+
+  if (expiresAtFrom) {
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.expiresAt.gte(expiresAtFrom),
+    );
+  }
+
+  if (expiresAtTo) {
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.expiresAt.lte(expiresAtTo),
+    );
+  }
+
+  if (createdAtFrom) {
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.createdAt.gte(createdAtFrom),
+    );
+  }
+
+  if (createdAtTo) {
+    filteredQuery = filteredQuery.where((bloodRequest) =>
+      bloodRequest.createdAt.lte(createdAtTo),
+    );
+  }
+
+  return filteredQuery;
 };
+
+// Blood Request List
 
 const getBloodRequestList = async (
   query: BloodRequestQueryInput,
   requesterId?: string,
 ) => {
-  const offset = (query.page - 1) * query.limit;
-  const filters = buildBloodRequestFilters(query);
+  const filteredQuery = await buildBloodRequestFilters(query, requesterId);
 
-  if (requesterId) {
-    filters.requesterId = requesterId;
+  if (!filteredQuery) {
+    return {
+      data: [],
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total: 0,
+        totalPage: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
   }
 
+  const offset = (query.page - 1) * query.limit;
+  const ascending = query.sortOrder === "asc";
+
+  const getSortedRequests = () => {
+    switch (query.sortBy) {
+      case "updatedAt":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.updatedAt.asc()
+            : bloodRequest.updatedAt.desc(),
+        );
+
+      case "requiredAt":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.requiredAt.asc()
+            : bloodRequest.requiredAt.desc(),
+        );
+
+      case "expiresAt":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.expiresAt.asc()
+            : bloodRequest.expiresAt.desc(),
+        );
+
+      case "unitsRequired":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.unitsRequired.asc()
+            : bloodRequest.unitsRequired.desc(),
+        );
+
+      case "unitsFulfilled":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.unitsFulfilled.asc()
+            : bloodRequest.unitsFulfilled.desc(),
+        );
+
+      case "priority":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.priority.asc()
+            : bloodRequest.priority.desc(),
+        );
+
+      case "status":
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending ? bloodRequest.status.asc() : bloodRequest.status.desc(),
+        );
+
+      case "createdAt":
+      default:
+        return filteredQuery.orderBy((bloodRequest) =>
+          ascending
+            ? bloodRequest.createdAt.asc()
+            : bloodRequest.createdAt.desc(),
+        );
+    }
+  };
+
   const [requests, countResult] = await Promise.all([
-    db.orm.public.BloodRequest.where(filters)
-      .orderBy((bloodRequest) => {
-        switch (query.sortBy) {
-          case "updatedAt":
-            return query.sortOrder === "asc"
-              ? bloodRequest.updatedAt.asc()
-              : bloodRequest.updatedAt.desc();
-
-          case "requiredAt":
-            return query.sortOrder === "asc"
-              ? bloodRequest.requiredAt.asc()
-              : bloodRequest.requiredAt.desc();
-
-          case "expiresAt":
-            return query.sortOrder === "asc"
-              ? bloodRequest.expiresAt.asc()
-              : bloodRequest.expiresAt.desc();
-
-          case "unitsRequired":
-            return query.sortOrder === "asc"
-              ? bloodRequest.unitsRequired.asc()
-              : bloodRequest.unitsRequired.desc();
-
-          case "unitsFulfilled":
-            return query.sortOrder === "asc"
-              ? bloodRequest.unitsFulfilled.asc()
-              : bloodRequest.unitsFulfilled.desc();
-
-          case "priority":
-            return query.sortOrder === "asc"
-              ? bloodRequest.priority.asc()
-              : bloodRequest.priority.desc();
-
-          case "status":
-            return query.sortOrder === "asc"
-              ? bloodRequest.status.asc()
-              : bloodRequest.status.desc();
-
-          case "createdAt":
-          default:
-            return query.sortOrder === "asc"
-              ? bloodRequest.createdAt.asc()
-              : bloodRequest.createdAt.desc();
-        }
-      })
-      .offset(offset)
-      .limit(query.limit)
-      .all(),
-
-    db.orm.public.BloodRequest.where(filters).aggregate((aggregate) => ({
+    getSortedRequests().offset(offset).limit(query.limit).all(),
+    filteredQuery.aggregate((aggregate) => ({
       total: aggregate.count(),
     })),
   ]);
@@ -379,11 +445,10 @@ const getBloodRequestList = async (
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };
-
 // Get My Blood Requests
 
 const getMyBloodRequests = async (

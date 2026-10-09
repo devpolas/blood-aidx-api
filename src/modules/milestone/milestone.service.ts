@@ -87,51 +87,47 @@ const generateVerificationCode = () =>
   crypto.randomUUID().replace(/-/g, "").toUpperCase();
 
 // Milestone List
-
 const getMilestoneList = async (query: MilestoneQueryInput) => {
   const milestoneQuery = db.orm.public.DonationMilestone;
 
-  const totalResult = await milestoneQuery.aggregate((aggregate) => ({
-    total: aggregate.count(),
-  }));
-
-  const total = Number(totalResult.total ?? 0);
   const offset = (query.page - 1) * query.limit;
   const ascending = query.sortOrder === "asc";
 
-  let sortedQuery;
+  const getSortedMilestones = () => {
+    switch (query.sortBy) {
+      case "createdAt":
+        return milestoneQuery.orderBy((milestone) =>
+          ascending ? milestone.createdAt.asc() : milestone.createdAt.desc(),
+        );
 
-  switch (query.sortBy) {
-    case "createdAt":
-      sortedQuery = milestoneQuery.orderBy((milestone) =>
-        ascending ? milestone.createdAt.asc() : milestone.createdAt.desc(),
-      );
-      break;
+      case "updatedAt":
+        return milestoneQuery.orderBy((milestone) =>
+          ascending ? milestone.updatedAt.asc() : milestone.updatedAt.desc(),
+        );
 
-    case "updatedAt":
-      sortedQuery = milestoneQuery.orderBy((milestone) =>
-        ascending ? milestone.updatedAt.asc() : milestone.updatedAt.desc(),
-      );
-      break;
+      case "name":
+        return milestoneQuery.orderBy((milestone) =>
+          ascending ? milestone.name.asc() : milestone.name.desc(),
+        );
 
-    case "name":
-      sortedQuery = milestoneQuery.orderBy((milestone) =>
-        ascending ? milestone.name.asc() : milestone.name.desc(),
-      );
-      break;
+      case "donationCount":
+      default:
+        return milestoneQuery.orderBy((milestone) =>
+          ascending
+            ? milestone.donationCount.asc()
+            : milestone.donationCount.desc(),
+        );
+    }
+  };
 
-    case "donationCount":
-    default:
-      sortedQuery = milestoneQuery.orderBy((milestone) =>
-        ascending
-          ? milestone.donationCount.asc()
-          : milestone.donationCount.desc(),
-      );
-      break;
-  }
+  const [data, countResult] = await Promise.all([
+    getSortedMilestones().offset(offset).limit(query.limit).all(),
+    milestoneQuery.aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+  ]);
 
-  const data = await sortedQuery.offset(offset).limit(query.limit).all();
-
+  const total = countResult.total;
   const totalPage = Math.ceil(total / query.limit);
 
   return {
@@ -142,7 +138,7 @@ const getMilestoneList = async (query: MilestoneQueryInput) => {
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };

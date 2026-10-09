@@ -304,6 +304,8 @@ const validateCanBeDeclined = (status: ResponseStatus) => {
 
 // Query Features
 
+// Blood Request Response Filters
+
 const applyResponseFilters = (
   query: BloodRequestResponseQueryInput,
   filters: {
@@ -337,40 +339,50 @@ const applyResponseFilters = (
     });
   }
 
-  if (query.search) {
-    const search = `%${query.search}%`;
+  const search = query.search;
 
+  if (search) {
     responseQuery = responseQuery.where((response) =>
-      response.message.ilike(search),
+      response.message.ilike(`%${search}%`),
     );
   }
 
-  if (query.respondedAtFrom) {
+  const respondedAtFrom = query.respondedAtFrom;
+
+  if (respondedAtFrom) {
     responseQuery = responseQuery.where((response) =>
-      response.respondedAt.gte(query.respondedAtFrom!),
+      response.respondedAt.gte(respondedAtFrom),
     );
   }
 
-  if (query.respondedAtTo) {
+  const respondedAtTo = query.respondedAtTo;
+
+  if (respondedAtTo) {
     responseQuery = responseQuery.where((response) =>
-      response.respondedAt.lte(query.respondedAtTo!),
+      response.respondedAt.lte(respondedAtTo),
     );
   }
 
-  if (query.createdAtFrom) {
+  const createdAtFrom = query.createdAtFrom;
+
+  if (createdAtFrom) {
     responseQuery = responseQuery.where((response) =>
-      response.createdAt.gte(query.createdAtFrom!),
+      response.createdAt.gte(createdAtFrom),
     );
   }
 
-  if (query.createdAtTo) {
+  const createdAtTo = query.createdAtTo;
+
+  if (createdAtTo) {
     responseQuery = responseQuery.where((response) =>
-      response.createdAt.lte(query.createdAtTo!),
+      response.createdAt.lte(createdAtTo),
     );
   }
 
   return responseQuery;
 };
+
+// Blood Request Response Sorting
 
 const applyResponseSorting = (
   responseQuery: ReturnType<typeof db.orm.public.BloodRequestResponse.where>,
@@ -430,24 +442,23 @@ const getResponseList = async (
       .offset(offset)
       .limit(limit)
       .all(),
-
-    applyResponseFilters(query, filters).aggregate((aggregate) => ({
+    filteredQuery.aggregate((aggregate) => ({
       total: aggregate.count(),
     })),
   ]);
 
   const total = countResult.total;
-  const totalPage = Math.ceil(total / query.limit);
+  const totalPage = Math.ceil(total / limit);
 
   return {
     data: requests,
     meta: {
-      page: query.page,
-      limit: query.limit,
+      page,
+      limit,
       total,
       totalPage,
-      hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasNextPage: page < totalPage,
+      hasPreviousPage: page > 1,
     },
   };
 };

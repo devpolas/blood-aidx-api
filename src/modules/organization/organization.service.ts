@@ -13,12 +13,14 @@ import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
 
 // Types
+
 type GlobalRole = "user" | "moderator" | "admin";
 type OrganizationMemberRole = "admin" | "staff" | "verifier";
 
 const PUBLIC_ORGANIZATION_STATUSES = ["active", "verified"] as const;
 
 // User
+
 const getUserById = async (userId: string) => {
   const user = await db.orm.public.User.where({
     id: userId,
@@ -30,6 +32,8 @@ const getUserById = async (userId: string) => {
 
   return user;
 };
+
+// Location
 
 const getLocationData = (location: CreateOrganizationInput["location"]) => ({
   country: location.country,
@@ -49,6 +53,7 @@ const getLocationData = (location: CreateOrganizationInput["location"]) => ({
 });
 
 // Organization
+
 const getOrganizationById = async (organizationId: string) => {
   const organization = await db.orm.public.Organization.where({
     id: organizationId,
@@ -62,6 +67,7 @@ const getOrganizationById = async (organizationId: string) => {
 };
 
 // Membership
+
 const getMembership = async (organizationId: string, userId: string) => {
   return db.orm.public.OrganizationMember.where({
     organizationId,
@@ -70,6 +76,7 @@ const getMembership = async (organizationId: string, userId: string) => {
 };
 
 // Global Authorization
+
 const isGlobalModerator = (role: GlobalRole) =>
   role === "moderator" || role === "admin";
 
@@ -87,6 +94,7 @@ const requireGlobalModerator = async (userId: string) => {
 };
 
 // Organization Access
+
 const getOrganizationAccess = async (
   organizationId: string,
   userId: string,
@@ -131,7 +139,6 @@ const requireOrganizationManager = async (
   userId: string,
 ) => {
   const access = await getOrganizationAccess(organizationId, userId);
-
   const isOrganizationAdmin = access.isOwner || access.memberRole === "admin";
 
   if (!isOrganizationAdmin && !access.isModerator) {
@@ -145,131 +152,191 @@ const requireOrganizationManager = async (
 };
 
 // Organization List
+
+// Organization List
+
 const applyOrganizationFilters = (query: OrganizationQueryInput) => {
   const requestedStatus = query.status;
+
   const isPublicStatus =
     requestedStatus !== undefined &&
     (PUBLIC_ORGANIZATION_STATUSES as readonly string[]).includes(
       requestedStatus,
     );
 
-  const filters: Record<string, unknown> = {
-    status: isPublicStatus
-      ? requestedStatus
-      : {
-          in: PUBLIC_ORGANIZATION_STATUSES,
-        },
+  return {
+    status: isPublicStatus ? requestedStatus : undefined,
+    locationId:
+      query.locationId && !query.country && !query.division && !query.city
+        ? query.locationId
+        : undefined,
   };
-
-  if (query.types?.length) {
-    filters.type = {
-      in: query.types,
-    };
-  }
-
-  if (query.locationId) {
-    filters.locationId = query.locationId;
-  }
-
-  if (query.search) {
-    filters.name = {
-      contains: query.search,
-      mode: "insensitive",
-    };
-  }
-
-  if (query.country || query.division || query.city) {
-    filters.location = {
-      ...(query.country && { country: query.country }),
-      ...(query.division && { division: query.division }),
-      ...(query.city && { city: query.city }),
-    };
-  }
-
-  if (query.createdAtFrom || query.createdAtTo) {
-    filters.createdAt = {
-      ...(query.createdAtFrom && {
-        gte: query.createdAtFrom,
-      }),
-      ...(query.createdAtTo && {
-        lte: query.createdAtTo,
-      }),
-    };
-  }
-
-  return filters;
 };
+
+const getEmptyOrganizationList = (query: OrganizationQueryInput) => ({
+  data: [],
+  meta: {
+    page: query.page,
+    limit: query.limit,
+    total: 0,
+    totalPage: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  },
+});
 
 const getOrganizationList = async (query: OrganizationQueryInput) => {
   const filters = applyOrganizationFilters(query);
+
+  const hasLocationFilters = Boolean(
+    query.country || query.division || query.city,
+  );
+
+  let locationIds: string[] | undefined;
+
+  if (hasLocationFilters) {
+    const locations = await db.orm.public.Location.where({
+      ...(query.country && { country: query.country }),
+      ...(query.division && { division: query.division }),
+      ...(query.city && { city: query.city }),
+    })
+      .select("id")
+      .all();
+
+    locationIds = locations.map((location) => location.id);
+
+    if (locationIds.length === 0) {
+      return getEmptyOrganizationList(query);
+    }
+
+    if (query.locationId) {
+      if (!locationIds.includes(query.locationId)) {
+        return getEmptyOrganizationList(query);
+      }
+
+      locationIds = [query.locationId];
+    }
+  }
+
   const offset = (query.page - 1) * query.limit;
   const ascending = query.sortOrder === "asc";
 
-  const filteredQuery = db.orm.public.Organization.where(filters);
+  const hasRequestedStatus = filters.status !== undefined;
+
+  let filteredQuery = hasRequestedStatus
+    ? db.orm.public.Organization.where({
+        status: filters.status,
+      })
+    : db.orm.public.Organization.where((organization) =>
+        organization.status.in([...PUBLIC_ORGANIZATION_STATUSES]),
+      );
+
+  if (filters.locationId) {
+    filteredQuery = filteredQuery.where({
+      locationId: filters.locationId,
+    });
+  }
+
+  if (locationIds !== undefined) {
+    filteredQuery = filteredQuery.where((organization) =>
+      organization.locationId.in(locationIds),
+    );
+  }
+
+  const types = query.types;
+
+  if (types?.length) {
+    filteredQuery = filteredQuery.where((organization) =>
+      organization.type.in(types),
+    );
+  }
+
+  const search = query.search;
+
+  if (search) {
+    filteredQuery = filteredQuery.where((organization) =>
+      organization.name.ilike(`%${search}%`),
+    );
+  }
+
+  const createdAtFrom = query.createdAtFrom;
+
+  if (createdAtFrom) {
+    filteredQuery = filteredQuery.where((organization) =>
+      organization.createdAt.gte(createdAtFrom),
+    );
+  }
+
+  const createdAtTo = query.createdAtTo;
+
+  if (createdAtTo) {
+    filteredQuery = filteredQuery.where((organization) =>
+      organization.createdAt.lte(createdAtTo),
+    );
+  }
+
+  const getSortedOrganizations = () => {
+    switch (query.sortBy) {
+      case "updatedAt":
+        return filteredQuery
+          .orderBy((organization) =>
+            ascending
+              ? organization.updatedAt.asc()
+              : organization.updatedAt.desc(),
+          )
+          .offset(offset)
+          .limit(query.limit)
+          .all();
+
+      case "name":
+        return filteredQuery
+          .orderBy((organization) =>
+            ascending ? organization.name.asc() : organization.name.desc(),
+          )
+          .offset(offset)
+          .limit(query.limit)
+          .all();
+
+      case "type":
+        return filteredQuery
+          .orderBy((organization) =>
+            ascending ? organization.type.asc() : organization.type.desc(),
+          )
+          .offset(offset)
+          .limit(query.limit)
+          .all();
+
+      case "status":
+        return filteredQuery
+          .orderBy((organization) =>
+            ascending ? organization.status.asc() : organization.status.desc(),
+          )
+          .offset(offset)
+          .limit(query.limit)
+          .all();
+
+      case "createdAt":
+      default:
+        return filteredQuery
+          .orderBy((organization) =>
+            ascending
+              ? organization.createdAt.asc()
+              : organization.createdAt.desc(),
+          )
+          .offset(offset)
+          .limit(query.limit)
+          .all();
+    }
+  };
 
   const [data, totalResult] = await Promise.all([
-    (() => {
-      switch (query.sortBy) {
-        case "updatedAt":
-          return filteredQuery
-            .orderBy((organization) =>
-              ascending
-                ? organization.updatedAt.asc()
-                : organization.updatedAt.desc(),
-            )
-            .offset(offset)
-            .limit(query.limit)
-            .all();
-
-        case "name":
-          return filteredQuery
-            .orderBy((organization) =>
-              ascending ? organization.name.asc() : organization.name.desc(),
-            )
-            .offset(offset)
-            .limit(query.limit)
-            .all();
-
-        case "type":
-          return filteredQuery
-            .orderBy((organization) =>
-              ascending ? organization.type.asc() : organization.type.desc(),
-            )
-            .offset(offset)
-            .limit(query.limit)
-            .all();
-
-        case "status":
-          return filteredQuery
-            .orderBy((organization) =>
-              ascending
-                ? organization.status.asc()
-                : organization.status.desc(),
-            )
-            .offset(offset)
-            .limit(query.limit)
-            .all();
-
-        case "createdAt":
-        default:
-          return filteredQuery
-            .orderBy((organization) =>
-              ascending
-                ? organization.createdAt.asc()
-                : organization.createdAt.desc(),
-            )
-            .offset(offset)
-            .limit(query.limit)
-            .all();
-      }
-    })(),
-
+    getSortedOrganizations(),
     filteredQuery.aggregate((aggregate) => ({
       total: aggregate.count(),
     })),
   ]);
 
-  const total = Number(totalResult.total ?? 0);
+  const total = totalResult.total;
   const totalPage = Math.ceil(total / query.limit);
 
   return {
@@ -286,6 +353,7 @@ const getOrganizationList = async (query: OrganizationQueryInput) => {
 };
 
 // Public Organization
+
 const getOrganizations = async (query: OrganizationQueryInput) => {
   return getOrganizationList(query);
 };
@@ -305,6 +373,7 @@ const getOrganization = async (organizationId: string) => {
 };
 
 // My Organizations
+
 const getMyOrganizations = async (userId: string) => {
   await getUserById(userId);
 
@@ -344,6 +413,7 @@ const getMyOrganizations = async (userId: string) => {
 };
 
 // Organization By User Access
+
 const getOrganizationByIdForUser = async (
   organizationId: string,
   userId: string,
@@ -357,6 +427,7 @@ const getOrganizationByIdForUser = async (
 };
 
 // Create Organization
+
 const createOrganization = async (
   userId: string,
   data: CreateOrganizationInput,
@@ -403,6 +474,7 @@ const createOrganization = async (
 };
 
 // Update Organization
+
 const updateOrganization = async (
   organizationId: string,
   userId: string,
@@ -478,6 +550,7 @@ const updateOrganization = async (
 };
 
 // Update Organization Status
+
 const updateOrganizationStatus = async (
   organizationId: string,
   userId: string,
@@ -528,6 +601,7 @@ const updateOrganizationStatus = async (
 };
 
 // Delete Organization
+
 const deleteOrganization = async (organizationId: string, userId: string) => {
   const { organization } = await getOrganizationAccess(organizationId, userId);
 
@@ -553,6 +627,7 @@ const deleteOrganization = async (organizationId: string, userId: string) => {
 };
 
 // Members
+
 const addMember = async (
   organizationId: string,
   userId: string,

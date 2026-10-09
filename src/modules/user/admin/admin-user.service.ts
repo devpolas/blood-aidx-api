@@ -43,11 +43,12 @@ const getUserById = async (userId: string) => {
 const applyUserFilters = (query: AdminUserQueryInput) => {
   let userQuery = db.orm.public.User.select(...userSelect);
 
-  if (query.search) {
+  const search = query.search;
+
+  if (search) {
     userQuery = userQuery.where(
       (user) =>
-        user.name.ilike(`%${query.search}%`) ||
-        user.email.ilike(`%${query.search}%`),
+        user.name.ilike(`%${search}%`) || user.email.ilike(`%${search}%`),
     );
   }
 
@@ -69,16 +70,16 @@ const applyUserFilters = (query: AdminUserQueryInput) => {
     });
   }
 
-  if (query.createdAtFrom) {
-    userQuery = userQuery.where((user) =>
-      user.createdAt.gte(query.createdAtFrom!),
-    );
+  const createdAtFrom = query.createdAtFrom;
+
+  if (createdAtFrom) {
+    userQuery = userQuery.where((user) => user.createdAt.gte(createdAtFrom));
   }
 
-  if (query.createdAtTo) {
-    userQuery = userQuery.where((user) =>
-      user.createdAt.lte(query.createdAtTo!),
-    );
+  const createdAtTo = query.createdAtTo;
+
+  if (createdAtTo) {
+    userQuery = userQuery.where((user) => user.createdAt.lte(createdAtTo));
   }
 
   return userQuery;
@@ -91,7 +92,7 @@ const getUserList = async (query: AdminUserQueryInput) => {
     total: aggregate.count(),
   }));
 
-  const total = Number(totalResult.total ?? 0);
+  const total = totalResult.total;
   const offset = (query.page - 1) * query.limit;
   const ascending = query.sortOrder === "asc";
 
@@ -142,7 +143,7 @@ const getUserList = async (query: AdminUserQueryInput) => {
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };

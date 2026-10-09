@@ -6,6 +6,7 @@ import type {
   UpdateReviewInput,
   UpdateReviewStatusInput,
 } from "./review.schema";
+
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
 
@@ -32,7 +33,7 @@ const getPaginationMeta = (page: number, limit: number, total: number) => {
     total,
     totalPage,
     hasNextPage: page < totalPage,
-    hasPreviousPage: page > 1,
+    hasPreviousPage: page > 1 && totalPage > 0,
   };
 };
 
@@ -87,20 +88,72 @@ const validateReviewTarget = async (
   throw new AppError("A review target is required", httpStatus.BAD_REQUEST);
 };
 
+const applyReviewSorting = (
+  reviewQuery: ReturnType<typeof db.orm.public.Review.where>,
+  query: ReviewQueryInput,
+) => {
+  const ascending = query.sortOrder === "asc";
+
+  switch (query.sortBy) {
+    case "updatedAt":
+      return reviewQuery.orderBy((review) =>
+        ascending ? review.updatedAt.asc() : review.updatedAt.desc(),
+      );
+
+    case "rating":
+      return reviewQuery.orderBy((review) =>
+        ascending ? review.rating.asc() : review.rating.desc(),
+      );
+
+    case "createdAt":
+    default:
+      return reviewQuery.orderBy((review) =>
+        ascending ? review.createdAt.asc() : review.createdAt.desc(),
+      );
+  }
+};
+
+const getReviewList = async (
+  reviewQuery: ReturnType<typeof db.orm.public.Review.where>,
+  query: ReviewQueryInput,
+) => {
+  const totalResult = await reviewQuery.aggregate((review) => ({
+    total: review.count(),
+  }));
+
+  const sortedQuery = applyReviewSorting(reviewQuery, query);
+
+  const data = await sortedQuery
+    .offset((query.page - 1) * query.limit)
+    .limit(query.limit)
+    .all();
+
+  return {
+    data,
+    meta: getPaginationMeta(query.page, query.limit, totalResult.total),
+  };
+};
+
 // Create
 
 const createReview = async (reviewerId: string, data: CreateReviewInput) => {
   const target = await validateReviewTarget(reviewerId, data);
 
-  const existingReview = await db.orm.public.Review.where({
+  let existingReviewQuery = db.orm.public.Review.where({
     reviewerId,
-    ...(target.revieweeId !== undefined && {
+  });
+
+  if (target.revieweeId !== undefined) {
+    existingReviewQuery = existingReviewQuery.where({
       revieweeId: target.revieweeId,
-    }),
-    ...(target.organizationId !== undefined && {
+    });
+  } else if (target.organizationId !== undefined) {
+    existingReviewQuery = existingReviewQuery.where({
       organizationId: target.organizationId,
-    }),
-  }).first();
+    });
+  }
+
+  const existingReview = await existingReviewQuery.first();
 
   if (existingReview) {
     throw new AppError(
@@ -126,48 +179,23 @@ const createReview = async (reviewerId: string, data: CreateReviewInput) => {
 // Current User
 
 const getMyReviews = async (reviewerId: string, query: ReviewQueryInput) => {
-  const { page, limit, status, rating, sortBy, sortOrder } = query;
-
-  const where = {
+  let reviewQuery = db.orm.public.Review.where({
     reviewerId,
-    ...(status !== undefined && { status }),
-    ...(rating !== undefined && { rating }),
-  };
+  });
 
-  const offset = (page - 1) * limit;
+  if (query.status !== undefined) {
+    reviewQuery = reviewQuery.where({
+      status: query.status,
+    });
+  }
 
-  const [totalResult, reviews] = await Promise.all([
-    db.orm.public.Review.where(where).aggregate((aggregate) => ({
-      total: aggregate.count(),
-    })),
+  if (query.rating !== undefined) {
+    reviewQuery = reviewQuery.where({
+      rating: query.rating,
+    });
+  }
 
-    db.orm.public.Review.where(where)
-      .orderBy((fields) => {
-        if (sortBy === "updatedAt") {
-          return sortOrder === "asc"
-            ? fields.updatedAt.asc()
-            : fields.updatedAt.desc();
-        }
-
-        if (sortBy === "rating") {
-          return sortOrder === "asc"
-            ? fields.rating.asc()
-            : fields.rating.desc();
-        }
-
-        return sortOrder === "asc"
-          ? fields.createdAt.asc()
-          : fields.createdAt.desc();
-      })
-      .offset(offset)
-      .limit(limit)
-      .all(),
-  ]);
-
-  return {
-    data: reviews,
-    meta: getPaginationMeta(page, limit, totalResult.total),
-  };
+  return getReviewList(reviewQuery, query);
 };
 
 // Public
@@ -181,48 +209,18 @@ const getReviewsForUser = async (userId: string, query: ReviewQueryInput) => {
     throw new AppError("User not found", httpStatus.NOT_FOUND);
   }
 
-  const { page, limit, rating, sortBy, sortOrder } = query;
-
-  const where = {
+  let reviewQuery = db.orm.public.Review.where({
     revieweeId: userId,
-    status: "published" as const,
-    ...(rating !== undefined && { rating }),
-  };
+    status: "published",
+  });
 
-  const offset = (page - 1) * limit;
+  if (query.rating !== undefined) {
+    reviewQuery = reviewQuery.where({
+      rating: query.rating,
+    });
+  }
 
-  const [totalResult, reviews] = await Promise.all([
-    db.orm.public.Review.where(where).aggregate((aggregate) => ({
-      total: aggregate.count(),
-    })),
-
-    db.orm.public.Review.where(where)
-      .orderBy((fields) => {
-        if (sortBy === "updatedAt") {
-          return sortOrder === "asc"
-            ? fields.updatedAt.asc()
-            : fields.updatedAt.desc();
-        }
-
-        if (sortBy === "rating") {
-          return sortOrder === "asc"
-            ? fields.rating.asc()
-            : fields.rating.desc();
-        }
-
-        return sortOrder === "asc"
-          ? fields.createdAt.asc()
-          : fields.createdAt.desc();
-      })
-      .offset(offset)
-      .limit(limit)
-      .all(),
-  ]);
-
-  return {
-    data: reviews,
-    meta: getPaginationMeta(page, limit, totalResult.total),
-  };
+  return getReviewList(reviewQuery, query);
 };
 
 const getReviewsForOrganization = async (
@@ -237,48 +235,18 @@ const getReviewsForOrganization = async (
     throw new AppError("Organization not found", httpStatus.NOT_FOUND);
   }
 
-  const { page, limit, rating, sortBy, sortOrder } = query;
-
-  const where = {
+  let reviewQuery = db.orm.public.Review.where({
     organizationId,
-    status: "published" as const,
-    ...(rating !== undefined && { rating }),
-  };
+    status: "published",
+  });
 
-  const offset = (page - 1) * limit;
+  if (query.rating !== undefined) {
+    reviewQuery = reviewQuery.where({
+      rating: query.rating,
+    });
+  }
 
-  const [totalResult, reviews] = await Promise.all([
-    db.orm.public.Review.where(where).aggregate((aggregate) => ({
-      total: aggregate.count(),
-    })),
-
-    db.orm.public.Review.where(where)
-      .orderBy((fields) => {
-        if (sortBy === "updatedAt") {
-          return sortOrder === "asc"
-            ? fields.updatedAt.asc()
-            : fields.updatedAt.desc();
-        }
-
-        if (sortBy === "rating") {
-          return sortOrder === "asc"
-            ? fields.rating.asc()
-            : fields.rating.desc();
-        }
-
-        return sortOrder === "asc"
-          ? fields.createdAt.asc()
-          : fields.createdAt.desc();
-      })
-      .offset(offset)
-      .limit(limit)
-      .all(),
-  ]);
-
-  return {
-    data: reviews,
-    meta: getPaginationMeta(page, limit, totalResult.total),
-  };
+  return getReviewList(reviewQuery, query);
 };
 
 // Current User
@@ -357,16 +325,8 @@ const updateReviewStatus = async (
 ) => {
   const review = await getReviewById(reviewId);
 
-  if (status === "published") {
-    if (review.status === "published") {
-      return review;
-    }
-
-    return db.orm.public.Review.where({
-      id: reviewId,
-    }).update({
-      status: "published",
-    });
+  if (review.status === status) {
+    return review;
   }
 
   return db.orm.public.Review.where({

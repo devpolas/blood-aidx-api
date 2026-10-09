@@ -126,7 +126,6 @@ const buildDonorUpdateData = (data: UpdateDonorProfileInput) => ({
 });
 
 // Location Filter Helpers
-
 const hasLocationFilters = (query: LocationFilters) =>
   Boolean(
     query.country ||
@@ -175,7 +174,7 @@ const getMatchingUserIds = async (
     });
   }
 
-  const locations = await locationQuery.all();
+  const locations = await locationQuery.select("id").all();
 
   if (locations.length === 0) {
     return [];
@@ -185,7 +184,9 @@ const getMatchingUserIds = async (
 
   const users = await db.orm.public.User.where((user) =>
     user.locationId.in(locationIds),
-  ).all();
+  )
+    .select("id")
+    .all();
 
   return users.map((user) => user.id);
 };
@@ -226,27 +227,30 @@ const applyDonorFilters = (
     donorQuery = donorQuery.where((donor) => donor.userId.in(matchingUserIds));
   }
 
-  if (query.createdAtFrom) {
+  const createdAtFrom = query.createdAtFrom;
+  const createdAtTo = query.createdAtTo;
+  const lastDonationAtFrom = query.lastDonationAtFrom;
+  const lastDonationAtTo = query.lastDonationAtTo;
+
+  if (createdAtFrom) {
     donorQuery = donorQuery.where((donor) =>
-      donor.createdAt.gte(query.createdAtFrom!),
+      donor.createdAt.gte(createdAtFrom),
     );
   }
 
-  if (query.createdAtTo) {
+  if (createdAtTo) {
+    donorQuery = donorQuery.where((donor) => donor.createdAt.lte(createdAtTo));
+  }
+
+  if (lastDonationAtFrom) {
     donorQuery = donorQuery.where((donor) =>
-      donor.createdAt.lte(query.createdAtTo!),
+      donor.lastDonationAt.gte(lastDonationAtFrom),
     );
   }
 
-  if (query.lastDonationAtFrom) {
+  if (lastDonationAtTo) {
     donorQuery = donorQuery.where((donor) =>
-      donor.lastDonationAt.gte(query.lastDonationAtFrom!),
-    );
-  }
-
-  if (query.lastDonationAtTo) {
-    donorQuery = donorQuery.where((donor) =>
-      donor.lastDonationAt.lte(query.lastDonationAtTo!),
+      donor.lastDonationAt.lte(lastDonationAtTo),
     );
   }
 
@@ -254,7 +258,6 @@ const applyDonorFilters = (
 };
 
 // Empty Donor List
-
 const getEmptyDonorList = (query: DonorQueryInput) => ({
   data: [],
   meta: {
@@ -268,7 +271,6 @@ const getEmptyDonorList = (query: DonorQueryInput) => ({
 });
 
 // Get Donor List
-
 const getDonorList = async (query: DonorQueryInput) => {
   const matchingUserIds = await getMatchingUserIds(query);
 
@@ -278,57 +280,52 @@ const getDonorList = async (query: DonorQueryInput) => {
 
   const filteredQuery = applyDonorFilters(query, matchingUserIds);
 
-  const totalResult = await filteredQuery.aggregate((aggregate) => ({
-    total: aggregate.count(),
-  }));
-
-  const total = Number(totalResult.total ?? 0);
   const offset = (query.page - 1) * query.limit;
   const ascending = query.sortOrder === "asc";
 
-  let sortedQuery;
+  const getSortedDonors = () => {
+    switch (query.sortBy) {
+      case "updatedAt":
+        return filteredQuery.orderBy((donor) =>
+          ascending ? donor.updatedAt.asc() : donor.updatedAt.desc(),
+        );
 
-  switch (query.sortBy) {
-    case "updatedAt":
-      sortedQuery = filteredQuery.orderBy((donor) =>
-        ascending ? donor.updatedAt.asc() : donor.updatedAt.desc(),
-      );
-      break;
+      case "lastDonationAt":
+        return filteredQuery.orderBy((donor) =>
+          ascending ? donor.lastDonationAt.asc() : donor.lastDonationAt.desc(),
+        );
 
-    case "lastDonationAt":
-      sortedQuery = filteredQuery.orderBy((donor) =>
-        ascending ? donor.lastDonationAt.asc() : donor.lastDonationAt.desc(),
-      );
-      break;
+      case "totalDonations":
+        return filteredQuery.orderBy((donor) =>
+          ascending ? donor.totalDonations.asc() : donor.totalDonations.desc(),
+        );
 
-    case "totalDonations":
-      sortedQuery = filteredQuery.orderBy((donor) =>
-        ascending ? donor.totalDonations.asc() : donor.totalDonations.desc(),
-      );
-      break;
+      case "bloodGroup":
+        return filteredQuery.orderBy((donor) =>
+          ascending ? donor.bloodGroup.asc() : donor.bloodGroup.desc(),
+        );
 
-    case "bloodGroup":
-      sortedQuery = filteredQuery.orderBy((donor) =>
-        ascending ? donor.bloodGroup.asc() : donor.bloodGroup.desc(),
-      );
-      break;
+      case "availability":
+        return filteredQuery.orderBy((donor) =>
+          ascending ? donor.availability.asc() : donor.availability.desc(),
+        );
 
-    case "availability":
-      sortedQuery = filteredQuery.orderBy((donor) =>
-        ascending ? donor.availability.asc() : donor.availability.desc(),
-      );
-      break;
+      case "createdAt":
+      default:
+        return filteredQuery.orderBy((donor) =>
+          ascending ? donor.createdAt.asc() : donor.createdAt.desc(),
+        );
+    }
+  };
 
-    case "createdAt":
-    default:
-      sortedQuery = filteredQuery.orderBy((donor) =>
-        ascending ? donor.createdAt.asc() : donor.createdAt.desc(),
-      );
-      break;
-  }
+  const [data, countResult] = await Promise.all([
+    getSortedDonors().offset(offset).limit(query.limit).all(),
+    filteredQuery.aggregate((aggregate) => ({
+      total: aggregate.count(),
+    })),
+  ]);
 
-  const data = await sortedQuery.offset(offset).limit(query.limit).all();
-
+  const total = countResult.total;
   const totalPage = Math.ceil(total / query.limit);
 
   return {
@@ -339,7 +336,7 @@ const getDonorList = async (query: DonorQueryInput) => {
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };
