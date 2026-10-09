@@ -304,7 +304,6 @@ model Location {
   longitude     String?
   country       String
   division      String
-  district      String
   city          String
   village       String
   postalCode    String
@@ -318,10 +317,9 @@ model Location {
 
   @@index([country])
   @@index([division])
-  @@index([district])
   @@index([city])
   @@index([postalCode])
-  @@index([country, division, district, city])
+  @@index([country, division, city])
   @@map("locations")
 }
 

@@ -2145,13 +2145,6 @@
                   "kind": "scalar"
                 }
               },
-              "district": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "division": {
                 "nullable": false,
                 "type": {
@@ -2262,9 +2255,6 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
-                },
-                "district": {
-                  "column": "district"
                 },
                 "division": {
                   "column": "division"
@@ -5901,11 +5891,6 @@
                   "nativeType": "timestamptz",
                   "nullable": false
                 },
-                "district": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
                 "division": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -5956,11 +5941,10 @@
                   "columns": [
                     "country",
                     "division",
-                    "district",
                     "city"
                   ],
-                  "name": "locations_country_division_district_city_idx_2693022c",
-                  "prefix": "locations_country_division_district_city_idx",
+                  "name": "locations_country_division_city_idx_863b3cff",
+                  "prefix": "locations_country_division_city_idx",
                   "unique": false
                 },
                 {
@@ -5969,14 +5953,6 @@
                   ],
                   "name": "locations_country_idx_c3994778",
                   "prefix": "locations_country_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "district"
-                  ],
-                  "name": "locations_district_idx_1728c727",
-                  "prefix": "locations_district_idx",
                   "unique": false
                 },
                 {
@@ -8004,7 +7980,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "fcb36834b12017c72952b61d377c1baa4f5b1d5a9ba5b4f2cfadf4555a3629d6"
+    "storageHash": "f3b12b37ac60d1d5c11b07b2a3b318c86a0c858ab11cb27e1607bbf8debc58df"
   },
   "execution": {
     "executionHash": "b7426475606b12d86c69c03b1062e809c8e2f2958319abf366c1ddd8b92423a6",

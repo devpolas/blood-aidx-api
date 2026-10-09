@@ -1,0 +1,161 @@
+[
+  {
+    "id": "dropIndex.locations.locations_country_division_district_city_idx_2693022c",
+    "label": "Drop index \"locations_country_division_district_city_idx_2693022c\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_country_division_district_city_idx_2693022c",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_country_division_district_city_idx_2693022c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_division_district_city_idx_2693022c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"locations_country_division_district_city_idx_2693022c\"",
+        "sql": "DROP INDEX \"public\".\"locations_country_division_district_city_idx_2693022c\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_country_division_district_city_idx_2693022c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_division_district_city_idx_2693022c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropIndex.locations.locations_district_idx_1728c727",
+    "label": "Drop index \"locations_district_idx_1728c727\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_district_idx_1728c727",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_district_idx_1728c727\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_district_idx_1728c727\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"locations_district_idx_1728c727\"",
+        "sql": "DROP INDEX \"public\".\"locations_district_idx_1728c727\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_district_idx_1728c727\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_district_idx_1728c727\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.locations.district",
+    "label": "Drop column \"district\" from \"locations\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "district",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"district\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "locations",
+          "district"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"district\"",
+        "sql": "ALTER TABLE \"public\".\"locations\" DROP COLUMN \"district\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"district\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "locations",
+          "district"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.locations.locations_country_division_city_idx_863b3cff",
+    "label": "Create index \"locations_country_division_city_idx_863b3cff\" on \"locations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "locations_country_division_city_idx_863b3cff",
+        "table": "locations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"locations_country_division_city_idx_863b3cff\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_division_city_idx_863b3cff\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"locations_country_division_city_idx_863b3cff\"",
+        "sql": "CREATE INDEX \"locations_country_division_city_idx_863b3cff\" ON \"public\".\"locations\" (\"country\", \"division\", \"city\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"locations_country_division_city_idx_863b3cff\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"locations_country_division_city_idx_863b3cff\""
+        ]
+      }
+    ]
+  }
+]
