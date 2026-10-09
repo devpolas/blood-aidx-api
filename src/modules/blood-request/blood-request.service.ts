@@ -9,13 +9,9 @@ import type {
 
 import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
-
 type BloodRequestActorRole = "user" | "moderator" | "admin";
-
 const TERMINAL_STATUSES = ["fulfilled", "cancelled", "expired"] as const;
-
 const ORGANIZATION_TYPES = ["hospital", "blood_bank"] as const;
-
 const ACTIVE_ORGANIZATION_STATUSES = ["active", "verified"] as const;
 
 const getActor = async (userId: string) => {
@@ -249,7 +245,7 @@ const buildBloodRequestFilters = (query: BloodRequestQueryInput) => {
     filters.organizationId = query.organizationId;
   }
 
-  if (query.country || query.division || query.district || query.city) {
+  if (query.country || query.division || query.city) {
     filters.organization = {
       location: {
         ...(query.country && {
@@ -258,10 +254,6 @@ const buildBloodRequestFilters = (query: BloodRequestQueryInput) => {
 
         ...(query.division && {
           division: query.division,
-        }),
-
-        ...(query.district && {
-          district: query.district,
         }),
 
         ...(query.city && {

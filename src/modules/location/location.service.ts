@@ -107,7 +107,6 @@ const createLocationIntoDB = async ({
     const location = await tx.orm.public.Location.create({
       country: payload.country,
       division: payload.division,
-      district: payload.district,
       city: payload.city,
       village: payload.village,
       postalCode: payload.postalCode,
@@ -161,10 +160,6 @@ const updateLocationIntoDB = async ({
 
     ...(payload.division !== undefined && {
       division: payload.division,
-    }),
-
-    ...(payload.district !== undefined && {
-      district: payload.district,
     }),
 
     ...(payload.city !== undefined && {

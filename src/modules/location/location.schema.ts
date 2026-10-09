@@ -6,7 +6,6 @@ export const LocationCreateSchema = z.object({
 
   country: z.string().min(1).max(100),
   division: z.string().min(1).max(100),
-  district: z.string().min(1).max(100),
   city: z.string().min(1).max(100),
   village: z.string().min(1).max(100),
   postalCode: z.string().min(1).max(20),

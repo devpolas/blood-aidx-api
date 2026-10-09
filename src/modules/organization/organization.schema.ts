@@ -125,7 +125,6 @@ export const OrganizationQuerySchema = z
     locationId: z.uuid().optional(),
     country: z.string().trim().min(1).max(100).optional(),
     division: z.string().trim().min(1).max(100).optional(),
-    district: z.string().trim().min(1).max(100).optional(),
     city: z.string().trim().min(1).max(100).optional(),
     createdAtFrom: z.iso.datetime().optional(),
     createdAtTo: z.iso.datetime().optional(),

@@ -114,9 +114,7 @@ export const BloodRequestSchema = z.object({
 // Types
 
 export type CreateBloodRequestInput = z.infer<typeof CreateBloodRequestSchema>;
-
 export type UpdateBloodRequestInput = z.infer<typeof UpdateBloodRequestSchema>;
-
 export type UpdateBloodRequestStatusInput = z.infer<
   typeof UpdateBloodRequestStatusSchema
 >;
@@ -140,29 +138,20 @@ export const BloodRequestQuerySchema = z
   .object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
-
     search: z.string().trim().min(1).max(100).optional(),
-
     bloodGroup: BloodGroupSchema.optional(),
     priority: PrioritySchema.optional(),
     status: BloodRequestStatusSchema.optional(),
-
     organizationId: z.uuid().optional(),
-
     country: z.string().trim().min(1).max(100).optional(),
     division: z.string().trim().min(1).max(100).optional(),
-    district: z.string().trim().min(1).max(100).optional(),
     city: z.string().trim().min(1).max(100).optional(),
-
     requiredAtFrom: z.iso.datetime().optional(),
     requiredAtTo: z.iso.datetime().optional(),
-
     expiresAtFrom: z.iso.datetime().optional(),
     expiresAtTo: z.iso.datetime().optional(),
-
     createdAtFrom: z.iso.datetime().optional(),
     createdAtTo: z.iso.datetime().optional(),
-
     sortBy: BloodRequestSortBySchema.default("createdAt"),
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })

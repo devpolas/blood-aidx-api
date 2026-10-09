@@ -189,13 +189,6 @@ const applyOrganizationFilters = (query: OrganizationQueryInput) => {
     };
   }
 
-  if (query.district) {
-    filters.location = {
-      ...(filters.location as Record<string, unknown>),
-      district: query.district,
-    };
-  }
-
   if (query.city) {
     filters.location = {
       ...(filters.location as Record<string, unknown>),
