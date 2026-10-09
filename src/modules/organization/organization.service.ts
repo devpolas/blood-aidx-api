@@ -13,15 +13,12 @@ import { db } from "../../lib/db";
 import { AppError } from "../../utils/appError";
 
 // Types
-
 type GlobalRole = "user" | "moderator" | "admin";
-
 type OrganizationMemberRole = "admin" | "staff" | "verifier";
 
 const PUBLIC_ORGANIZATION_STATUSES = ["active", "verified"] as const;
 
 // User
-
 const getUserById = async (userId: string) => {
   const user = await db.orm.public.User.where({
     id: userId,
@@ -34,22 +31,24 @@ const getUserById = async (userId: string) => {
   return user;
 };
 
-// Location
-
-const getLocationById = async (locationId: string) => {
-  const location = await db.orm.public.Location.where({
-    id: locationId,
-  }).first();
-
-  if (!location) {
-    throw new AppError("Location not found", httpStatus.NOT_FOUND);
-  }
-
-  return location;
-};
+const getLocationData = (location: CreateOrganizationInput["location"]) => ({
+  country: location.country,
+  division: location.division,
+  city: location.city,
+  village: location.village,
+  postalCode: location.postalCode,
+  ...(location.addressLine !== undefined && {
+    addressLine: location.addressLine,
+  }),
+  ...(location.latitude !== undefined && {
+    latitude: location.latitude,
+  }),
+  ...(location.longitude !== undefined && {
+    longitude: location.longitude,
+  }),
+});
 
 // Organization
-
 const getOrganizationById = async (organizationId: string) => {
   const organization = await db.orm.public.Organization.where({
     id: organizationId,
@@ -63,7 +62,6 @@ const getOrganizationById = async (organizationId: string) => {
 };
 
 // Membership
-
 const getMembership = async (organizationId: string, userId: string) => {
   return db.orm.public.OrganizationMember.where({
     organizationId,
@@ -72,7 +70,6 @@ const getMembership = async (organizationId: string, userId: string) => {
 };
 
 // Global Authorization
-
 const isGlobalModerator = (role: GlobalRole) =>
   role === "moderator" || role === "admin";
 
@@ -90,7 +87,6 @@ const requireGlobalModerator = async (userId: string) => {
 };
 
 // Organization Access
-
 const getOrganizationAccess = async (
   organizationId: string,
   userId: string,
@@ -149,11 +145,17 @@ const requireOrganizationManager = async (
 };
 
 // Organization List
-
 const applyOrganizationFilters = (query: OrganizationQueryInput) => {
+  const requestedStatus = query.status;
+  const isPublicStatus =
+    requestedStatus !== undefined &&
+    (PUBLIC_ORGANIZATION_STATUSES as readonly string[]).includes(
+      requestedStatus,
+    );
+
   const filters: Record<string, unknown> = {
-    status: query.status
-      ? query.status
+    status: isPublicStatus
+      ? requestedStatus
       : {
           in: PUBLIC_ORGANIZATION_STATUSES,
         },
@@ -176,23 +178,11 @@ const applyOrganizationFilters = (query: OrganizationQueryInput) => {
     };
   }
 
-  if (query.country) {
+  if (query.country || query.division || query.city) {
     filters.location = {
-      country: query.country,
-    };
-  }
-
-  if (query.division) {
-    filters.location = {
-      ...(filters.location as Record<string, unknown>),
-      division: query.division,
-    };
-  }
-
-  if (query.city) {
-    filters.location = {
-      ...(filters.location as Record<string, unknown>),
-      city: query.city,
+      ...(query.country && { country: query.country }),
+      ...(query.division && { division: query.division }),
+      ...(query.city && { city: query.city }),
     };
   }
 
@@ -290,13 +280,12 @@ const getOrganizationList = async (query: OrganizationQueryInput) => {
       total,
       totalPage,
       hasNextPage: query.page < totalPage,
-      hasPreviousPage: query.page > 1,
+      hasPreviousPage: query.page > 1 && totalPage > 0,
     },
   };
 };
 
 // Public Organization
-
 const getOrganizations = async (query: OrganizationQueryInput) => {
   return getOrganizationList(query);
 };
@@ -316,7 +305,6 @@ const getOrganization = async (organizationId: string) => {
 };
 
 // My Organizations
-
 const getMyOrganizations = async (userId: string) => {
   await getUserById(userId);
 
@@ -356,7 +344,6 @@ const getMyOrganizations = async (userId: string) => {
 };
 
 // Organization By User Access
-
 const getOrganizationByIdForUser = async (
   organizationId: string,
   userId: string,
@@ -370,7 +357,6 @@ const getOrganizationByIdForUser = async (
 };
 
 // Create Organization
-
 const createOrganization = async (
   userId: string,
   data: CreateOrganizationInput,
@@ -385,41 +371,38 @@ const createOrganization = async (
     throw new AppError("Organization slug already exists", httpStatus.CONFLICT);
   }
 
-  if (data.locationId !== undefined) {
-    await getLocationById(data.locationId);
-  }
+  return db.transaction(async (tx) => {
+    const location = await tx.orm.public.Location.create(
+      getLocationData(data.location),
+    );
 
-  return db.orm.public.Organization.create({
-    ownerId: userId,
-    name: data.name,
-    slug: data.slug,
-    type: data.type,
-    status: "pending",
-
-    ...(data.locationId !== undefined && {
-      locationId: data.locationId,
-    }),
-
-    ...(data.description !== undefined && {
-      description: data.description,
-    }),
-
-    ...(data.phone !== undefined && {
-      phone: data.phone,
-    }),
-
-    ...(data.email !== undefined && {
-      email: data.email,
-    }),
-
-    ...(data.website !== undefined && {
-      website: data.website,
-    }),
+    return tx.orm.public.Organization.create({
+      ownerId: userId,
+      locationId: location.id,
+      name: data.name,
+      slug: data.slug,
+      type: data.type,
+      status: "pending",
+      ...(data.description !== undefined && {
+        description: data.description,
+      }),
+      ...(data.phone !== undefined && {
+        phone: data.phone,
+      }),
+      ...(data.email !== undefined && {
+        email: data.email,
+      }),
+      ...(data.website !== undefined && {
+        website: data.website,
+      }),
+      ...(data.registrationNo !== undefined && {
+        registrationNo: data.registrationNo,
+      }),
+    });
   });
 };
 
 // Update Organization
-
 const updateOrganization = async (
   organizationId: string,
   userId: string,
@@ -443,56 +426,64 @@ const updateOrganization = async (
     }
   }
 
-  if (data.locationId !== undefined && data.locationId !== null) {
-    await getLocationById(data.locationId);
-  }
+  return db.transaction(async (tx) => {
+    let locationId = organization.locationId;
 
-  return db.orm.public.Organization.where({
-    id: organizationId,
-  }).update({
-    ...(data.name !== undefined && {
-      name: data.name,
-    }),
+    if (data.location) {
+      const locationPayload = getLocationData(data.location);
 
-    ...(data.slug !== undefined && {
-      slug: data.slug,
-    }),
+      if (locationId) {
+        await tx.orm.public.Location.where({
+          id: locationId,
+        }).update(locationPayload);
+      } else {
+        const location = await tx.orm.public.Location.create(locationPayload);
 
-    ...(data.type !== undefined && {
-      type: data.type,
-    }),
+        locationId = location.id;
+      }
+    }
 
-    ...(data.locationId !== undefined && {
-      locationId: data.locationId,
-    }),
-
-    ...(data.description !== undefined && {
-      description: data.description,
-    }),
-
-    ...(data.phone !== undefined && {
-      phone: data.phone,
-    }),
-
-    ...(data.email !== undefined && {
-      email: data.email,
-    }),
-
-    ...(data.website !== undefined && {
-      website: data.website,
-    }),
+    return tx.orm.public.Organization.where({
+      id: organizationId,
+    }).update({
+      ...(data.name !== undefined && {
+        name: data.name,
+      }),
+      ...(data.slug !== undefined && {
+        slug: data.slug,
+      }),
+      ...(data.type !== undefined && {
+        type: data.type,
+      }),
+      ...(data.location !== undefined && {
+        locationId,
+      }),
+      ...(data.description !== undefined && {
+        description: data.description,
+      }),
+      ...(data.phone !== undefined && {
+        phone: data.phone,
+      }),
+      ...(data.email !== undefined && {
+        email: data.email,
+      }),
+      ...(data.website !== undefined && {
+        website: data.website,
+      }),
+      ...(data.registrationNo !== undefined && {
+        registrationNo: data.registrationNo,
+      }),
+    });
   });
 };
 
 // Update Organization Status
-
 const updateOrganizationStatus = async (
   organizationId: string,
   userId: string,
   data: UpdateOrganizationStatusInput,
 ) => {
   const verifier = await requireGlobalModerator(userId);
-
   const organization = await getOrganizationById(organizationId);
 
   if (data.status === organization.status) {
@@ -537,7 +528,6 @@ const updateOrganizationStatus = async (
 };
 
 // Delete Organization
-
 const deleteOrganization = async (organizationId: string, userId: string) => {
   const { organization } = await getOrganizationAccess(organizationId, userId);
 
@@ -563,7 +553,6 @@ const deleteOrganization = async (organizationId: string, userId: string) => {
 };
 
 // Members
-
 const addMember = async (
   organizationId: string,
   userId: string,

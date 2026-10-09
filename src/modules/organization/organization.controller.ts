@@ -18,9 +18,9 @@ import { OrganizationService } from "./organization.service";
 
 export const OrganizationController = {
   // Public
-
   getOrganizations: catchAsync(async (req: Request, res: Response) => {
     const query = OrganizationQuerySchema.parse(req.query);
+
     const result = await OrganizationService.getOrganizations(query);
 
     sendResponse(res, {
@@ -48,7 +48,6 @@ export const OrganizationController = {
   }),
 
   // Current User
-
   getMyOrganizations: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
@@ -63,7 +62,6 @@ export const OrganizationController = {
   }),
 
   // Organization
-
   createOrganization: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
     const data = CreateOrganizationSchema.parse(req.body);
@@ -116,7 +114,6 @@ export const OrganizationController = {
   }),
 
   // Organization Status
-
   updateOrganizationStatus: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
     const data = UpdateOrganizationStatusSchema.parse(req.body);
@@ -136,7 +133,6 @@ export const OrganizationController = {
   }),
 
   // Members
-
   getMembers: catchAsync(async (req: Request, res: Response) => {
     const { user } = requireAuth(req);
 
